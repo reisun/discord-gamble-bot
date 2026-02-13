@@ -1,0 +1,26 @@
+﻿version: "3"
+
+services:
+  discord_spla_bot:
+    build: ./docker/discord_spla_bot
+    container_name: discord_spla_bot
+    links:
+      - mongodb
+    depends_on:
+      - mongodb
+    volumes:
+      - ./src/SPLABOT/:/home/SPLABOT
+    tty: true
+
+  mongodb:
+    build: ./docker/mongodb
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./docker/mongodb/initdb.d:/docker-entrypoint-initdb.d
+      - ./docker/mongodb/data:/data/db

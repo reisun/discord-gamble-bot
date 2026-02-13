@@ -1,0 +1,3 @@
+﻿docker/mongodb/data
+src/SPLABOT/.env
+.env
