@@ -1,4 +1,4 @@
-import { GambleBet, GambleLedger } from "../Model";
+import { GambleBet, GambleLedger } from '../models/gamble';
 
 type UserStake = {
     userId: string,

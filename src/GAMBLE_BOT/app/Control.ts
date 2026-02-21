@@ -16,11 +16,15 @@ import {
     Collection
 } from 'discord.js';
 import { MAX_MEMBER_COUNT, ALPHABET_TABLE, eMessage, SPACE_REGXg, TEAMBUILD_DEFAULT_NUM } from "./Const";
-import { GambleSyncMode, User as MyUser, SendMemberRoleOption, SplaJinroData, WorkData } from "./Model";
+import { GambleSyncMode } from './models/gamble';
+import { User as MyUser, SendMemberRoleOption, WorkData } from './models/common';
+import { SplaJinroData } from './models/splajinro';
 import { eCommandOptions, eCommands, isMyCommand, CommandParser } from "./Commands"
 import { Utils } from "./Utilis";
 import { DiscordUtils, MessageContent } from "./DiscordUtils";
-import { DBAccesser, DBUtils } from "./db";
+import { DBUtils } from './db';
+import { SplaJinroRepository } from './repositories/splajinroRepository';
+import { GambleRepository } from './repositories/gambleRepository';
 import { ResultOK } from './Result';
 import { eContextMenuCommands, isMyContextMenuCommand } from './ContextMenuCommands';
 import config from './config';
@@ -84,21 +88,26 @@ type MyResult = {
 }
 
 export class Controller {
-    private _dbAccesser: DBAccesser | null = null;
+    private _splaJinroRepository: SplaJinroRepository | null = null;
+    private _gambleRepository: GambleRepository | null = null;
 
     constructor() {
     }
 
     get initialized(): boolean {
-        return this._dbAccesser != null ? true : false;
+        return this._splaJinroRepository != null && this._gambleRepository != null;
     }
-    get connectedDB(): DBAccesser {
-        return this._dbAccesser!;
+    get splaJinroRepository(): SplaJinroRepository {
+        return this._splaJinroRepository!;
+    }
+    get gambleRepository(): GambleRepository {
+        return this._gambleRepository!;
     }
     asyncSetup = async () => {
-        this._dbAccesser = await DBAccesser.connect();
+        this._splaJinroRepository = await SplaJinroRepository.connect();
+        this._gambleRepository = await GambleRepository.connect();
         console.log('bot MyDB connected!');
-        this._dbAccesser.asyncClearWorkData();
+        this._splaJinroRepository.asyncClearWorkData();
         console.log('workdata cleared!');
     }
 
@@ -340,7 +349,7 @@ export class Controller {
             return MyFuncs.createErrorReply("/gb_sync はサーバーチャンネルから実行してください。");
         }
 
-        const { status, value: session } = await this.connectedDB.asyncSelectGambleSessionForce(channelId);
+        const { status, value: session } = await this.gambleRepository.asyncSelectGambleSessionForce(channelId);
         if (status != ResultOK) {
             return MyFuncs.createErrorReply(status);
         }
@@ -350,7 +359,7 @@ export class Controller {
         const credentialRef = cmd.getValue(0, 3) ?? session.credentialRef;
         const mode = (cmd.getValue(0, 4) as GambleSyncMode | null) ?? "full";
 
-        const updSuccess = await this.connectedDB.asyncUpdateGambleSession(channelId, {
+        const updSuccess = await this.gambleRepository.asyncUpdateGambleSession(channelId, {
             spreadsheetId,
             sheetName,
             credentialRef,
@@ -378,7 +387,7 @@ export class Controller {
     
     resolveGame = async (sessionId: string, gameId: string, winningTicket: string): Promise<MyResult> => {
         try {
-            const { summary } = await this.connectedDB.asyncResolveGame(sessionId, gameId, winningTicket);
+            const { summary } = await this.gambleRepository.asyncResolveGame(sessionId, gameId, winningTicket);
             const msg = [
                 `ゲーム確定が完了しました。`,
                 `- 総額: ${summary.totalStake}`,
@@ -399,7 +408,7 @@ export class Controller {
             return MyFuncs.createErrorReply(eMessage.C02_NotAllowFromDM);
         }
 
-        const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId);
+        const { status, value: data } = await this.splaJinroRepository.asyncSelectSplaJinroDataForce(channelId);
         if (status != ResultOK) {
             return MyFuncs.createErrorReply(status);
         }
@@ -510,7 +519,7 @@ export class Controller {
             }
         });
 
-        const updSuccess = await this.connectedDB.asyncUpdateSplaJinroData(channelId, {
+        const updSuccess = await this.splaJinroRepository.asyncUpdateSplaJinroData(channelId, {
             'add_member_list': concatMemberListWithFlag.filter(m => m.status == "add").map(m => m.member),
             'ignore_member_list': concatMemberListWithFlag.filter(m => m.status == "delete").map(m => m.member),
         });
@@ -529,7 +538,7 @@ export class Controller {
             console.log("dmで受信");
         }
 
-        const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId,)
+        const { status, value: data } = await this.splaJinroRepository.asyncSelectSplaJinroDataForce(channelId,)
         if (status != ResultOK) {
             return MyFuncs.createErrorReply(status);
         }
@@ -681,7 +690,7 @@ export class Controller {
 
         if (!uesPredata) {
             // 今回のパラメータを記憶
-            const updSuccess = await this.connectedDB.asyncUpdateSplaJinroData(channelId, {
+            const updSuccess = await this.splaJinroRepository.asyncUpdateSplaJinroData(channelId, {
                 'prev_suggest_role_command_string': cmd.orgString,
             });
             // これがDBエラーでもメイン処理に弊害は無いのでログだけにする
@@ -715,7 +724,7 @@ export class Controller {
         }
 
         // メンバー取得
-        const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId,);
+        const { status, value: data } = await this.splaJinroRepository.asyncSelectSplaJinroDataForce(channelId,);
         if (status != ResultOK) {
             return MyFuncs.createErrorReply(status);
         }
@@ -734,7 +743,7 @@ export class Controller {
         }
 
         // 送信コマンドを記憶する。投票除外メンバーをリセットする
-        const updSuccess = await this.connectedDB.asyncUpdateSplaJinroData(channelId, {
+        const updSuccess = await this.splaJinroRepository.asyncUpdateSplaJinroData(channelId, {
             'prev_send_role_command_string': cmd.orgString,
             'eject_member_list': [],
         });
@@ -795,7 +804,7 @@ export class Controller {
             return MyFuncs.createErrorReply(eMessage.C05_NotAllowFromDM);
         }
 
-        const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId);
+        const { status, value: data } = await this.splaJinroRepository.asyncSelectSplaJinroDataForce(channelId);
         if (status != ResultOK) {
             return MyFuncs.createErrorReply(status);
         }
@@ -863,7 +872,7 @@ export class Controller {
             return MyFuncs.createErrorReply(eMessage.C06_NotAllowFromDM);
         }
 
-        const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId);
+        const { status, value: data } = await this.splaJinroRepository.asyncSelectSplaJinroDataForce(channelId);
         if (status != ResultOK) {
             return MyFuncs.createErrorReply(status);
         }
@@ -918,7 +927,7 @@ export class Controller {
         // ---追加モード
         if (cmd.existsOption(eCommandOptions.add)) {
             ejectList = Utils.unique(ejectList.concat(inputMenbers), u => u.id);
-            const updSuccess = await this.connectedDB.asyncUpdateSplaJinroData(channelId, {
+            const updSuccess = await this.splaJinroRepository.asyncUpdateSplaJinroData(channelId, {
                 'eject_member_list': ejectList,
             });
             if (!updSuccess) {
@@ -933,7 +942,7 @@ export class Controller {
         // ---削除モード
         if (cmd.existsOption(eCommandOptions.delete)) {
             ejectList = ejectList.filter(m => !inputMenbers.some(im => im.id == m.id));
-            const updSuccess = await this.connectedDB.asyncUpdateSplaJinroData(channelId, {
+            const updSuccess = await this.splaJinroRepository.asyncUpdateSplaJinroData(channelId, {
                 'eject_member_list': ejectList,
             });
             if (!updSuccess) {
@@ -955,13 +964,13 @@ export class Controller {
         }
 
         // asyncSelectSplaJinroDataForce を呼ぶことで、データが未登録の場合でも自動的にInsertされる
-        const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId);
+        const { status, value: data } = await this.splaJinroRepository.asyncSelectSplaJinroDataForce(channelId);
         if (status != ResultOK) {
             return MyFuncs.createErrorReply(status);
         }
 
         // オプション更新
-        await this.connectedDB.asyncUpdateSplaJinroData(channelId, {
+        await this.splaJinroRepository.asyncUpdateSplaJinroData(channelId, {
             'send_role_option': cmd.orgString,
         })
 
@@ -989,12 +998,12 @@ export class Controller {
             console.log("dmで受信");
         }
 
-        const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId,);
+        const { status, value: data } = await this.splaJinroRepository.asyncSelectSplaJinroDataForce(channelId,);
         if (!data) {
             return MyFuncs.createErrorReply(eMessage.C08_DataNothing,);
         }
 
-        const delSuccess = await this.connectedDB.asyncDeleteSplaJinroData(channelId);
+        const delSuccess = await this.splaJinroRepository.asyncDeleteSplaJinroData(channelId);
         if (!delSuccess) {
             return MyFuncs.createErrorReply(eMessage.C08_DBError,);
         }
@@ -1010,7 +1019,7 @@ export class Controller {
 
         // メンバーの取得
         let memberList = [];
-        const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId);
+        const { status, value: data } = await this.splaJinroRepository.asyncSelectSplaJinroDataForce(channelId);
         if (status != ResultOK) {
             memberList = MyFuncs.getSplaJinroMemberList(DBUtils.createNewSplaJinroDataObj(channelId), ch, sender, false);
         }
@@ -1245,7 +1254,7 @@ export class Controller {
                         return record;
                     });
                     if (records.length > 0) {
-                        await this._dbAccesser?.asyncInsertWorkData(records);
+                        await this._splaJinroRepository?.asyncInsertWorkData(records);
                     }
                     messages = await ch.messages.fetch({ before: messages.lastKey(), limit: 100 });
                 }
@@ -1270,7 +1279,7 @@ export class Controller {
                 },));
                 groupBy = [];
             }
-            await this._dbAccesser?.asyncSelectWorkDataForEach(uuid, true, async (record) => {
+            await this._splaJinroRepository?.asyncSelectWorkDataForEach(uuid, true, async (record) => {
                 if (groupBy.length > 0 && groupBy[0].data.author.icon_url !== record.data.author.icon_url) {
                     // 投稿者が変わるなら登録して、グループ集計を解放
                     await asyncPushAndGroupByResetAndSleep();
@@ -1304,7 +1313,7 @@ export class Controller {
         }
         finally {
             // 作業用DBの削除漏れが無いようにする
-            await this._dbAccesser?.asyncDeleteWorkData(uuid);
+            await this._splaJinroRepository?.asyncDeleteWorkData(uuid);
         }
 
         return {

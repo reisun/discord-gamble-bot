@@ -9,7 +9,7 @@ import {
 } from "discord.js";
 import "./DiscordExtentions";
 import { Utils } from "./Utilis";
-import { MemberRoleInfo, User as MyUser } from "./Model";
+import { MemberRoleInfo, User as MyUser } from './models/common';
 import { TEAMBUILD_DEFAULT_NUM } from "./Const";
 
 // スラッシュコマンドの仕様による制限（経験則）

@@ -1,4 +1,4 @@
-import { GambleSession, GambleSyncMode } from "../Model";
+import { GambleSession, GambleSyncMode } from '../models/gamble';
 
 type SyncResult = {
     mode: GambleSyncMode,
