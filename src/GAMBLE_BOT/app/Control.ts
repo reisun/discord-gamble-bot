@@ -15,7 +15,10 @@ import {
     InteractionWebhook,
     Collection
 } from 'discord.js';
-import { MAX_MEMBER_COUNT, ALPHABET_TABLE, eMessage, SPACE_REGXg, TEAMBUILD_DEFAULT_NUM } from "./Const";
+import { SPACE_REGXg, coreMessages, formatError } from "./constants/core";
+import { MAX_MEMBER_COUNT, ALPHABET_TABLE, TEAMBUILD_DEFAULT_NUM, splaJinroMessages } from "./constants/splajinro";
+import { gambleMessages } from "./constants/gamble";
+import { AppMessage } from "./constants/messages";
 import { GambleSyncMode, User as MyUser, SendMemberRoleOption, SplaJinroData, WorkData } from "./Model";
 import { eCommandOptions, eCommands, isMyCommand, CommandParser } from "./Commands"
 import { Utils } from "./Utilis";
@@ -215,7 +218,7 @@ export class Controller {
 
         // 埋め込みメッセージのフッタに投票を示す文字列が入っていれば処理する
         const embed = lastReaction.message.embeds[0];
-        const voteMsg = [eMessage.C00_VoteOneOnOne, eMessage.C00_VoteAny]
+        const voteMsg = [coreMessages.C00_VoteOneOnOne, coreMessages.C00_VoteAny]
         if (embed.footer == null
             || !voteMsg.some(v => embed.footer!.text.includes(v))
         ) {
@@ -233,7 +236,7 @@ export class Controller {
             return myCheckReactions;
         }
 
-        if (embed.footer.text == eMessage.C00_VoteOneOnOne) {
+        if (embed.footer.text == coreMessages.C00_VoteOneOnOne) {
             // 一人一票
             // ⇒ 直近のリアクション以外は削除
             const myCheckReactionsOnCache = await getMyCheckReactionsOnCache();
@@ -271,7 +274,7 @@ export class Controller {
                     break;
                 case eSendType.sendReplyByDM:
                     await DiscordUtils.asyncDM(user, sendObj.sendMessage)
-                        .catch(e => DiscordUtils.asyncReply(channel, user, Utils.format(eMessage.C00_ReplyDMFailed,)))
+                        .catch(e => DiscordUtils.asyncReply(channel, user, Utils.format(coreMessages.C00_ReplyDMFailed,)))
                         .catch(console.error);
                     break;
                 case eSendType.sendDMByUserId:
@@ -293,7 +296,7 @@ export class Controller {
         if (dmFailedUser.length > 0) {
             const unique = Utils.unique(dmFailedUser, v => v.id);
             const memList = unique.map(u => "* " + u.name).join("\n").replace(/\n$/, "");
-            await DiscordUtils.asyncReply(channel, user, Utils.format(eMessage.C00_OtherDMFailed, memList))
+            await DiscordUtils.asyncReply(channel, user, Utils.format(coreMessages.C00_OtherDMFailed, memList))
                 .catch(console.error);
         }
     }
@@ -337,7 +340,7 @@ export class Controller {
 
     gambleSync = async (isDM: boolean, channelId: string, cmd: CommandParser): Promise<MyResult> => {
         if (isDM) {
-            return MyFuncs.createErrorReply("/gb_sync はサーバーチャンネルから実行してください。");
+            return MyFuncs.createErrorReply(gambleMessages.Gb_NotAllowFromDM);
         }
 
         const { status, value: session } = await this.connectedDB.asyncSelectGambleSessionForce(channelId);
@@ -356,7 +359,7 @@ export class Controller {
             credentialRef,
         });
         if (!updSuccess) {
-            return MyFuncs.createErrorReply(eMessage.C00_DBError);
+            return MyFuncs.createErrorReply(coreMessages.C00_DBError);
         }
 
         try {
@@ -388,7 +391,7 @@ export class Controller {
             return MyFuncs.createSuccessReply(msg);
         }
         catch (error) {
-            const errMessage = error instanceof Error ? error.message : "ゲーム確定処理で不明なエラーが発生しました。";
+            const errMessage = error instanceof Error ? error.message : gambleMessages.Gb_ResolveUnknownError;
             return MyFuncs.createErrorReply(errMessage);
         }
     }
@@ -396,7 +399,7 @@ export class Controller {
     updateMember = async (isDM: boolean, channelId: string, ch: Channel, sender: MyUser, cmd: CommandParser, inputMenbers: MyUser[]): Promise<MyResult> => {
         if (isDM && inputMenbers.length > 0) {
             // ではだめにする。メンバーのメンションが必要なので
-            return MyFuncs.createErrorReply(eMessage.C02_NotAllowFromDM);
+            return MyFuncs.createErrorReply(splaJinroMessages.C02_NotAllowFromDM);
         }
 
         const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId);
@@ -419,7 +422,7 @@ export class Controller {
 
             const memberMsg = memberList
                 .map(mem =>
-                    Utils.format(eMessage.C06_inner_MemberFormat, `${mem.name}`)
+                    Utils.format(splaJinroMessages.C06_inner_MemberFormat, `${mem.name}`)
                 ).join("\n");
 
             // 人狼さん参加者を埋め込みメッセージでチームを表示
@@ -437,7 +440,7 @@ export class Controller {
                     const ignoreMemberMsg = chMemberLsit
                         .filter(chmem => !memberList.some(mem => mem.id == chmem.id))
                         .map(chmem =>
-                            Utils.format(eMessage.C02_inner_MemberFormat, chmem.name)
+                            Utils.format(splaJinroMessages.C02_inner_MemberFormat, chmem.name)
                         ).join("\n");
 
                     const embedIgnore = new EmbedBuilder()
@@ -452,7 +455,7 @@ export class Controller {
                     const addMemberMsg = memberList
                         .filter(chmem => !chMemberLsit.some(mem => mem.id == chmem.id))
                         .map(chmem =>
-                            Utils.format(eMessage.C02_inner_MemberFormat, chmem.name)
+                            Utils.format(splaJinroMessages.C02_inner_MemberFormat, chmem.name)
                         ).join("\n");
 
                     if (addMemberMsg) {
@@ -467,7 +470,7 @@ export class Controller {
             }
 
             return MyFuncs.createSuccessReply({
-                content: eMessage.C02_MemberView,
+                content: splaJinroMessages.C02_MemberView,
                 embeds: embeds,
             });
         }
@@ -515,7 +518,7 @@ export class Controller {
             'ignore_member_list': concatMemberListWithFlag.filter(m => m.status == "delete").map(m => m.member),
         });
         if (!updSuccess) {
-            return MyFuncs.createErrorReply(eMessage.C02_DBError,);
+            return MyFuncs.createErrorReply(splaJinroMessages.C02_DBError,);
         }
 
         // 参照モードを利用して最終的なメンバーのメッセージを取得し、返信
@@ -551,19 +554,19 @@ export class Controller {
             uesPredata = true;
             cmd = CommandParser.fromPlaneText(data.prev_suggest_role_command_string ?? "");
             if (cmd.isEmpty()) {
-                return MyFuncs.createErrorReply(eMessage.C03_NonAgainData,);
+                return MyFuncs.createErrorReply(splaJinroMessages.C03_NonAgainData,);
             }
         }
         // コマンドチェックつづき
         // 前回データの利用だからといってエラーにならないわけでは無い
         if (cmd.getValue(0, 2) == null) {
             result.status = MyError;
-            result.sendList.push(MyFuncs.createReply(eMessage.C03_RorlArgNothing, eCommands.SuggestRole))
+            result.sendList.push(MyFuncs.createReply(splaJinroMessages.C03_RorlArgNothing, eCommands.SuggestRole))
             return result;
         }
         else if ((cmd.getLength(0) - 2) > MAX_MEMBER_COUNT) {
             result.status = MyError;
-            result.sendList.push(MyFuncs.createReply(eMessage.C03_ToMany, MAX_MEMBER_COUNT))
+            result.sendList.push(MyFuncs.createReply(splaJinroMessages.C03_ToMany, MAX_MEMBER_COUNT))
             return result;
         }
 
@@ -576,7 +579,7 @@ export class Controller {
 
         if (uesPredata) {
             result.sendList.push(MyFuncs.createReply(
-                eMessage.C03_UsePredata,
+                splaJinroMessages.C03_UsePredata,
                 theName,
                 roleNameList.join("、")))
         }
@@ -585,19 +588,19 @@ export class Controller {
         const memberList = MyFuncs.getSplaJinroMemberList(data, ch, sender, !noCheckOptExists);
         if (memberList.length == 0) {
             result.status = MyError;
-            result.sendList.push(MyFuncs.createReply(eMessage.C03_MemberNothing,))
+            result.sendList.push(MyFuncs.createReply(splaJinroMessages.C03_MemberNothing,))
             return result;
         }
         // メンバー多すぎ問題
         if (memberList.length > MAX_MEMBER_COUNT) {
             result.status = MyError;
-            result.sendList.push(MyFuncs.createReply(eMessage.C03_ToMany, MAX_MEMBER_COUNT));
+            result.sendList.push(MyFuncs.createReply(splaJinroMessages.C03_ToMany, MAX_MEMBER_COUNT));
             return result;
         }
         if (memberList.length < roleNameList.length) {
             result.status = MyError;
             result.sendList.push(MyFuncs.createReply(
-                eMessage.C03_MemberFew,
+                splaJinroMessages.C03_MemberFew,
                 roleNameList.length,
                 memberList.length));
             return result;
@@ -639,7 +642,7 @@ export class Controller {
         let roleMaxlen = Math.max(...roleNameList.map(v => v.length));
 
         memberRoleStr = workMemberList.map(obj =>
-            Utils.format(eMessage.C03_inner_MemberFormat,
+            Utils.format(splaJinroMessages.C03_inner_MemberFormat,
                 obj.dispName,
                 obj.role.padEnd(roleMaxlen, "　"), // 役職は全角だろうという前提で文字幅調整
                 obj.member.name),
@@ -647,7 +650,7 @@ export class Controller {
 
         // sendRole用の平文のコマンドを作成
         const planeTextForSnedRole = Utils.format(
-            eMessage.C03_SuggestMember,
+            splaJinroMessages.C03_SuggestMember,
             eCommands.SendRole,
             ch.id,
             memberRoleStr);
@@ -674,7 +677,7 @@ export class Controller {
             // --no-checkオプションがない場合
             // メッセージに sendRole用コマンドを含める
             result.sendList.push(
-                MyFuncs.createReplyDM(eMessage.C03_SuggestMemberExplain),
+                MyFuncs.createReplyDM(splaJinroMessages.C03_SuggestMemberExplain),
                 MyFuncs.createReplyDM(planeTextForSnedRole),
             );
         }
@@ -695,23 +698,23 @@ export class Controller {
     sendRole = async (isDM: boolean, client: Client, sender: MyUser, cmd: CommandParser, isSenderRoleChecked: boolean): Promise<MyResult> => {
         if (!isDM) {
             // DMで送らないと視えちゃうのでだめ
-            return MyFuncs.createErrorReply(eMessage.C04_NeedDM);
+            return MyFuncs.createErrorReply(splaJinroMessages.C04_NeedDM);
         }
 
         // コマンドチェック
         const channelId = cmd.getValue(1, 0);
         if (channelId == null) {
-            return MyFuncs.createErrorReply(eMessage.C04_ChannelIdArgNothing,);
+            return MyFuncs.createErrorReply(splaJinroMessages.C04_ChannelIdArgNothing,);
         }
 
         if (cmd.getValue(2, 0) == null) {
-            return MyFuncs.createErrorReply(eMessage.C04_MemberArgNothing,);
+            return MyFuncs.createErrorReply(splaJinroMessages.C04_MemberArgNothing,);
         }
 
         // メンバー情報を取得するため、人狼部屋のチャンネルを取得
         const ch = await client.channels.fetch(channelId).catch(() => console.log("invalid channel id. [" + channelId + "]"));
         if (!ch || ch.isDMBased() || !config.allowedServers.includes(ch.guildId)) {
-            return MyFuncs.createErrorReply(eMessage.C04_InvalidChannelId,);
+            return MyFuncs.createErrorReply(splaJinroMessages.C04_InvalidChannelId,);
         }
 
         // メンバー取得
@@ -722,7 +725,7 @@ export class Controller {
 
         const memberList = MyFuncs.getSplaJinroMemberList(data, ch, sender, isSenderRoleChecked);
         if (memberList.length == 0) {
-            return MyFuncs.createErrorReply(eMessage.C04_MemberNothing,);
+            return MyFuncs.createErrorReply(splaJinroMessages.C04_MemberNothing,);
         }
 
         // コマンド情報から、メンバー情報をパース
@@ -730,7 +733,7 @@ export class Controller {
 
         // メンバーより少ない分には良しとする。参加者以外がメンバーに入っている場合はエラー
         if (memberRoleList.some(mr => !memberList.some(m => m.id == mr.id))) {
-            return MyFuncs.createErrorReply(eMessage.C04_UnknownMemberContain, eCommands.SuggestRole);
+            return MyFuncs.createErrorReply(splaJinroMessages.C04_UnknownMemberContain, eCommands.SuggestRole);
         }
 
         // 送信コマンドを記憶する。投票除外メンバーをリセットする
@@ -739,7 +742,7 @@ export class Controller {
             'eject_member_list': [],
         });
         if (!updSuccess) {
-            return MyFuncs.createErrorReply(eMessage.C04_DBError,);
+            return MyFuncs.createErrorReply(splaJinroMessages.C04_DBError,);
         }
 
         // 各メンバーにDM
@@ -752,7 +755,7 @@ export class Controller {
             result.sendList.push(
                 MyFuncs.createDMToOtherUser(
                     mem,
-                    eMessage.C04_SendRoleTmpl,
+                    splaJinroMessages.C04_SendRoleTmpl,
                     mem.theName, mem.role
                 )
             );
@@ -767,7 +770,7 @@ export class Controller {
                     result.sendList.push(
                         MyFuncs.createDMToOtherUser(
                             mem,
-                            eMessage.C04_SendKnowTmpl,
+                            splaJinroMessages.C04_SendKnowTmpl,
                             mem.role,
                             opt.complement,
                             memberRoleList
@@ -780,7 +783,7 @@ export class Controller {
         }
 
         // 送信成功を伝えるDM
-        result.sendList.push(MyFuncs.createReply(eMessage.C04_DMSuccess,));
+        result.sendList.push(MyFuncs.createReply(splaJinroMessages.C04_DMSuccess,));
         return result;
     }
 
@@ -792,7 +795,7 @@ export class Controller {
      */
     createVote = async (isDM: boolean, channelId: string, ch: Channel, sender: MyUser, user: User): Promise<MyResult> => {
         if (isDM) {
-            return MyFuncs.createErrorReply(eMessage.C05_NotAllowFromDM);
+            return MyFuncs.createErrorReply(splaJinroMessages.C05_NotAllowFromDM);
         }
 
         const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId);
@@ -801,7 +804,7 @@ export class Controller {
         }
 
         if (!data.prev_send_role_command_string) {
-            return MyFuncs.createErrorReply(eMessage.C05_NotStartJinro);
+            return MyFuncs.createErrorReply(splaJinroMessages.C05_NotStartJinro);
         }
 
         // GMをメンバーとみなすか、みなさないか問題は、send_role コマンドにGMがいたかどうかで判断する
@@ -812,13 +815,13 @@ export class Controller {
             .parseMemberRoleSetting(memberList);
 
         if (memberRoleList.length == 0) {
-            return MyFuncs.createErrorReply(eMessage.C05_RoleDataNothingInData);
+            return MyFuncs.createErrorReply(splaJinroMessages.C05_RoleDataNothingInData);
         }
 
         // 追放者を除く
         memberRoleList = memberRoleList.filter(m => !data.eject_member_list.some(em => em.id == m.id));
         if (memberRoleList.length == 0) {
-            return MyFuncs.createErrorReply(eMessage.C05_AllMemberEjected);
+            return MyFuncs.createErrorReply(splaJinroMessages.C05_AllMemberEjected);
         }
 
         let msg = "";
@@ -836,7 +839,7 @@ export class Controller {
             })
             .setTitle('今日は誰を追放しますか？')
             .setDescription(msg)
-            .setFooter({ text: Utils.format(eMessage.C00_VoteOneOnOne) })
+            .setFooter({ text: Utils.format(coreMessages.C00_VoteOneOnOne) })
             .setTimestamp()
             .toJSON();
 
@@ -860,7 +863,7 @@ export class Controller {
     ejectMemberForVote = async (isDM: boolean, channelId: string, ch: Channel, sender: MyUser, cmd: CommandParser, inputMenbers: MyUser[]): Promise<MyResult> => {
         if (isDM) {
             // メンバーを指定するのでサーバーのチャンネルからどうぞ
-            return MyFuncs.createErrorReply(eMessage.C06_NotAllowFromDM);
+            return MyFuncs.createErrorReply(splaJinroMessages.C06_NotAllowFromDM);
         }
 
         const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId);
@@ -869,7 +872,7 @@ export class Controller {
         }
 
         if (!data.prev_send_role_command_string) {
-            return MyFuncs.createErrorReply(eMessage.C05_NotStartJinro);
+            return MyFuncs.createErrorReply(splaJinroMessages.C05_NotStartJinro);
         }
 
         // 現追放者リスト
@@ -889,7 +892,7 @@ export class Controller {
             let alived = memberRoleList
                 .filter(m => !ejectList.some(em => em.id == m.id))
                 .map(mem =>
-                    Utils.format(eMessage.C06_inner_MemberFormat, `${mem.theName} (${mem.name})`)
+                    Utils.format(splaJinroMessages.C06_inner_MemberFormat, `${mem.theName} (${mem.name})`)
                 ).join("\n");
 
             // 埋め込みメッセージでチームを表示
@@ -900,7 +903,7 @@ export class Controller {
                 .toJSON();
 
             let ejected = ejectList.map(mem =>
-                Utils.format(eMessage.C06_inner_MemberFormat, mem.name)
+                Utils.format(splaJinroMessages.C06_inner_MemberFormat, mem.name)
             ).join("\n");
 
             const embedEjected = new EmbedBuilder()
@@ -922,7 +925,7 @@ export class Controller {
                 'eject_member_list': ejectList,
             });
             if (!updSuccess) {
-                return MyFuncs.createErrorReply(eMessage.C00_DBError,);
+                return MyFuncs.createErrorReply(coreMessages.C00_DBError,);
             }
 
             // 参照モードを利用して最終的なメンバーのメッセージを取得し、返信
@@ -937,7 +940,7 @@ export class Controller {
                 'eject_member_list': ejectList,
             });
             if (!updSuccess) {
-                return MyFuncs.createErrorReply(eMessage.C00_DBError,);
+                return MyFuncs.createErrorReply(coreMessages.C00_DBError,);
             }
 
             // 参照モードを利用して最終的なメンバーのメッセージを取得し、返信
@@ -951,7 +954,7 @@ export class Controller {
 
     updateSendRoleOption = async (isDM: boolean, channelId: string, cmd: CommandParser): Promise<MyResult> => {
         if (isDM) {
-            return MyFuncs.createErrorReply(eMessage.C00_NotAllowFromDM,);
+            return MyFuncs.createErrorReply(coreMessages.C00_NotAllowFromDM,);
         }
 
         // asyncSelectSplaJinroDataForce を呼ぶことで、データが未登録の場合でも自動的にInsertされる
@@ -970,11 +973,11 @@ export class Controller {
         const optionList = MyFuncs.parseSendRoleOption(cmd.orgString);
         for (const opt of optionList) {
             if (opt.action == "canknow") {
-                msg += Utils.format(eMessage.C03_inner_0_know_to_1, opt.targetRole, opt.complement) + "\n";
+                msg += Utils.format(splaJinroMessages.C03_inner_0_know_to_1, opt.targetRole, opt.complement) + "\n";
             }
         }
 
-        return MyFuncs.createSuccessReply(eMessage.C07_EnabledOptions, msg);
+        return MyFuncs.createSuccessReply(splaJinroMessages.C07_EnabledOptions, msg);
     }
 
     /**
@@ -991,15 +994,15 @@ export class Controller {
 
         const { status, value: data } = await this.connectedDB.asyncSelectSplaJinroDataForce(channelId,);
         if (!data) {
-            return MyFuncs.createErrorReply(eMessage.C08_DataNothing,);
+            return MyFuncs.createErrorReply(splaJinroMessages.C08_DataNothing,);
         }
 
         const delSuccess = await this.connectedDB.asyncDeleteSplaJinroData(channelId);
         if (!delSuccess) {
-            return MyFuncs.createErrorReply(eMessage.C08_DBError,);
+            return MyFuncs.createErrorReply(splaJinroMessages.C08_DBError,);
         }
 
-        return MyFuncs.createSuccessReply(eMessage.C08_ClearMemberData,);
+        return MyFuncs.createSuccessReply(splaJinroMessages.C08_ClearMemberData,);
     }
 
     buildTeam = async (isDM: boolean, channelId: string, ch: Channel, sender: MyUser, cmd: CommandParser): Promise<MyResult> => {
@@ -1019,7 +1022,7 @@ export class Controller {
         }
 
         if (memberList.length == 0) {
-            return MyFuncs.createErrorReply(eMessage.C09_MemberNotFound);
+            return MyFuncs.createErrorReply(splaJinroMessages.C09_MemberNotFound);
         }
 
         let teamA: string[] = [];
@@ -1087,11 +1090,11 @@ export class Controller {
 
     messageCopy = async (isDM: boolean, client: Client, ch: Channel, sender: MyUser, cmd: CommandParser, interaction?: Interaction): Promise<MyResult> => {
         if (isDM) {
-            return MyFuncs.createErrorReply(eMessage.C00_NotAllowFromDM,);
+            return MyFuncs.createErrorReply(coreMessages.C00_NotAllowFromDM,);
         }
         // 上記とかぶるが、型チェックしておきたいので
         if (ch.isDMBased()) {
-            return MyFuncs.createErrorReply(eMessage.C00_NotAllowFromDM,);
+            return MyFuncs.createErrorReply(coreMessages.C00_NotAllowFromDM,);
         }
 
         const selectedChannelId = cmd.getValue(0, 1)!;
@@ -1368,7 +1371,7 @@ export class Controller {
  */
 class MyFuncs {
     //#region  専用リザルト関連
-    private static updateMessageContent(msg: eMessage | MessageContent, ...args: unknown[]) {
+    private static updateMessageContent(msg: AppMessage | MessageContent, ...args: unknown[]) {
         if (typeof msg === "string")
             msg = Utils.format(msg, ...args);
         else if (msg.content)
@@ -1376,7 +1379,7 @@ class MyFuncs {
         return msg;
     }
 
-    static createReply = (msg: eMessage | MessageContent, ...args: unknown[]): SendListItem => {
+    static createReply = (msg: AppMessage | MessageContent, ...args: unknown[]): SendListItem => {
         return {
             type: eSendType.sendReply,
             user: { id: "", name: "" },
@@ -1384,7 +1387,7 @@ class MyFuncs {
         };
     }
 
-    static createReplyDM = (msg: eMessage | MessageContent, ...args: unknown[]): SendListItem => {
+    static createReplyDM = (msg: AppMessage | MessageContent, ...args: unknown[]): SendListItem => {
         return {
             type: eSendType.sendReplyByDM,
             user: { id: "", name: "" },
@@ -1392,7 +1395,7 @@ class MyFuncs {
         };
     }
 
-    static createDMToOtherUser = (user: MyUser, msg: eMessage | MessageContent, ...args: unknown[]): SendListItem => {
+    static createDMToOtherUser = (user: MyUser, msg: AppMessage | MessageContent, ...args: unknown[]): SendListItem => {
         return {
             type: eSendType.sendDMByUserId,
             user: user,
@@ -1400,7 +1403,7 @@ class MyFuncs {
         };
     }
 
-    static createSendSameChannel = (msg: eMessage | MessageContent, ...args: unknown[]): SendListItem => {
+    static createSendSameChannel = (msg: AppMessage | MessageContent, ...args: unknown[]): SendListItem => {
         return {
             type: eSendType.sendSameChannel,
             user: { id: "", name: "" },
@@ -1408,7 +1411,7 @@ class MyFuncs {
         };
     }
 
-    static createSendOtherChannel = (ch: TextBasedChannel, msg: eMessage | MessageContent, ...args: unknown[]): SendListItem => {
+    static createSendOtherChannel = (ch: TextBasedChannel, msg: AppMessage | MessageContent, ...args: unknown[]): SendListItem => {
         return {
             type: eSendType.sendOtherChannel,
             user: { id: "", name: "" },
@@ -1417,31 +1420,25 @@ class MyFuncs {
         };
     }
 
-    static createErrorReply = (msg: eMessage | MessageContent, ...args: unknown[]): MyResult => {
-        if (typeof msg === "string") {
-            return {
-                status: MyError,
-                sendList: [MyFuncs.createReply({ content: msg, flags: MessageFlags.SuppressNotifications }, ...args)],
-            }
-        }
+    static createErrorReply = (msg: AppMessage | MessageContent, ...args: unknown[]): MyResult => {
         return {
             status: MyError,
-            sendList: [MyFuncs.createReply(msg, ...args)],
+            sendList: [MyFuncs.createReply(formatError(msg, ...args))],
         }
     }
-    static createSuccessReply = (msg: eMessage | MessageContent, ...args: unknown[]): MyResult => {
+    static createSuccessReply = (msg: AppMessage | MessageContent, ...args: unknown[]): MyResult => {
         return {
             status: MySuccess,
             sendList: [MyFuncs.createReply(msg, ...args)],
         }
     }
-    static createSuccessSendSameChannel = (msg: eMessage | MessageContent, ...args: unknown[]): MyResult => {
+    static createSuccessSendSameChannel = (msg: AppMessage | MessageContent, ...args: unknown[]): MyResult => {
         return {
             status: MySuccess,
             sendList: [MyFuncs.createSendSameChannel(msg, ...args)],
         }
     }
-    static createSuccessSendOtherChannel = (ch: TextBasedChannel, msg: eMessage | MessageContent, ...args: unknown[]): MyResult => {
+    static createSuccessSendOtherChannel = (ch: TextBasedChannel, msg: AppMessage | MessageContent, ...args: unknown[]): MyResult => {
         return {
             status: MySuccess,
             sendList: [MyFuncs.createSendOtherChannel(ch, msg, ...args)],
@@ -1485,7 +1482,7 @@ class MyFuncs {
         for (const optStr of optionStrList) {
             // 知られるオプションか判定
             {
-                const sepalate = Utils.format(eMessage.C03_inner_0_know_to_1, "", "");
+                const sepalate = Utils.format(splaJinroMessages.C03_inner_0_know_to_1, "", "");
                 const optArray = optStr.split(sepalate);
                 if (optArray.length == 2) {
                     sendRoleOptionList.push({

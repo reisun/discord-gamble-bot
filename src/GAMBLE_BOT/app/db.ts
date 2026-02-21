@@ -1,6 +1,6 @@
 import { MongoClient, Collection, MatchKeysAndValues } from 'mongodb'
 import { Result, ResultOK, ResultUtil } from './Result';
-import { eMessage } from './Const';
+import { coreMessages } from './constants/core';
 import { 
   GambleGame,
   GambleSession, 
@@ -222,15 +222,15 @@ export class DBAccesser {
   async asyncInsertGambleBet(sessionId: string, bet: Omit<GambleBet, "sessionId" | "createdAt">): Promise<Result<GambleBet>> {
     const game = await this.GambleGame.findOne({ sessionId, gameId: bet.gameId });
     if (!game) {
-      return ResultUtil.error(eMessage.C00_NoData);
+      return ResultUtil.error(coreMessages.C00_NoData);
     }
     if (game.status !== "open") {
-      return ResultUtil.error(eMessage.C00_DBError);
+      return ResultUtil.error(coreMessages.C00_DBError);
     }
 
     const existingBet = await this.GambleBet.findOne({ sessionId, gameId: bet.gameId, userId: bet.userId });
     if (existingBet) {
-      return ResultUtil.error(eMessage.C00_DBError);
+      return ResultUtil.error(coreMessages.C00_DBError);
     }
     const doc: GambleBet = {
       sessionId,
@@ -243,7 +243,7 @@ export class DBAccesser {
     };
     const insRet = await this.GambleBet.insertOne(doc);
     if (!insRet.acknowledged) {
-      return ResultUtil.error(eMessage.C00_DBError);
+      return ResultUtil.error(coreMessages.C00_DBError);
     }
     return ResultUtil.success(doc);
   }
@@ -266,7 +266,7 @@ export class DBAccesser {
     };
     const insRet = await this.GambleLedger.insertOne(doc);
     if (!insRet.acknowledged) {
-      return ResultUtil.error(eMessage.C00_DBError);
+      return ResultUtil.error(coreMessages.C00_DBError);
     }
     return ResultUtil.success(doc);
   }
@@ -400,7 +400,7 @@ export class DBAccesser {
       const newData = DBUtils.createNewSplaJinroDataObj(channelId);
       const insRet = (await this.SplaJinroData.insertOne(newData));
       if (!insRet.acknowledged) {
-        return ResultUtil.error(eMessage.C00_DBError);
+        return ResultUtil.error(coreMessages.C00_DBError);
       }
       return ResultUtil.success(newData);
     }
@@ -417,7 +417,7 @@ export class DBAccesser {
       await this.SplaJinroData.deleteMany(query);
       // ここで新データを登録しても良いが、ユーザーが後日同じデータがあるから～と
       // 操作した時に首を傾げそうなので、明示しておく。
-      return ResultUtil.error(eMessage.C00_DataVersionNotSame);
+      return ResultUtil.error(coreMessages.C00_DataVersionNotSame);
     }
     return ResultUtil.success(data);
   }
@@ -485,7 +485,7 @@ export class DBAccesser {
       const newData = DBUtils.createNewGambleSessionObj(channelId);
       const insRet = await this.GambleSession.insertOne(newData);
       if (!insRet.acknowledged) {
-        return ResultUtil.error(eMessage.C00_DBError);
+        return ResultUtil.error(coreMessages.C00_DBError);
       }
       return ResultUtil.success(newData);
     }
@@ -498,7 +498,7 @@ export class DBAccesser {
 
     if (data.version != GambleSessionVersion) {
       await this.GambleSession.deleteMany(query);
-      return ResultUtil.error(eMessage.C00_DataVersionNotSame);
+      return ResultUtil.error(coreMessages.C00_DataVersionNotSame);
     }
     return ResultUtil.success(data);
   }

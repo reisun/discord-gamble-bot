@@ -10,7 +10,7 @@ import {
 import "./DiscordExtentions";
 import { Utils } from "./Utilis";
 import { MemberRoleInfo, User as MyUser } from "./Model";
-import { TEAMBUILD_DEFAULT_NUM } from "./Const";
+import { TEAMBUILD_DEFAULT_NUM } from "./constants/splajinro";
 
 // スラッシュコマンドの仕様による制限（経験則）
 // 日本語だめ 不都合なことが多すぎないか…あっぁぁん？
