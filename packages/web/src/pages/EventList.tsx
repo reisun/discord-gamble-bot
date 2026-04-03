@@ -63,8 +63,7 @@ export default function EventList() {
   return (
     <>
       <Breadcrumb items={[
-        { label: 'ホーム', href: '#/events' + tokenSearch },
-        { label: 'イベント一覧' },
+        { label: 'ホーム' },
       ]} />
 
       <div className="action-bar">
@@ -126,31 +125,16 @@ export default function EventList() {
                           className="btn-outline btn-sm"
                           onClick={() => navigate(`/events/${ev.id}/games${tokenSearch}`)}
                         >
-                          ゲーム一覧
+                          詳細
                         </button>
                         {isAdmin && (
-                          <>
-                            <button
-                              className="btn-secondary btn-sm"
-                              onClick={() => navigate(`/events/${ev.id}/edit${tokenSearch}`)}
-                            >
-                              編集
-                            </button>
-                            <button
-                              className="btn-danger btn-sm"
-                              disabled={actionLoading}
-                              onClick={() => setDeleteTarget(ev)}
-                            >
-                              削除
-                            </button>
-                            <button
-                              className="btn-secondary btn-sm"
-                              disabled={actionLoading || ev.isActive}
-                              onClick={() => handleActivate(ev)}
-                            >
-                              開催中切替
-                            </button>
-                          </>
+                          <button
+                            className="btn-secondary btn-sm"
+                            disabled={actionLoading || ev.isActive}
+                            onClick={() => handleActivate(ev)}
+                          >
+                            開催中切替
+                          </button>
                         )}
                       </div>
                     </td>

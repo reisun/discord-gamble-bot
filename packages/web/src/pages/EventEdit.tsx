@@ -62,13 +62,11 @@ export default function EventEdit() {
   const breadcrumbItems = isNew
     ? [
         { label: 'ホーム', href: '#/events' + tokenSearch },
-        { label: 'イベント一覧', href: '#/events' + tokenSearch },
         { label: '新規作成' },
       ]
     : [
         { label: 'ホーム', href: '#/events' + tokenSearch },
-        { label: 'イベント一覧', href: '#/events' + tokenSearch },
-        { label: name || '編集' },
+        { label: name || '...', href: `#/events/${id}/games${tokenSearch}` },
         { label: '編集' },
       ];
 

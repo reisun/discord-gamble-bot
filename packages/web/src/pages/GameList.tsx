@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getEvent, getGames, deleteGame, publishGame } from '../api/client';
+import { getEvent, getGames, deleteEvent, publishGame } from '../api/client';
 import type { Event, Game } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
@@ -28,8 +28,8 @@ export default function GameList() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Game | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [deleteEventTarget, setDeleteEventTarget] = useState(false);
 
   const evId = Number(eventId);
 
@@ -50,15 +50,15 @@ export default function GameList() {
 
   useEffect(() => { load(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleDelete = async () => {
-    if (!deleteTarget || !token) return;
+  const handleDeleteEvent = async () => {
+    if (!token) return;
     setActionLoading(true);
     try {
-      await deleteGame(deleteTarget.id, token);
-      setDeleteTarget(null);
-      load();
+      await deleteEvent(evId, token);
+      navigate('/events' + tokenSearch);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '削除に失敗しました');
+      setDeleteEventTarget(false);
     } finally {
       setActionLoading(false);
     }
@@ -79,9 +79,7 @@ export default function GameList() {
 
   const breadcrumbs = [
     { label: 'ホーム', href: '#/events' + tokenSearch },
-    { label: 'イベント一覧', href: '#/events' + tokenSearch },
-    { label: event?.name ?? '...', href: `#/events/${evId}/games${tokenSearch}` },
-    { label: 'ゲーム一覧' },
+    { label: event?.name ?? '...' },
   ];
 
   if (loading) return <div className="loading">読み込み中...</div>;
@@ -97,6 +95,23 @@ export default function GameList() {
         </h1>
         {event?.isActive && (
           <span className="badge badge-active">開催中</span>
+        )}
+        {isAdmin && (
+          <>
+            <button
+              className="btn-secondary btn-sm"
+              onClick={() => navigate(`/events/${evId}/edit${tokenSearch}`)}
+            >
+              編集
+            </button>
+            <button
+              className="btn-danger btn-sm"
+              disabled={actionLoading}
+              onClick={() => setDeleteEventTarget(true)}
+            >
+              削除
+            </button>
+          </>
         )}
       </div>
 
@@ -168,31 +183,16 @@ export default function GameList() {
                           className="btn-outline btn-sm"
                           onClick={() => navigate(`/games/${g.id}/status${tokenSearch}`)}
                         >
-                          状況
+                          詳細
                         </button>
                         {isAdmin && (
-                          <>
-                            <button
-                              className="btn-secondary btn-sm"
-                              onClick={() => navigate(`/games/${g.id}/edit${tokenSearch}`)}
-                            >
-                              編集
-                            </button>
-                            <button
-                              className="btn-danger btn-sm"
-                              disabled={actionLoading}
-                              onClick={() => setDeleteTarget(g)}
-                            >
-                              削除
-                            </button>
-                            <button
-                              className={`btn-sm ${g.isPublished ? 'btn-warning' : 'btn-success'}`}
-                              disabled={actionLoading}
-                              onClick={() => handlePublish(g)}
-                            >
-                              {g.isPublished ? '非公開にする' : '公開する'}
-                            </button>
-                          </>
+                          <button
+                            className={`btn-sm ${g.isPublished ? 'btn-warning' : 'btn-success'}`}
+                            disabled={actionLoading}
+                            onClick={() => handlePublish(g)}
+                          >
+                            {g.isPublished ? '非公開にする' : '公開する'}
+                          </button>
                         )}
                       </div>
                     </td>
@@ -204,11 +204,11 @@ export default function GameList() {
         </div>
       )}
 
-      {deleteTarget && (
+      {deleteEventTarget && event && (
         <ConfirmDialog
-          message={`「${deleteTarget.title}」を削除しますか？この操作は取り消せません。`}
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteTarget(null)}
+          message={`「${event.name}」を削除しますか？この操作は取り消せません。`}
+          onConfirm={handleDeleteEvent}
+          onCancel={() => setDeleteEventTarget(false)}
         />
       )}
     </>
