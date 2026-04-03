@@ -30,14 +30,14 @@
 
 | # | タスク | 担当 | ステータス | 備考 |
 |---|--------|------|------------|------|
-| 1-1 | Docker Compose 構成ファイル作成 | - | [ ] | bot / web / db / nginx の各サービス |
-| 1-2 | PostgreSQL コンテナ設定 | - | [ ] | 初期DB・ユーザー作成 |
-| 1-3 | Express.js サーバー Dockerfile 作成 | - | [ ] | |
-| 1-4 | React.js アプリ Dockerfile 作成 | - | [ ] | |
-| 1-5 | Discord Bot Dockerfile 作成 | - | [ ] | |
-| 1-6 | .env.example 作成 | - | [ ] | シークレット項目の列挙 |
-| 1-7 | TypeScript 共通設定 (tsconfig.json) | - | [ ] | パス別に分割 or monorepo 検討 |
-| 1-8 | ESLint / Prettier 設定 | - | [ ] | |
+| 1-1 | Docker Compose 構成ファイル作成 | - | [x] | bot / web / db / nginx の各サービス |
+| 1-2 | PostgreSQL コンテナ設定 | - | [x] | 初期DB・ユーザー作成 |
+| 1-3 | Express.js サーバー Dockerfile 作成 | - | [x] | |
+| 1-4 | React.js アプリ Dockerfile 作成 | - | [x] | |
+| 1-5 | Discord Bot Dockerfile 作成 | - | [x] | |
+| 1-6 | .env.example 作成 | - | [x] | シークレット項目の列挙 |
+| 1-7 | TypeScript 共通設定 (tsconfig.json) | - | [x] | npm workspaces monorepo、tsconfig.base.json + 各パッケージ tsconfig |
+| 1-8 | ESLint / Prettier 設定 | - | [x] | eslint.config.mjs (flat config) + .prettierrc.json |
 
 ---
 
