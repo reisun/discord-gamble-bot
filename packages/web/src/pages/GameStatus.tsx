@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { getGame, getBets, setGameResult } from '../api/client';
-import type { BetType, BetsData, BetCombination, Game } from '../api/types';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getGame, getEvent, getBets, setGameResult, deleteGame } from '../api/client';
+import type { BetType, BetsData, BetCombination, Game, Event } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { ClockIcon, CheckCircleIcon } from '../components/icons';
 import { useTokenSearch } from '../hooks/useTokenSearch';
 
@@ -104,12 +105,16 @@ function CombinationCard({ combo, betType, isWinner, reveal }: CombinationCardPr
 export default function GameStatus() {
   const { id } = useParams<{ id: string }>();
   const { isAdmin, token } = useAuth();
+  const navigate = useNavigate();
   const tokenSearch = useTokenSearch();
 
   const [game, setGame] = useState<Game | null>(null);
+  const [event, setEvent] = useState<Event | null>(null);
   const [bets, setBets] = useState<BetsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // 結果確定フォーム
   const [resultSymbols, setResultSymbols] = useState('');
@@ -132,7 +137,9 @@ export default function GameStatus() {
         if (g.requiredSelections) {
           setOrderedSymbols(Array(g.requiredSelections).fill(''));
         }
+        return getEvent(g.eventId, token ?? undefined);
       })
+      .then((ev) => setEvent(ev))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [id, token]);
@@ -170,6 +177,20 @@ export default function GameStatus() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!game || !token) return;
+    setActionLoading(true);
+    try {
+      await deleteGame(game.id, token);
+      navigate(`/events/${game.eventId}/games${tokenSearch}`);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '削除に失敗しました');
+      setDeleteTarget(false);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const revealDetails = isAdmin || game?.status === 'finished';
 
   if (loading) return <div className="loading">読み込み中...</div>;
@@ -177,10 +198,8 @@ export default function GameStatus() {
 
   const breadcrumbs = [
     { label: 'ホーム', href: '#/events' + tokenSearch },
-    { label: 'イベント一覧', href: '#/events' + tokenSearch },
-    { label: 'ゲーム一覧', href: `#/events/${game.eventId}/games${tokenSearch}` },
-    { label: game.title, href: `#/events/${game.eventId}/games${tokenSearch}` },
-    { label: '状況' },
+    { label: event?.name ?? '...', href: `#/events/${game.eventId}/games${tokenSearch}` },
+    { label: game.title },
   ];
 
   const status = statusLabel(game.status);
@@ -194,7 +213,26 @@ export default function GameStatus() {
       {/* ゲーム情報カード */}
       <div className="card" style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 600, color: 'var(--color-text)' }}>{game.title}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 600, color: 'var(--color-text)' }}>{game.title}</h1>
+            {isAdmin && (
+              <>
+                <button
+                  className="btn-secondary btn-sm"
+                  onClick={() => navigate(`/games/${game.id}/edit${tokenSearch}`)}
+                >
+                  編集
+                </button>
+                <button
+                  className="btn-danger btn-sm"
+                  disabled={actionLoading}
+                  onClick={() => setDeleteTarget(true)}
+                >
+                  削除
+                </button>
+              </>
+            )}
+          </div>
           {game.betType !== 'single' && (
             <div>
               <span className="badge badge-bet-type">
@@ -421,6 +459,14 @@ export default function GameStatus() {
             </table>
           </div>
         </div>
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          message={`「${game.title}」を削除しますか？この操作は取り消せません。`}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(false)}
+        />
       )}
     </>
   );

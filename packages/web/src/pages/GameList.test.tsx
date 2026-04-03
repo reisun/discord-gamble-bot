@@ -33,7 +33,7 @@ describe('GameList', () => {
   beforeEach(() => {
     vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
     vi.mocked(api.getGames).mockResolvedValue([mockGameSingle, mockGameUnpublished]);
-    vi.mocked(api.deleteGame).mockResolvedValue(undefined);
+    vi.mocked(api.deleteEvent).mockResolvedValue(undefined);
     vi.mocked(api.publishGame).mockResolvedValue(mockGameSingle);
     mockNavigate.mockClear();
   });
@@ -60,6 +60,7 @@ describe('GameList', () => {
     expect(screen.getByText('非公開')).toBeInTheDocument();
   });
 
+<<<<<<< feature/phase6-deploy
   it('一般ユーザーには「公開」列が表示されない', async () => {
     renderPage(false);
     await waitFor(() => expect(screen.getByText('第1試合')).toBeInTheDocument());
@@ -68,29 +69,32 @@ describe('GameList', () => {
   });
 
   it('非管理者は「状況」ボタンのみ表示される', async () => {
+=======
+  it('非管理者は「詳細」ボタンのみ表示される', async () => {
+>>>>>>> master
     renderPage(false);
-    await waitFor(() => expect(screen.getAllByText('状況')).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText('詳細')).toHaveLength(2));
     expect(screen.queryByText('編集')).not.toBeInTheDocument();
     expect(screen.queryByText('削除')).not.toBeInTheDocument();
   });
 
-  it('管理者は編集・削除・公開切替ボタンが表示される', async () => {
+  it('管理者はイベントヘッダーに編集・削除、ゲーム行に公開切替ボタンが表示される', async () => {
     renderPage(true);
-    await waitFor(() => expect(screen.getAllByText('編集')).toHaveLength(2));
-    expect(screen.getAllByText('削除')).toHaveLength(2);
+    await waitFor(() => expect(screen.getByText('編集')).toBeInTheDocument());
+    expect(screen.getByText('削除')).toBeInTheDocument();
     expect(screen.getByText('非公開にする')).toBeInTheDocument();
     expect(screen.getByText('公開する')).toBeInTheDocument();
   });
 
-  it('削除ボタンで確認ダイアログが表示され、確定で deleteGame が呼ばれる', async () => {
+  it('削除ボタンで確認ダイアログが表示され、確定で deleteEvent が呼ばれる', async () => {
     const user = userEvent.setup();
     renderPage(true);
-    await waitFor(() => screen.getAllByText('削除'));
-    await user.click(screen.getAllByText('削除')[0]);
-    expect(screen.getByText(/第1試合.*削除/)).toBeInTheDocument();
+    await waitFor(() => screen.getByText('削除'));
+    await user.click(screen.getByText('削除'));
+    expect(screen.getByText(/春季大会.*削除/)).toBeInTheDocument();
     const dialog = screen.getByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: '削除' }));
-    expect(api.deleteGame).toHaveBeenCalledWith(mockGameSingle.id, 'tok');
+    expect(api.deleteEvent).toHaveBeenCalledWith(mockEvent.id, 'tok');
   });
 
   it('管理者: 「+ 新規ゲーム作成」ボタンが表示される', async () => {
