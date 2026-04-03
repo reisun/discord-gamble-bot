@@ -1,6 +1,9 @@
 # Secrets
 .env
 
+# TLS certificates
+docker/nginx/certs/
+
 # Build outputs
 dist/
 build/
