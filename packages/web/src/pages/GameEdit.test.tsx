@@ -1,0 +1,126 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
+import GameEdit from './GameEdit';
+import * as api from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
+import { mockEvent, mockGameSingle, mockGameMultiOrdered } from '../test/fixtures';
+
+vi.mock('../api/client');
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: vi.fn(),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+vi.mock('../hooks/useTokenSearch', () => ({ useTokenSearch: () => '' }));
+
+const mockNavigate = vi.fn();
+const mockUseParams = vi.fn();
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>();
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+    useParams: () => mockUseParams(),
+  };
+});
+
+function renderNew() {
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false });
+  mockUseParams.mockReturnValue({ eventId: '1' });
+  vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
+  return render(<MemoryRouter><GameEdit /></MemoryRouter>);
+}
+
+function renderEdit(game = mockGameSingle) {
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false });
+  mockUseParams.mockReturnValue({ id: String(game.id) });
+  vi.mocked(api.getGame).mockResolvedValue(game);
+  vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
+  return render(<MemoryRouter><GameEdit /></MemoryRouter>);
+}
+
+describe('GameEdit', () => {
+  beforeEach(() => {
+    vi.mocked(api.createGame).mockResolvedValue(mockGameSingle);
+    vi.mocked(api.updateGame).mockResolvedValue(mockGameSingle);
+    mockNavigate.mockClear();
+  });
+
+  it('新規作成: タイトル入力欄が表示される', () => {
+    renderNew();
+    expect(screen.getByLabelText(/ゲームタイトル/)).toBeInTheDocument();
+  });
+
+  it('賭け方式「単数」の説明文が表示される', () => {
+    renderNew();
+    expect(screen.getByText(/記号を1つ選ぶ賭け方式/)).toBeInTheDocument();
+  });
+
+  it('「単数」選択時は選択数フィールドが非表示', () => {
+    renderNew();
+    expect(screen.queryByLabelText(/選択数/)).not.toBeInTheDocument();
+  });
+
+  it('「複数-選択一致」選択時に選択数フィールドと説明文が表示される', async () => {
+    const user = userEvent.setup();
+    renderNew();
+    await user.selectOptions(screen.getByLabelText(/賭け方式/), 'multi_unordered');
+    expect(screen.getByLabelText(/選択数/)).toBeInTheDocument();
+    expect(screen.getByText(/順序に関わらず/)).toBeInTheDocument();
+  });
+
+  it('公開済みゲーム編集: 締め切り日時が disabled になる', async () => {
+    const publishedGame = { ...mockGameSingle, isPublished: true };
+    renderEdit(publishedGame);
+    await waitFor(() => screen.getByDisplayValue('第1試合'));
+    expect(screen.getByLabelText(/締め切り日時/)).toBeDisabled();
+  });
+
+  it('公開済みゲーム編集: 賭け方式が disabled になる', async () => {
+    const publishedGame = { ...mockGameSingle, isPublished: true };
+    renderEdit(publishedGame);
+    await waitFor(() => screen.getByDisplayValue('第1試合'));
+    expect(screen.getByLabelText(/賭け方式/)).toBeDisabled();
+  });
+
+  it('公開済みゲーム: 警告メッセージが表示される', async () => {
+    renderEdit({ ...mockGameSingle, isPublished: true });
+    await waitFor(() => expect(screen.getByText(/公開済みです/)).toBeInTheDocument());
+  });
+
+  it('非公開ゲーム: 「項目追加」ボタンが表示される', async () => {
+    renderEdit({ ...mockGameSingle, isPublished: false });
+    await waitFor(() => expect(screen.getByText('+ 項目追加')).toBeInTheDocument());
+  });
+
+  it('公開済みゲーム: 「項目追加」ボタンが非表示', async () => {
+    renderEdit({ ...mockGameSingle, isPublished: true });
+    await waitFor(() => screen.getByDisplayValue('第1試合'));
+    expect(screen.queryByText('+ 項目追加')).not.toBeInTheDocument();
+  });
+
+  it('新規作成: タイトル入力後に保存すると createGame が呼ばれる', async () => {
+    const user = userEvent.setup();
+    renderNew();
+    await user.type(screen.getByLabelText(/ゲームタイトル/), '第5試合');
+    // 締め切りを設定（必須）
+    const deadlineInput = screen.getByLabelText(/締め切り日時/);
+    await user.type(deadlineInput, '2099-12-31T12:00');
+    // 記号と項目名（2行分）を入力
+    const symbolInputs = screen.getAllByPlaceholderText('A');
+    const labelInputs = screen.getAllByPlaceholderText('チームA');
+    await user.type(symbolInputs[0], 'A');
+    await user.type(labelInputs[0], 'チームA');
+    await user.type(symbolInputs[1], 'B');
+    await user.type(labelInputs[1], 'チームB');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+    await waitFor(() => expect(api.createGame).toHaveBeenCalled());
+  });
+
+  it('編集: 既存データが表示される', async () => {
+    renderEdit(mockGameMultiOrdered);
+    await waitFor(() => expect(screen.getByDisplayValue('第2試合')).toBeInTheDocument());
+    expect(screen.getByDisplayValue('3')).toBeInTheDocument(); // requiredSelections
+  });
+});

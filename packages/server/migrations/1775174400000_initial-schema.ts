@@ -1,4 +1,4 @@
-import { MigrationBuilder } from 'node-pg-migrate';
+import type { MigrationBuilder } from 'node-pg-migrate';
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   // events（イベント）
@@ -28,16 +28,16 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   });
 
-  pgm.addConstraint('games', 'chk_games_status', "status IN ('open', 'closed', 'finished')");
+  pgm.addConstraint('games', 'chk_games_status', "CHECK (status IN ('open', 'closed', 'finished'))");
   pgm.addConstraint(
     'games',
     'chk_games_bet_type',
-    "bet_type IN ('single', 'multi_unordered', 'multi_ordered', 'multi_ordered_dup')",
+    "CHECK (bet_type IN ('single', 'multi_unordered', 'multi_ordered', 'multi_ordered_dup'))",
   );
   pgm.addConstraint(
     'games',
     'chk_games_selections',
-    "(bet_type = 'single' AND required_selections IS NULL) OR (bet_type != 'single' AND required_selections >= 2)",
+    "CHECK ((bet_type = 'single' AND required_selections IS NULL) OR (bet_type != 'single' AND required_selections >= 2))",
   );
   pgm.createIndex('games', 'event_id', { name: 'idx_games_event_id' });
 
@@ -76,7 +76,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   });
 
   pgm.addConstraint('bets', 'uq_bets_user_game', { unique: ['user_id', 'game_id'] });
-  pgm.addConstraint('bets', 'chk_bets_amount', 'amount > 0');
+  pgm.addConstraint('bets', 'chk_bets_amount', 'CHECK (amount > 0)');
   pgm.createIndex('bets', 'game_id', { name: 'idx_bets_game_id' });
 
   // point_history（ポイント履歴）

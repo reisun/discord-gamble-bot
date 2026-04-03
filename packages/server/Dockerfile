@@ -9,7 +9,8 @@ RUN npm ci -w packages/server
 # ソースをコピーしてビルド
 COPY tsconfig.base.json ./
 COPY packages/server ./packages/server
-RUN npm run build -w packages/server
+RUN npm run build -w packages/server && \
+    npx tsc -p packages/server/tsconfig.migrations.json
 
 # --- runtime stage ---
 FROM node:20-alpine

@@ -1,0 +1,34 @@
+import express from 'express';
+import cors from 'cors';
+import morgan from 'morgan';
+
+import { logger } from './logger';
+import { errorHandler } from './middleware/errorHandler';
+import authRouter from './routes/auth';
+import eventsRouter from './routes/events';
+import gamesRouter from './routes/games';
+import betsRouter from './routes/bets';
+import usersRouter from './routes/users';
+
+export function createApp() {
+  const app = express();
+
+  app.use(cors());
+  app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }));
+  app.use(express.json());
+
+  app.use('/api/auth', authRouter);
+  app.use('/api/events', eventsRouter);
+  app.use('/api/games', gamesRouter);
+  app.use('/api/events/:eventId/games', gamesRouter);
+  app.use('/api/games/:gameId/bets', betsRouter);
+  app.use('/api/users', usersRouter);
+
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok' });
+  });
+
+  app.use(errorHandler);
+
+  return app;
+}
