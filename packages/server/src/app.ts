@@ -13,7 +13,17 @@ import usersRouter from './routes/users';
 export function createApp() {
   const app = express();
 
-  app.use(cors());
+  const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  app.use(
+    cors({
+      origin: allowedOrigins.length > 0 ? allowedOrigins : false,
+      credentials: true,
+    }),
+  );
   app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }));
   app.use(express.json());
 
