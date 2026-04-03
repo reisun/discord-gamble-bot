@@ -104,7 +104,7 @@ function CombinationCard({ combo, betType, isWinner, reveal }: CombinationCardPr
 
 export default function GameStatus() {
   const { id } = useParams<{ id: string }>();
-  const { isAdmin, token } = useAuth();
+  const { isAdmin, token, guildId } = useAuth();
   const navigate = useNavigate();
   const tokenSearch = useTokenSearch();
 
@@ -196,10 +196,13 @@ export default function GameStatus() {
   if (loading) return <div className="loading">読み込み中...</div>;
   if (!game || !bets) return <div className="error-message">{error ?? 'データが取得できませんでした'}</div>;
 
+  const eventsBase = guildId ? `/events/${guildId}` : '/events';
   const breadcrumbs = [
-    { label: 'ホーム', href: '#/events' + tokenSearch },
-    { label: event?.name ?? '...', href: `#/events/${game.eventId}/games${tokenSearch}` },
-    { label: game.title },
+    { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
+    { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
+    { label: 'ゲーム一覧', href: `#${eventsBase}/${game.eventId}/games${tokenSearch}` },
+    { label: game.title, href: `#${eventsBase}/${game.eventId}/games${tokenSearch}` },
+    { label: '状況' },
   ];
 
   const status = statusLabel(game.status);

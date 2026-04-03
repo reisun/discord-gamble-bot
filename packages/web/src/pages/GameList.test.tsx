@@ -20,12 +20,12 @@ vi.mock('react-router-dom', async (importOriginal) => {
   return {
     ...actual,
     useNavigate: () => mockNavigate,
-    useParams: () => ({ eventId: '1' }),
+    useParams: () => ({ guildId: 'test-guild-001', eventId: '1' }),
   };
 });
 
 function renderPage(isAdmin = false) {
-  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false });
+  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001' });
   return render(<MemoryRouter><GameList /></MemoryRouter>);
 }
 
@@ -60,7 +60,6 @@ describe('GameList', () => {
     expect(screen.getByText('非公開')).toBeInTheDocument();
   });
 
-<<<<<<< feature/phase6-deploy
   it('一般ユーザーには「公開」列が表示されない', async () => {
     renderPage(false);
     await waitFor(() => expect(screen.getByText('第1試合')).toBeInTheDocument());
@@ -68,10 +67,7 @@ describe('GameList', () => {
     expect(screen.queryByText('非公開')).not.toBeInTheDocument();
   });
 
-  it('非管理者は「状況」ボタンのみ表示される', async () => {
-=======
   it('非管理者は「詳細」ボタンのみ表示される', async () => {
->>>>>>> master
     renderPage(false);
     await waitFor(() => expect(screen.getAllByText('詳細')).toHaveLength(2));
     expect(screen.queryByText('編集')).not.toBeInTheDocument();

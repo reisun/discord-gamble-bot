@@ -9,6 +9,7 @@ import eventsRouter from './routes/events';
 import gamesRouter from './routes/games';
 import betsRouter from './routes/bets';
 import usersRouter from './routes/users';
+import guildsRouter from './routes/guilds';
 
 export function createApp() {
   const app = express();
@@ -28,6 +29,7 @@ export function createApp() {
   app.use(express.json());
 
   app.use('/api/auth', authRouter);
+  app.use('/api/guilds', guildsRouter);
   app.use('/api/events', eventsRouter);
   app.use('/api/games', gamesRouter);
   app.use('/api/events/:eventId/games', gamesRouter);

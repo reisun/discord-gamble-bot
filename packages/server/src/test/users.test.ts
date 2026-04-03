@@ -19,7 +19,7 @@ async function setupFullScenario() {
   const eventRes = await request(app)
     .post('/api/events')
     .set(adminHeaders)
-    .send({ name: 'テストイベント', initialPoints: 10000 });
+    .send({ name: 'テストイベント', initialPoints: 10000, guildId: 'test-guild-001' });
   const event = eventRes.body.data;
 
   const gameRes = await request(app)

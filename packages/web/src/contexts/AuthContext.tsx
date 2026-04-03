@@ -5,20 +5,22 @@ interface AuthContextValue {
   token: string | null;
   isAdmin: boolean;
   isVerifying: boolean;
+  guildId: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   token: null,
   isAdmin: false,
   isVerifying: false,
+  guildId: null,
 });
 
 /**
  * ハッシュフラグメント内のクエリパラメータから token を取得する。
- * 例: /#/events?token=xxx  → "xxx"
+ * 例: /#/events/123456789?token=xxx  → "xxx"
  */
 function getTokenFromHash(): string | null {
-  const hash = window.location.hash; // e.g. "#/events?token=xxx"
+  const hash = window.location.hash; // e.g. "#/events/123456789?token=xxx"
   const queryIndex = hash.indexOf('?');
   if (queryIndex === -1) return null;
   const query = hash.slice(queryIndex + 1);
@@ -26,8 +28,23 @@ function getTokenFromHash(): string | null {
   return params.get('token');
 }
 
+/**
+ * ハッシュフラグメントから guildId を取得する。
+ * 例: /#/events/123456789/...  → "123456789"
+ */
+function getGuildIdFromHash(): string | null {
+  const hash = window.location.hash; // e.g. "#/events/123456789?token=xxx"
+  const withoutHash = hash.slice(1).split('?')[0]; // "/events/123456789"
+  const parts = withoutHash.split('/').filter(Boolean); // ["events", "123456789", ...]
+  if (parts[0] === 'events' && parts[1]) {
+    return parts[1];
+  }
+  return null;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => getTokenFromHash());
+  const [guildId, setGuildId] = useState<string | null>(() => getGuildIdFromHash());
   const [isAdmin, setIsAdmin] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -58,18 +75,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [token]);
 
-  // ハッシュ変化時にトークンを再取得
+  // ハッシュ変化時にトークンと guildId を再取得
   useEffect(() => {
     const onHashChange = () => {
       const t = getTokenFromHash();
+      const g = getGuildIdFromHash();
       setToken(t);
+      setGuildId(g);
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, isAdmin, isVerifying }}>
+    <AuthContext.Provider value={{ token, isAdmin, isVerifying, guildId }}>
       {children}
     </AuthContext.Provider>
   );

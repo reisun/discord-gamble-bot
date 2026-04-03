@@ -20,7 +20,7 @@ async function createEvent() {
   const res = await request(app)
     .post('/api/events')
     .set(adminHeaders)
-    .send({ name: 'テストイベント', initialPoints: 10000 });
+    .send({ name: 'テストイベント', initialPoints: 10000, guildId: 'test-guild-001' });
   return res.body.data as { id: number };
 }
 

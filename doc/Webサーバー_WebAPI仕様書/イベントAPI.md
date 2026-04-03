@@ -2,11 +2,18 @@
 
 ## イベント一覧取得
 ```
-GET /api/events
+GET /api/events?guildId={guildId}
 ```
 
+指定したギルドのイベント一覧を返す。  
 管理者トークン付きの場合は全イベントを返す。  
 トークンなし（一般ユーザー）の場合は `is_published = TRUE` のイベントのみ返す。
+
+**クエリパラメータ**
+
+| パラメータ | 説明 |
+|-----------|------|
+| guildId | DiscordサーバーID（必須） |
 
 **レスポンス**
 ```json
@@ -14,6 +21,7 @@ GET /api/events
   "data": [
     {
       "id": 1,
+      "guildId": "123456789012345678",
       "name": "〇〇大会",
       "isActive": true,
       "isPublished": true,

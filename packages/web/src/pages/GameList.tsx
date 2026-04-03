@@ -19,10 +19,13 @@ function formatDeadline(iso: string) {
 }
 
 export default function GameList() {
-  const { eventId } = useParams<{ eventId: string }>();
+  const { guildId, eventId } = useParams<{ guildId: string; eventId: string }>();
   const { isAdmin, token } = useAuth();
   const navigate = useNavigate();
   const tokenSearch = useTokenSearch();
+
+  const eventsBase = guildId ? `/events/${guildId}` : '/events';
+  const evId = Number(eventId);
 
   const [event, setEvent] = useState<Event | null>(null);
   const [games, setGames] = useState<Game[]>([]);
@@ -30,8 +33,6 @@ export default function GameList() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [deleteEventTarget, setDeleteEventTarget] = useState(false);
-
-  const evId = Number(eventId);
 
   const load = () => {
     setLoading(true);
@@ -55,7 +56,7 @@ export default function GameList() {
     setActionLoading(true);
     try {
       await deleteEvent(evId, token);
-      navigate('/events' + tokenSearch);
+      navigate(eventsBase + tokenSearch);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '削除に失敗しました');
       setDeleteEventTarget(false);
@@ -78,8 +79,10 @@ export default function GameList() {
   };
 
   const breadcrumbs = [
-    { label: 'ホーム', href: '#/events' + tokenSearch },
-    { label: event?.name ?? '...' },
+    { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
+    { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
+    { label: event?.name ?? '...', href: `#${eventsBase}/${evId}/games${tokenSearch}` },
+    { label: 'ゲーム一覧' },
   ];
 
   if (loading) return <div className="loading">読み込み中...</div>;
@@ -121,14 +124,14 @@ export default function GameList() {
           <>
             <button
               className="btn-secondary"
-              onClick={() => navigate(`/events/${evId}/results${tokenSearch}`)}
+              onClick={() => navigate(`${eventsBase}/${evId}/results${tokenSearch}`)}
             >
               ユーザー結果一覧
             </button>
             <button
               className="btn-primary"
               style={{ marginLeft: 'auto' }}
-              onClick={() => navigate(`/events/${evId}/games/new${tokenSearch}`)}
+              onClick={() => navigate(`${eventsBase}/${evId}/games/new${tokenSearch}`)}
             >
               + 新規ゲーム作成
             </button>

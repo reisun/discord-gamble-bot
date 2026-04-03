@@ -16,13 +16,14 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Navigate to="/events" replace />} />
             <Route path="/events" element={<EventList />} />
-            <Route path="/events/new" element={<EventEdit />} />
-            <Route path="/events/:id/edit" element={<EventEdit />} />
-            <Route path="/events/:eventId/games" element={<GameList />} />
-            <Route path="/events/:eventId/games/new" element={<GameEdit />} />
+            <Route path="/events/:guildId" element={<EventList />} />
+            <Route path="/events/:guildId/new" element={<EventEdit />} />
+            <Route path="/events/:guildId/:eventId/edit" element={<EventEdit />} />
+            <Route path="/events/:guildId/:eventId/games" element={<GameList />} />
+            <Route path="/events/:guildId/:eventId/games/new" element={<GameEdit />} />
             <Route path="/games/:id/edit" element={<GameEdit />} />
             <Route path="/games/:id/status" element={<GameStatus />} />
-            <Route path="/events/:eventId/results" element={<UserResults />} />
+            <Route path="/events/:guildId/:eventId/results" element={<UserResults />} />
             <Route path="*" element={<Navigate to="/events" replace />} />
           </Route>
         </Routes>

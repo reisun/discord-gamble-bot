@@ -7,6 +7,7 @@ const router = Router();
 
 type EventRow = {
   id: number;
+  guild_id: string;
   name: string;
   is_active: boolean;
   is_published: boolean;
@@ -19,6 +20,7 @@ type EventRow = {
 function formatEvent(row: EventRow) {
   return {
     id: row.id,
+    guildId: row.guild_id,
     name: row.name,
     isActive: row.is_active,
     isPublished: row.is_published,
@@ -30,16 +32,22 @@ function formatEvent(row: EventRow) {
 }
 
 const SELECT_COLUMNS =
-  'id, name, is_active, is_published, initial_points, results_public, created_at, updated_at';
+  'id, guild_id, name, is_active, is_published, initial_points, results_public, created_at, updated_at';
 
-// GET /api/events
+// GET /api/events?guildId=xxx
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { guildId } = req.query;
+    if (!guildId || typeof guildId !== 'string') {
+      throw new AppError(400, 'VALIDATION_ERROR', 'guildId は必須です');
+    }
+
     const adminUser = isAdmin(req);
     const rows = await query<EventRow>(
       adminUser
-        ? `SELECT ${SELECT_COLUMNS} FROM events ORDER BY id`
-        : `SELECT ${SELECT_COLUMNS} FROM events WHERE is_published = TRUE ORDER BY id`,
+        ? `SELECT ${SELECT_COLUMNS} FROM events WHERE guild_id = $1 ORDER BY id`
+        : `SELECT ${SELECT_COLUMNS} FROM events WHERE guild_id = $1 AND is_published = TRUE ORDER BY id`,
+      [guildId],
     );
     res.json({ data: rows.map(formatEvent) });
   } catch (err) {
@@ -66,12 +74,16 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 // POST /api/events
 router.post('/', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, initialPoints = 10000, resultsPublic = false } = req.body as {
+    const { name, initialPoints = 10000, resultsPublic = false, guildId } = req.body as {
       name?: string;
       initialPoints?: number;
       resultsPublic?: boolean;
+      guildId?: string;
     };
 
+    if (!guildId || typeof guildId !== 'string' || guildId.trim().length === 0) {
+      throw new AppError(400, 'VALIDATION_ERROR', 'guildId は必須です');
+    }
     if (!name || typeof name !== 'string' || name.trim().length === 0 || name.length > 100) {
       throw new AppError(400, 'VALIDATION_ERROR', 'name は1〜100文字で指定してください');
     }
@@ -80,10 +92,10 @@ router.post('/', requireAdmin, async (req: Request, res: Response, next: NextFun
     }
 
     const rows = await query<EventRow>(
-      `INSERT INTO events (name, initial_points, results_public)
-       VALUES ($1, $2, $3)
+      `INSERT INTO events (guild_id, name, initial_points, results_public)
+       VALUES ($1, $2, $3, $4)
        RETURNING ${SELECT_COLUMNS}`,
-      [name.trim(), initialPoints, resultsPublic],
+      [guildId.trim(), name.trim(), initialPoints, resultsPublic],
     );
     res.status(201).json({ data: formatEvent(rows[0]) });
   } catch (err) {
@@ -153,6 +165,7 @@ router.delete('/:id', requireAdmin, async (req: Request, res: Response, next: Ne
 
 // PATCH /api/events/:id/activate
 // 開催状態をトグルする。非開催→開催 の場合は is_published を TRUE に強制する。
+// 同一ギルド内の他イベントのみ非開催にする。
 router.patch(
   '/:id/activate',
   requireAdmin,
@@ -160,14 +173,14 @@ router.patch(
     try {
       const rows = await withTransaction(async (client) => {
         const check = await client.query<EventRow>(
-          `SELECT id, is_active FROM events WHERE id = $1`,
+          `SELECT id, is_active, guild_id FROM events WHERE id = $1`,
           [req.params.id],
         );
         if (check.rows.length === 0) {
           throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
         }
 
-        const currentlyActive = check.rows[0].is_active;
+        const { is_active: currentlyActive, guild_id } = check.rows[0];
 
         if (currentlyActive) {
           // 開催中 → 非開催に切り替え
@@ -179,9 +192,10 @@ router.patch(
           );
           return updated.rows;
         } else {
-          // 非開催 → 開催に切り替え（他をすべて非開催、かつ is_published を TRUE に強制）
+          // 非開催 → 開催に切り替え（同一ギルドの他を非開催、かつ is_published を TRUE に強制）
           await client.query(
-            'UPDATE events SET is_active = FALSE, updated_at = NOW() WHERE is_active = TRUE',
+            'UPDATE events SET is_active = FALSE, updated_at = NOW() WHERE is_active = TRUE AND guild_id = $1',
+            [guild_id],
           );
           const updated = await client.query<EventRow>(
             `UPDATE events SET is_active = TRUE, is_published = TRUE, updated_at = NOW()

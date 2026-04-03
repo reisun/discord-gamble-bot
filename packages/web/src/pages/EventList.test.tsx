@@ -15,11 +15,15 @@ vi.mock('../contexts/AuthContext', () => ({
 vi.mock('../hooks/useTokenSearch', () => ({ useTokenSearch: () => '' }));
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
-  return { ...actual, useNavigate: () => vi.fn() };
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+    useParams: () => ({ guildId: 'test-guild-001' }),
+  };
 });
 
 function renderPage(isAdmin = false) {
-  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false });
+  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001' });
   return render(<MemoryRouter><EventList /></MemoryRouter>);
 }
 

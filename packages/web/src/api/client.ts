@@ -2,6 +2,7 @@ import type {
   Event,
   Game,
   BetsData,
+  Guild,
   User,
   UserEventResult,
 } from './types';
@@ -44,9 +45,15 @@ export function verifyToken(token: string): Promise<{ isAdmin: boolean }> {
   return request(`/auth/verify?token=${encodeURIComponent(token)}`);
 }
 
+// ギルド
+export function getGuild(guildId: string): Promise<Guild> {
+  return request(`/guilds/${guildId}`);
+}
+
 // イベント
-export function getEvents(token?: string): Promise<Event[]> {
-  return request('/events', {}, token);
+export function getEvents(token?: string, guildId?: string): Promise<Event[]> {
+  const query = guildId ? `?guildId=${encodeURIComponent(guildId)}` : '';
+  return request(`/events${query}`, {}, token);
 }
 
 export function getEvent(id: number, token?: string): Promise<Event> {
@@ -54,7 +61,7 @@ export function getEvent(id: number, token?: string): Promise<Event> {
 }
 
 export function createEvent(
-  body: { name: string; initialPoints?: number; resultsPublic?: boolean },
+  body: { name: string; initialPoints?: number; resultsPublic?: boolean; guildId: string },
   token: string,
 ): Promise<Event> {
   return request('/events', { method: 'POST', body: JSON.stringify(body) }, token);
