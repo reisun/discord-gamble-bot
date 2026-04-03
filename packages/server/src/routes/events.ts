@@ -1,0 +1,175 @@
+import { Router, Request, Response, NextFunction } from 'express';
+import { query, withTransaction } from '../db';
+import { requireAdmin } from '../middleware/auth';
+import { AppError } from '../middleware/errorHandler';
+
+const router = Router();
+
+type EventRow = {
+  id: number;
+  name: string;
+  is_active: boolean;
+  initial_points: number;
+  results_public: boolean;
+  created_at: Date;
+  updated_at: Date;
+};
+
+function formatEvent(row: EventRow) {
+  return {
+    id: row.id,
+    name: row.name,
+    isActive: row.is_active,
+    initialPoints: row.initial_points,
+    resultsPublic: row.results_public,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+// GET /api/events
+router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const rows = await query<EventRow>(
+      'SELECT id, name, is_active, initial_points, results_public, created_at, updated_at FROM events ORDER BY id',
+    );
+    res.json({ data: rows.map(formatEvent) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/events/:id
+router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const rows = await query<EventRow>(
+      'SELECT id, name, is_active, initial_points, results_public, created_at, updated_at FROM events WHERE id = $1',
+      [req.params.id],
+    );
+    if (rows.length === 0) {
+      throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
+    }
+    res.json({ data: formatEvent(rows[0]) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/events
+router.post('/', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, initialPoints = 10000, resultsPublic = false } = req.body as {
+      name?: string;
+      initialPoints?: number;
+      resultsPublic?: boolean;
+    };
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0 || name.length > 100) {
+      throw new AppError(400, 'VALIDATION_ERROR', 'name は1〜100文字で指定してください');
+    }
+    if (!Number.isInteger(initialPoints) || initialPoints < 1) {
+      throw new AppError(400, 'VALIDATION_ERROR', 'initialPoints は1以上の整数で指定してください');
+    }
+
+    const rows = await query<EventRow>(
+      `INSERT INTO events (name, initial_points, results_public)
+       VALUES ($1, $2, $3)
+       RETURNING id, name, is_active, initial_points, results_public, created_at, updated_at`,
+      [name.trim(), initialPoints, resultsPublic],
+    );
+    res.status(201).json({ data: formatEvent(rows[0]) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/events/:id
+router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, initialPoints, resultsPublic } = req.body as {
+      name?: string;
+      initialPoints?: number;
+      resultsPublic?: boolean;
+    };
+
+    const existing = await query<EventRow>('SELECT id FROM events WHERE id = $1', [req.params.id]);
+    if (existing.length === 0) {
+      throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
+    }
+
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim().length === 0 || name.length > 100) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'name は1〜100文字で指定してください');
+      }
+    }
+    if (initialPoints !== undefined) {
+      if (!Number.isInteger(initialPoints) || initialPoints < 1) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'initialPoints は1以上の整数で指定してください');
+      }
+    }
+
+    const rows = await query<EventRow>(
+      `UPDATE events
+       SET name = COALESCE($1, name),
+           initial_points = COALESCE($2, initial_points),
+           results_public = COALESCE($3, results_public),
+           updated_at = NOW()
+       WHERE id = $4
+       RETURNING id, name, is_active, initial_points, results_public, created_at, updated_at`,
+      [name?.trim() ?? null, initialPoints ?? null, resultsPublic ?? null, req.params.id],
+    );
+    res.json({ data: formatEvent(rows[0]) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/events/:id
+router.delete('/:id', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await query<{ id: number }>(
+      'DELETE FROM events WHERE id = $1 RETURNING id',
+      [req.params.id],
+    );
+    if (result.length === 0) {
+      throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
+    }
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/events/:id/activate
+router.patch(
+  '/:id/activate',
+  requireAdmin,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const rows = await withTransaction(async (client) => {
+        const check = await client.query<EventRow>(
+          'SELECT id FROM events WHERE id = $1',
+          [req.params.id],
+        );
+        if (check.rows.length === 0) {
+          throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
+        }
+
+        await client.query('UPDATE events SET is_active = FALSE, updated_at = NOW() WHERE is_active = TRUE');
+        const updated = await client.query<EventRow>(
+          `UPDATE events SET is_active = TRUE, updated_at = NOW()
+           WHERE id = $1
+           RETURNING id, name, is_active, initial_points, results_public, created_at, updated_at`,
+          [req.params.id],
+        );
+        return updated.rows;
+      });
+
+      res.json({ data: formatEvent(rows[0]) });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+export default router;
