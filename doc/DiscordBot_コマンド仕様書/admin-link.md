@@ -17,7 +17,14 @@
 ```
 🔑 管理者用URLです。他の人に共有しないでください。
 
-https://<github-pages-url>/#/?token=xxxxxxxxxxxxxxxx
+https://<github-pages-url>/#/events/<guildId>?token=xxxxxxxxxxxxxxxx
 ```
 
 トークンはハッシュ内クエリパラメータとして付与するため、サーバーのアクセスログには残らない。
+
+## エラー条件
+
+| 条件 | 応答 |
+|------|------|
+| 管理者ロールなし | 「管理者のみ使用できます。」（Ephemeral） |
+| DM（サーバー外）から実行 | 「このコマンドはサーバー内でのみ使用できます。」（Ephemeral） |

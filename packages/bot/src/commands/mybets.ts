@@ -14,7 +14,12 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   // 開催中イベント取得
   let activeEvent;
   try {
-    const events = await getEvents();
+    const guildId = interaction.guild?.id;
+    if (!guildId) {
+      await interaction.editReply('❌ サーバー内でのみ使用できます。');
+      return;
+    }
+    const events = await getEvents(guildId);
     activeEvent = events.find((e) => e.isActive);
   } catch (err) {
     await interaction.editReply(`❌ イベント情報の取得に失敗しました。\n理由: ${extractApiMessage(err)}`);

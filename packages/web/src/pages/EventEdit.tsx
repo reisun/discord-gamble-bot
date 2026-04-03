@@ -6,11 +6,14 @@ import Breadcrumb from '../components/Breadcrumb';
 import { useTokenSearch } from '../hooks/useTokenSearch';
 
 export default function EventEdit() {
-  const { id } = useParams<{ id: string }>();
-  const isNew = !id;
+  // Route: /events/:guildId/new  or  /events/:guildId/:eventId/edit
+  const { guildId, eventId } = useParams<{ guildId?: string; eventId?: string }>();
+  const isNew = !eventId;
   const { token } = useAuth();
   const navigate = useNavigate();
   const tokenSearch = useTokenSearch();
+
+  const eventsBase = guildId ? `/events/${guildId}` : '/events';
 
   const [name, setName] = useState('');
   const [initialPoints, setInitialPoints] = useState(10000);
@@ -21,7 +24,7 @@ export default function EventEdit() {
   useEffect(() => {
     if (isNew) return;
     setLoading(true);
-    getEvent(Number(id), token ?? undefined)
+    getEvent(Number(eventId), token ?? undefined)
       .then((ev) => {
         setName(ev.name);
         setInitialPoints(ev.initialPoints);
@@ -29,11 +32,12 @@ export default function EventEdit() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [eventId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
+    if (!guildId) { setError('ギルドIDが取得できません'); return; }
     if (name.trim().length === 0 || name.length > 100) {
       setError('イベント名は1〜100文字で入力してください');
       return;
@@ -47,11 +51,11 @@ export default function EventEdit() {
     setError(null);
     try {
       if (isNew) {
-        await createEvent({ name: name.trim(), initialPoints }, token);
+        await createEvent({ name: name.trim(), initialPoints, guildId }, token);
       } else {
-        await updateEvent(Number(id), { name: name.trim(), initialPoints }, token);
+        await updateEvent(Number(eventId), { name: name.trim(), initialPoints }, token);
       }
-      navigate('/events' + tokenSearch);
+      navigate(eventsBase + tokenSearch);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存に失敗しました');
     } finally {
@@ -61,13 +65,14 @@ export default function EventEdit() {
 
   const breadcrumbItems = isNew
     ? [
-        { label: 'ホーム', href: '#/events' + tokenSearch },
+        { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
+        { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
         { label: '新規作成' },
       ]
     : [
-        { label: 'ホーム', href: '#/events' + tokenSearch },
-        { label: name || '...', href: `#/events/${id}/games${tokenSearch}` },
-        { label: '編集' },
+        { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
+        { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
+        { label: name || '編集' },
       ];
 
   if (loading) return <div className="loading">読み込み中...</div>;
@@ -112,7 +117,7 @@ export default function EventEdit() {
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => navigate('/events' + tokenSearch)}
+              onClick={() => navigate(eventsBase + tokenSearch)}
             >
               キャンセル
             </button>

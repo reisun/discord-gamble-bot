@@ -38,11 +38,12 @@ function toLocalDatetimeValue(iso: string): string {
 }
 
 export default function GameEdit() {
-  // Route: /events/:eventId/games/new  or  /games/:id/edit
-  const params = useParams<{ eventId?: string; id?: string }>();
+  // Route: /events/:guildId/:eventId/games/new  or  /games/:id/edit
+  const params = useParams<{ guildId?: string; eventId?: string; id?: string }>();
   const isNew = !params.id;
   const gameId = params.id ? Number(params.id) : undefined;
-  const { token } = useAuth();
+  const { token, guildId: authGuildId } = useAuth();
+  const guildId = params.guildId ?? authGuildId;
   const navigate = useNavigate();
   const tokenSearch = useTokenSearch();
 
@@ -150,12 +151,15 @@ export default function GameEdit() {
     };
 
     try {
+      const gamePath = guildId
+        ? `/events/${guildId}/${eventId}/games${tokenSearch}`
+        : `/events${tokenSearch}`;
       if (isNew) {
         await createGame(eventId!, body, token);
-        navigate(`/events/${eventId}/games${tokenSearch}`);
+        navigate(gamePath);
       } else {
         await updateGame(gameId!, body, token);
-        navigate(`/events/${eventId}/games${tokenSearch}`);
+        navigate(gamePath);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存に失敗しました');
@@ -164,21 +168,25 @@ export default function GameEdit() {
     }
   };
 
+  const eventsBase = guildId ? `/events/${guildId}` : '/events';
   const backPath = eventId
-    ? `/events/${eventId}/games${tokenSearch}`
-    : `/events${tokenSearch}`;
+    ? `${eventsBase}/${eventId}/games${tokenSearch}`
+    : `${eventsBase}${tokenSearch}`;
 
   const breadcrumbs = isNew
     ? [
-        { label: 'ホーム', href: '#/events' + tokenSearch },
-        { label: eventName || '...', href: `#/events/${eventId}/games${tokenSearch}` },
+        { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
+        { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
+        { label: eventName || '...', href: `#${eventsBase}/${eventId}/games${tokenSearch}` },
+        { label: 'ゲーム一覧', href: `#${eventsBase}/${eventId}/games${tokenSearch}` },
         { label: '新規作成' },
       ]
     : [
-        { label: 'ホーム', href: '#/events' + tokenSearch },
-        { label: eventName || '...', href: `#/events/${eventId}/games${tokenSearch}` },
-        { label: title || '...', href: `#/games/${gameId}/status${tokenSearch}` },
-        { label: '編集' },
+        { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
+        { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
+        { label: eventName || '...', href: `#${eventsBase}/${eventId}/games${tokenSearch}` },
+        { label: 'ゲーム一覧', href: `#${eventsBase}/${eventId}/games${tokenSearch}` },
+        { label: title || '編集' },
       ];
 
   const selectedBetTypeInfo = BET_TYPE_OPTIONS.find((o) => o.value === betType);

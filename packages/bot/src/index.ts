@@ -1,11 +1,22 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { config } from './config';
 import { commands } from './commands/index';
+import { registerGuild } from './lib/api';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-client.once(Events.ClientReady, (c) => {
+client.once(Events.ClientReady, async (c) => {
   console.log(`[Bot] Logged in as ${c.user.tag}`);
+
+  // 参加中のギルド情報をAPIに登録
+  for (const [, guild] of c.guilds.cache) {
+    try {
+      await registerGuild(guild.id, guild.name);
+      console.log(`[Bot] Registered guild: ${guild.name} (${guild.id})`);
+    } catch (err) {
+      console.error(`[Bot] Failed to register guild ${guild.id}:`, err);
+    }
+  }
 });
 
 // スラッシュコマンド実行

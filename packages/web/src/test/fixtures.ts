@@ -2,6 +2,7 @@ import type { Event, Game, BetsData, User, UserEventResult } from '../api/types'
 
 export const mockEvent: Event = {
   id: 1,
+  guildId: 'test-guild-001',
   name: '春季大会',
   isActive: true,
   isPublished: true,

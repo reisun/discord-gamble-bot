@@ -1,6 +1,7 @@
 // イベント
 export interface Event {
   id: number;
+  guildId: string;
   name: string;
   isActive: boolean;
   isPublished: boolean;
@@ -8,6 +9,12 @@ export interface Event {
   resultsPublic: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// ギルド
+export interface Guild {
+  guildId: string;
+  guildName: string;
 }
 
 // 賭け方式

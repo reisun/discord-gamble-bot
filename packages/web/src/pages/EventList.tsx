@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getEvents, deleteEvent, activateEvent, publishEvent } from '../api/client';
 import type { Event } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,9 +9,14 @@ import { CircleActive, CircleInactive } from '../components/icons';
 import { useTokenSearch } from '../hooks/useTokenSearch';
 
 export default function EventList() {
+  const { guildId: paramGuildId } = useParams<{ guildId?: string }>();
   const { isAdmin, token } = useAuth();
   const navigate = useNavigate();
   const tokenSearch = useTokenSearch();
+
+  // guildId は URL パラメータから取得
+  const guildId = paramGuildId ?? null;
+  const eventsBase = guildId ? `/events/${guildId}` : '/events';
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,9 +25,13 @@ export default function EventList() {
   const [actionLoading, setActionLoading] = useState(false);
 
   const load = () => {
+    if (!guildId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
-    getEvents(token ?? undefined)
+    getEvents(token ?? undefined, guildId)
       .then(setEvents)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -31,7 +40,7 @@ export default function EventList() {
   useEffect(() => {
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, guildId]);
 
   const handleDelete = async () => {
     if (!deleteTarget || !token) return;
@@ -73,6 +82,16 @@ export default function EventList() {
     }
   };
 
+  if (!guildId) {
+    return (
+      <div className="card" style={{ textAlign: 'center', marginTop: '48px' }}>
+        <p style={{ color: 'var(--color-text-muted)' }}>
+          Discordの <code>/link</code> または <code>/admin-link</code> コマンドからアクセスしてください。
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <Breadcrumb items={[
@@ -84,7 +103,7 @@ export default function EventList() {
           <button
             className="btn-primary"
             style={{ marginLeft: 'auto' }}
-            onClick={() => navigate('/events/new' + tokenSearch)}
+            onClick={() => navigate(`${eventsBase}/new${tokenSearch}`)}
           >
             + 新規イベント作成
           </button>
@@ -144,7 +163,7 @@ export default function EventList() {
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                         <button
                           className="btn-outline btn-sm"
-                          onClick={() => navigate(`/events/${ev.id}/games${tokenSearch}`)}
+                          onClick={() => navigate(`${eventsBase}/${ev.id}/games${tokenSearch}`)}
                         >
                           詳細
                         </button>
@@ -152,7 +171,7 @@ export default function EventList() {
                           <>
                             <button
                               className="btn-secondary btn-sm"
-                              onClick={() => navigate(`/events/${ev.id}/edit${tokenSearch}`)}
+                              onClick={() => navigate(`${eventsBase}/${ev.id}/edit${tokenSearch}`)}
                             >
                               開催中切替
                             </button>

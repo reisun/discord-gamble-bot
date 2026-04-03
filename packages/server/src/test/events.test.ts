@@ -6,18 +6,26 @@ const app = createApp();
 const ADMIN_TOKEN = 'test-admin-token';
 const adminHeaders = { Authorization: `Bearer ${ADMIN_TOKEN}` };
 
+const TEST_GUILD_ID = 'test-guild-001';
+
 /** イベントを1件作成してそのデータを返すヘルパー */
 async function createEvent(name = 'テストイベント', initialPoints = 10000) {
   const res = await request(app)
     .post('/api/events')
     .set(adminHeaders)
-    .send({ name, initialPoints });
+    .send({ name, initialPoints, guildId: TEST_GUILD_ID });
   return res.body.data as { id: number; name: string; isActive: boolean; isPublished: boolean; initialPoints: number };
 }
 
 describe('GET /api/events', () => {
-  it('空の場合は空配列を返す', async () => {
+  it('guildId なしは 400 を返す', async () => {
     const res = await request(app).get('/api/events');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('空の場合は空配列を返す', async () => {
+    const res = await request(app).get(`/api/events?guildId=${TEST_GUILD_ID}`);
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual([]);
   });
@@ -26,7 +34,7 @@ describe('GET /api/events', () => {
     await createEvent('大会A');
     await createEvent('大会B');
 
-    const res = await request(app).get('/api/events').set(adminHeaders);
+    const res = await request(app).get(`/api/events?guildId=${TEST_GUILD_ID}`).set(adminHeaders);
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(2);
     expect(res.body.data[0].name).toBe('大会A');
@@ -40,17 +48,18 @@ describe('GET /api/events', () => {
     // e1 のみ公開にする
     await request(app).patch(`/api/events/${e1.id}/publish`).set(adminHeaders).send({ isPublished: true });
 
-    const res = await request(app).get('/api/events');
+    const res = await request(app).get(`/api/events?guildId=${TEST_GUILD_ID}`);
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
     expect(res.body.data[0].name).toBe('公開大会');
   });
 
-  it('レスポンスに isPublished が含まれる', async () => {
+  it('レスポンスに isPublished と guildId が含まれる', async () => {
     await createEvent('大会X');
-    const res = await request(app).get('/api/events').set(adminHeaders);
+    const res = await request(app).get(`/api/events?guildId=${TEST_GUILD_ID}`).set(adminHeaders);
     expect(res.status).toBe(200);
     expect(res.body.data[0]).toHaveProperty('isPublished', false);
+    expect(res.body.data[0]).toHaveProperty('guildId', TEST_GUILD_ID);
   });
 });
 
@@ -78,10 +87,11 @@ describe('POST /api/events', () => {
     const res = await request(app)
       .post('/api/events')
       .set(adminHeaders)
-      .send({ name: '新しい大会', initialPoints: 8000 });
+      .send({ name: '新しい大会', initialPoints: 8000, guildId: TEST_GUILD_ID });
 
     expect(res.status).toBe(201);
     expect(res.body.data.name).toBe('新しい大会');
+    expect(res.body.data.guildId).toBe(TEST_GUILD_ID);
     expect(res.body.data.initialPoints).toBe(8000);
     expect(res.body.data.isActive).toBe(false);
     expect(res.body.data.isPublished).toBe(false);
@@ -92,17 +102,27 @@ describe('POST /api/events', () => {
     const res = await request(app)
       .post('/api/events')
       .set(adminHeaders)
-      .send({ name: 'デフォルトPT大会' });
+      .send({ name: 'デフォルトPT大会', guildId: TEST_GUILD_ID });
 
     expect(res.status).toBe(201);
     expect(res.body.data.initialPoints).toBe(10000);
+  });
+
+  it('guildId がないと 400 を返す', async () => {
+    const res = await request(app)
+      .post('/api/events')
+      .set(adminHeaders)
+      .send({ name: '大会' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('name が空文字列だと 400 を返す', async () => {
     const res = await request(app)
       .post('/api/events')
       .set(adminHeaders)
-      .send({ name: '' });
+      .send({ name: '', guildId: TEST_GUILD_ID });
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
@@ -112,7 +132,7 @@ describe('POST /api/events', () => {
     const res = await request(app)
       .post('/api/events')
       .set(adminHeaders)
-      .send({ name: 'a'.repeat(101) });
+      .send({ name: 'a'.repeat(101), guildId: TEST_GUILD_ID });
 
     expect(res.status).toBe(400);
   });
@@ -121,7 +141,7 @@ describe('POST /api/events', () => {
     const res = await request(app)
       .post('/api/events')
       .set(adminHeaders)
-      .send({ name: '大会', initialPoints: 0 });
+      .send({ name: '大会', initialPoints: 0, guildId: TEST_GUILD_ID });
 
     expect(res.status).toBe(400);
   });

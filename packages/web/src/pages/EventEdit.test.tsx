@@ -27,14 +27,14 @@ vi.mock('react-router-dom', async (importOriginal) => {
 import { useParams } from 'react-router-dom';
 
 function renderNew() {
-  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false });
-  vi.mocked(useParams).mockReturnValue({});
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001' });
+  vi.mocked(useParams).mockReturnValue({ guildId: 'test-guild-001' });
   return render(<MemoryRouter><EventEdit /></MemoryRouter>);
 }
 
-function renderEdit(id = '1') {
-  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false });
-  vi.mocked(useParams).mockReturnValue({ id });
+function renderEdit(eventId = '1') {
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001' });
+  vi.mocked(useParams).mockReturnValue({ guildId: 'test-guild-001', eventId });
   vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
   return render(<MemoryRouter><EventEdit /></MemoryRouter>);
 }
@@ -72,10 +72,10 @@ describe('EventEdit', () => {
     await user.type(screen.getByLabelText(/イベント名/), '秋季大会');
     await user.click(screen.getByRole('button', { name: '保存' }));
     await waitFor(() => expect(api.createEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ name: '秋季大会' }),
+      expect.objectContaining({ name: '秋季大会', guildId: 'test-guild-001' }),
       'tok',
     ));
-    expect(mockNavigate).toHaveBeenCalledWith('/events');
+    expect(mockNavigate).toHaveBeenCalledWith('/events/test-guild-001');
   });
 
   it('編集: 正常送信で updateEvent が呼ばれる', async () => {
@@ -94,6 +94,6 @@ describe('EventEdit', () => {
     const user = userEvent.setup();
     renderNew();
     await user.click(screen.getByRole('button', { name: 'キャンセル' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/events');
+    expect(mockNavigate).toHaveBeenCalledWith('/events/test-guild-001');
   });
 });

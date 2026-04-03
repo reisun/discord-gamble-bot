@@ -28,8 +28,17 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     return;
   }
 
+  const guildId = interaction.guild?.id;
+  if (!guildId) {
+    await interaction.reply({
+      content: '❌ サーバー内でのみ使用できます。',
+      ephemeral: true,
+    });
+    return;
+  }
+
   // ハッシュフラグメントにトークンを埋め込む（サーバーログに残らないように）
-  const url = `${config.webAppBaseUrl.replace(/\/$/, '')}/#/?token=${config.adminToken}`;
+  const url = `${config.webAppBaseUrl.replace(/\/$/, '')}/#/events/${guildId}?token=${config.adminToken}`;
 
   await interaction.reply({
     content: `🔑 管理者用URLです。他の人に共有しないでください。\n\n${url}`,

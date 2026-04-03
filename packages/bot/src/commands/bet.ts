@@ -47,7 +47,9 @@ export async function autocomplete(interaction: AutocompleteInteraction): Promis
   if (focused.name === 'game') {
     // 開催中イベントの受付中ゲーム一覧を候補として返す
     try {
-      const events = await getEvents();
+      const guildId = interaction.guild?.id;
+      if (!guildId) { await interaction.respond([]); return; }
+      const events = await getEvents(guildId);
       const activeEvent = events.find((e) => e.isActive);
       if (!activeEvent) {
         await interaction.respond([]);

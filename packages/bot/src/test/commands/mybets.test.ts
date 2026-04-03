@@ -16,9 +16,12 @@ const DISCORD_ID = 'discord-user-001';
 const USER_ID = 42;
 const EVENT_ID = 1;
 
+const GUILD_ID = 'test-guild-001';
+
 function makeInteraction(): ChatInputCommandInteraction {
   return {
     user: { id: DISCORD_ID },
+    guild: { id: GUILD_ID },
     options: {},
     deferReply: vi.fn().mockResolvedValue(undefined),
     editReply: vi.fn().mockResolvedValue(undefined),

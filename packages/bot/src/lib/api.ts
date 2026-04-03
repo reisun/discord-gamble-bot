@@ -48,6 +48,7 @@ export type Game = {
 
 export type Event = {
   id: number;
+  guildId: string;
   name: string;
   isActive: boolean;
   initialPoints: number;
@@ -117,8 +118,8 @@ export async function getGame(gameId: number): Promise<Game> {
   return res.data.data;
 }
 
-export async function getEvents(): Promise<Event[]> {
-  const res = await api.get<{ data: Event[] }>('/api/events');
+export async function getEvents(guildId: string): Promise<Event[]> {
+  const res = await api.get<{ data: Event[] }>('/api/events', { params: { guildId } });
   return res.data.data;
 }
 
@@ -175,4 +176,12 @@ export async function getEventBets(
     `/api/users/${userId}/event-bets/${eventId}`,
   );
   return res.data.data;
+}
+
+export async function registerGuild(guildId: string, guildName: string): Promise<void> {
+  await api.put(
+    `/api/guilds/${guildId}`,
+    { guildName },
+    { headers: { Authorization: `Bearer ${config.adminToken}` } },
+  );
 }

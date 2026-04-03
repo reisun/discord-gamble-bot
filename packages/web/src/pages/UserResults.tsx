@@ -15,10 +15,11 @@ function PointChange({ value }: { value: number }) {
 }
 
 export default function UserResults() {
-  const { eventId } = useParams<{ eventId: string }>();
+  const { guildId, eventId } = useParams<{ guildId: string; eventId: string }>();
   const { isAdmin, token } = useAuth();
   const tokenSearch = useTokenSearch();
   const evId = Number(eventId);
+  const eventsBase = guildId ? `/events/${guildId}` : '/events';
 
   const [event, setEvent] = useState<Event | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -88,9 +89,9 @@ export default function UserResults() {
   });
 
   const breadcrumbs = [
-    { label: 'ホーム', href: '#/events' + tokenSearch },
-    { label: 'イベント一覧', href: '#/events' + tokenSearch },
-    { label: event?.name ?? '...', href: `#/events/${evId}/games${tokenSearch}` },
+    { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
+    { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
+    { label: event?.name ?? '...', href: `#${eventsBase}/${evId}/games${tokenSearch}` },
     { label: 'ユーザー結果一覧' },
   ];
 

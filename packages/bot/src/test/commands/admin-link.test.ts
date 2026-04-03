@@ -12,6 +12,8 @@ vi.mock('../../config', () => ({
 
 import { execute } from '../../commands/admin-link';
 
+const TEST_GUILD_ID = 'guild-123456789';
+
 function makeMember(isAdmin: boolean): GuildMember {
   return {
     roles: {
@@ -22,15 +24,18 @@ function makeMember(isAdmin: boolean): GuildMember {
   } as unknown as GuildMember;
 }
 
-function makeInteraction(isAdmin: boolean): ChatInputCommandInteraction {
+function makeInteraction(isAdmin: boolean, guildId: string | null = TEST_GUILD_ID): ChatInputCommandInteraction {
   const member = makeMember(isAdmin);
   return {
     user: { id: 'user-001' },
-    guild: {
-      members: {
-        fetch: vi.fn().mockResolvedValue(member),
-      },
-    } as unknown as Guild,
+    guild: guildId
+      ? {
+          id: guildId,
+          members: {
+            fetch: vi.fn().mockResolvedValue(member),
+          },
+        } as unknown as Guild
+      : null,
     reply: vi.fn().mockResolvedValue(undefined),
   } as unknown as ChatInputCommandInteraction;
 }
@@ -40,14 +45,16 @@ describe('/admin-link execute', () => {
     vi.clearAllMocks();
   });
 
-  it('管理者ロールあり: トークン付き URL を返す（Ephemeral）', async () => {
+  it('管理者ロールあり: guild_id 付きトークン URL を返す（Ephemeral）', async () => {
     const interaction = makeInteraction(true);
     await execute(interaction);
 
     expect(interaction.reply).toHaveBeenCalledWith(
       expect.objectContaining({
         ephemeral: true,
-        content: expect.stringContaining('https://example.github.io/app/#/?token=secret-admin-token'),
+        content: expect.stringContaining(
+          `https://example.github.io/app/#/events/${TEST_GUILD_ID}?token=secret-admin-token`,
+        ),
       }),
     );
     const call = vi.mocked(interaction.reply).mock.calls[0][0] as { content: string };
@@ -68,12 +75,7 @@ describe('/admin-link execute', () => {
   });
 
   it('guild なし（DM）: エラーメッセージ', async () => {
-    const interaction = {
-      user: { id: 'user-001' },
-      guild: null,
-      reply: vi.fn().mockResolvedValue(undefined),
-    } as unknown as ChatInputCommandInteraction;
-
+    const interaction = makeInteraction(true, null);
     await execute(interaction);
 
     expect(interaction.reply).toHaveBeenCalledWith(

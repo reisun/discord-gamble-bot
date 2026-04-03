@@ -1,8 +1,24 @@
+import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { getGuild } from '../api/client';
 import { LogoIcon } from './icons';
 
 export default function Header() {
-  const { isAdmin, isVerifying } = useAuth();
+  const { isAdmin, isVerifying, guildId } = useAuth();
+  const [guildName, setGuildName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!guildId) { setGuildName(null); return; }
+    getGuild(guildId)
+      .then((g) => setGuildName(g.guildName))
+      .catch(() => setGuildName(null));
+  }, [guildId]);
+
+  const titleText = guildName
+    ? `${guildName} ギャンブルBOT管理アプリ`
+    : 'ギャンブルBOT管理アプリ';
+
+  const homeHref = guildId ? `#/events/${guildId}` : '#/events';
 
   return (
     <header style={{
@@ -18,7 +34,7 @@ export default function Header() {
       zIndex: 100,
       flexShrink: 0,
     }}>
-      <a href="#/events" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+      <a href={homeHref} style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
         <div style={{
           background: '#155dfc',
           borderRadius: '4px',
@@ -37,7 +53,7 @@ export default function Header() {
           fontSize: '20px',
           whiteSpace: 'nowrap',
         }}>
-          イベント管理システム
+          {titleText}
         </span>
       </a>
 
