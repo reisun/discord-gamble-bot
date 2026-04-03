@@ -78,6 +78,102 @@ curl "http://127.0.0.1:3000/api/auth/verify?token=<ADMIN_TOKEN>"
 
 ---
 
+## 本番デプロイ
+
+### 構成
+
+| コンポーネント | ホスト | URL |
+|---|---|---|
+| Web アプリ（React） | GitHub Pages | `https://reisun.github.io/discord_gamble_bot/` |
+| Web API（Express） | 自宅 Docker + nginx | `https://reisun.asuscomm.com/api` |
+
+---
+
+### 手順
+
+#### 1. SSL 証明書の配置
+
+ルーター管理画面から以下のファイルをダウンロードし、`docker/nginx/certs/` に配置する。
+
+```bash
+# サーバー証明書と CA 証明書を結合して fullchain.pem を作成
+cat cert.pem cert.crt > docker/nginx/certs/fullchain.pem
+
+# 秘密鍵をコピー
+cp key.pem docker/nginx/certs/key.pem
+```
+
+> `docker/nginx/certs/` は `.gitignore` に含まれているためコミットされない。
+
+#### 2. `.env` の設定
+
+`.env` に以下を追加・確認する：
+
+```env
+CORS_ALLOWED_ORIGINS=https://reisun.github.io,https://reisun.asuscomm.com
+```
+
+#### 3. Windows ファイアウォールの設定
+
+PowerShell（管理者）で実行：
+
+```powershell
+New-NetFirewallRule -DisplayName "Docker nginx HTTP"  -Direction Inbound -Protocol TCP -LocalPort 80  -Action Allow
+New-NetFirewallRule -DisplayName "Docker nginx HTTPS" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
+```
+
+#### 4. ルーターのポート転送設定
+
+| 外部ポート | 内部ポート（PC） |
+|---|---|
+| 80 | 80 |
+| 443 | 443 |
+
+#### 5. GitHub リポジトリの設定
+
+**Settings > Environments > `github-pages` > Variables** に以下を登録：
+
+| Name | Value |
+|---|---|
+| `API_BASE_URL` | `https://reisun.asuscomm.com/api` |
+
+**Settings > Pages** で Source を **`GitHub Actions`** に設定（初回のみ）。
+
+#### 6. Docker の起動
+
+```bash
+docker compose up -d --build
+```
+
+起動するサービス（本番）：
+
+| サービス | 用途 | 外部公開 |
+|---------|------|---------|
+| `db` | PostgreSQL 16 | なし（127.0.0.1 のみ）|
+| `server` | Express.js API サーバー | なし（nginx 経由）|
+| `bot` | Discord Bot | なし（アウトバウンドのみ）|
+| `nginx` | リバースプロキシ / SSL 終端 | 80, 443 |
+
+> `web` コンテナは GitHub Pages が代替するため本番では不使用。
+
+#### 7. GitHub Actions による Web アプリのデプロイ
+
+`master` ブランチへの push で自動デプロイされる。  
+手動で実行する場合は Actions タブ → **Deploy Web App to GitHub Pages** → **Run workflow**。
+
+#### 8. 疎通確認
+
+```bash
+# API ヘルスチェック（外部から）
+curl https://reisun.asuscomm.com/api/health
+# → {"status":"ok"} が返れば OK
+
+# Web アプリ
+# ブラウザで https://reisun.github.io/discord_gamble_bot/ を開く
+```
+
+---
+
 ### テスト実行
 
 テストは Docker の PostgreSQL コンテナ（`127.0.0.1:5432`）が起動している状態で実行します。

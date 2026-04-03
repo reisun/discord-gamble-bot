@@ -77,7 +77,7 @@ export default function EventEdit() {
       <Breadcrumb items={breadcrumbItems} />
       <h1 className="page-title">{isNew ? '新規イベント作成' : 'イベント編集'}</h1>
 
-      <div className="card" style={{ maxWidth: '480px' }}>
+      <div className="card" style={{ maxWidth: '480px', margin: '0 auto' }}>
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">

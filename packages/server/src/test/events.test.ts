@@ -12,7 +12,7 @@ async function createEvent(name = 'テストイベント', initialPoints = 10000
     .post('/api/events')
     .set(adminHeaders)
     .send({ name, initialPoints });
-  return res.body.data as { id: number; name: string; isActive: boolean; initialPoints: number };
+  return res.body.data as { id: number; name: string; isActive: boolean; isPublished: boolean; initialPoints: number };
 }
 
 describe('GET /api/events', () => {
@@ -22,15 +22,35 @@ describe('GET /api/events', () => {
     expect(res.body.data).toEqual([]);
   });
 
-  it('イベントが存在する場合は一覧を返す', async () => {
+  it('管理者は全イベント（非公開含む）を返す', async () => {
     await createEvent('大会A');
     await createEvent('大会B');
 
-    const res = await request(app).get('/api/events');
+    const res = await request(app).get('/api/events').set(adminHeaders);
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(2);
     expect(res.body.data[0].name).toBe('大会A');
     expect(res.body.data[1].name).toBe('大会B');
+  });
+
+  it('一般ユーザーは公開イベントのみ返す', async () => {
+    const e1 = await createEvent('公開大会');
+    await createEvent('非公開大会');
+
+    // e1 のみ公開にする
+    await request(app).patch(`/api/events/${e1.id}/publish`).set(adminHeaders).send({ isPublished: true });
+
+    const res = await request(app).get('/api/events');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].name).toBe('公開大会');
+  });
+
+  it('レスポンスに isPublished が含まれる', async () => {
+    await createEvent('大会X');
+    const res = await request(app).get('/api/events').set(adminHeaders);
+    expect(res.status).toBe(200);
+    expect(res.body.data[0]).toHaveProperty('isPublished', false);
   });
 });
 
@@ -43,6 +63,7 @@ describe('GET /api/events/:id', () => {
     expect(res.body.data.name).toBe('大会X');
     expect(res.body.data.initialPoints).toBe(5000);
     expect(res.body.data.isActive).toBe(false);
+    expect(res.body.data.isPublished).toBe(false);
   });
 
   it('存在しない場合は 404 を返す', async () => {
@@ -63,6 +84,7 @@ describe('POST /api/events', () => {
     expect(res.body.data.name).toBe('新しい大会');
     expect(res.body.data.initialPoints).toBe(8000);
     expect(res.body.data.isActive).toBe(false);
+    expect(res.body.data.isPublished).toBe(false);
     expect(res.body.data.resultsPublic).toBe(false);
   });
 
@@ -151,14 +173,12 @@ describe('DELETE /api/events/:id', () => {
 });
 
 describe('PATCH /api/events/:id/activate', () => {
-  it('指定イベントを開催中にし、他を非開催にする', async () => {
+  it('非開催→開催: 他を非開催にし、対象を開催中にする', async () => {
     const e1 = await createEvent('大会1');
     const e2 = await createEvent('大会2');
 
     // e1 を開催中に
-    await request(app)
-      .patch(`/api/events/${e1.id}/activate`)
-      .set(adminHeaders);
+    await request(app).patch(`/api/events/${e1.id}/activate`).set(adminHeaders);
 
     // e2 を開催中に（e1 は非開催になるはず）
     const res = await request(app)
@@ -172,10 +192,108 @@ describe('PATCH /api/events/:id/activate', () => {
     expect(e1Res.body.data.isActive).toBe(false);
   });
 
+  it('非開催→開催: is_published が TRUE に強制される', async () => {
+    const e = await createEvent('大会');
+    expect(e.isPublished).toBe(false);
+
+    const res = await request(app)
+      .patch(`/api/events/${e.id}/activate`)
+      .set(adminHeaders);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.isActive).toBe(true);
+    expect(res.body.data.isPublished).toBe(true);
+  });
+
+  it('開催中→非開催: トグルで非開催になる（開催0件を許容）', async () => {
+    const e = await createEvent('大会');
+
+    // 開催中にする
+    await request(app).patch(`/api/events/${e.id}/activate`).set(adminHeaders);
+
+    // 再度押すと非開催に
+    const res = await request(app)
+      .patch(`/api/events/${e.id}/activate`)
+      .set(adminHeaders);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.isActive).toBe(false);
+  });
+
   it('存在しないIDだと 404 を返す', async () => {
     const res = await request(app)
       .patch('/api/events/9999/activate')
       .set(adminHeaders);
     expect(res.status).toBe(404);
+  });
+});
+
+describe('PATCH /api/events/:id/publish', () => {
+  it('非公開→公開に切り替えられる', async () => {
+    const e = await createEvent('大会');
+
+    const res = await request(app)
+      .patch(`/api/events/${e.id}/publish`)
+      .set(adminHeaders)
+      .send({ isPublished: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.isPublished).toBe(true);
+  });
+
+  it('公開→非公開に切り替えられる', async () => {
+    const e = await createEvent('大会');
+    await request(app).patch(`/api/events/${e.id}/publish`).set(adminHeaders).send({ isPublished: true });
+
+    const res = await request(app)
+      .patch(`/api/events/${e.id}/publish`)
+      .set(adminHeaders)
+      .send({ isPublished: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.isPublished).toBe(false);
+  });
+
+  it('開催中のイベントを非公開にしようとすると 400 を返す', async () => {
+    const e = await createEvent('大会');
+    await request(app).patch(`/api/events/${e.id}/activate`).set(adminHeaders);
+
+    const res = await request(app)
+      .patch(`/api/events/${e.id}/publish`)
+      .set(adminHeaders)
+      .send({ isPublished: false });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_OPERATION');
+  });
+
+  it('isPublished が boolean でない場合は 400 を返す', async () => {
+    const e = await createEvent('大会');
+
+    const res = await request(app)
+      .patch(`/api/events/${e.id}/publish`)
+      .set(adminHeaders)
+      .send({ isPublished: 'yes' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('存在しないIDだと 404 を返す', async () => {
+    const res = await request(app)
+      .patch('/api/events/9999/publish')
+      .set(adminHeaders)
+      .send({ isPublished: true });
+    expect(res.status).toBe(404);
+  });
+
+  it('管理者以外は 401/403 を返す', async () => {
+    const e = await createEvent('大会');
+
+    const res = await request(app)
+      .patch(`/api/events/${e.id}/publish`)
+      .send({ isPublished: true });
+
+    expect([401, 403]).toContain(res.status);
   });
 });

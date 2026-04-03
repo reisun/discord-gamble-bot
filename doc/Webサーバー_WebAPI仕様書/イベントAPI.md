@@ -5,6 +5,9 @@
 GET /api/events
 ```
 
+管理者トークン付きの場合は全イベントを返す。  
+トークンなし（一般ユーザー）の場合は `is_published = TRUE` のイベントのみ返す。
+
 **レスポンス**
 ```json
 {
@@ -13,6 +16,7 @@ GET /api/events
       "id": 1,
       "name": "〇〇大会",
       "isActive": true,
+      "isPublished": true,
       "initialPoints": 10000,
       "resultsPublic": false,
       "createdAt": "2024-01-01T00:00:00Z",
@@ -42,6 +46,7 @@ GET /api/events/:id
     "id": 1,
     "name": "〇〇大会",
     "isActive": true,
+    "isPublished": true,
     "initialPoints": 10000,
     "resultsPublic": false,
     "createdAt": "2024-01-01T00:00:00Z",
@@ -80,6 +85,7 @@ POST /api/events
     "id": 2,
     "name": "〇〇大会",
     "isActive": false,
+    "isPublished": false,
     "initialPoints": 10000,
     "resultsPublic": false,
     "createdAt": "2024-01-01T00:00:00Z",
@@ -119,17 +125,50 @@ DELETE /api/events/:id
 
 ---
 
-## 開催中イベント切り替え
+## 開催状態切り替え（トグル）
 ```
 PATCH /api/events/:id/activate
 ```
 **権限**: 管理者のみ
 
-指定したイベントを開催中にし、他のイベントはすべて非開催にする。  
-開催中イベントの1件制限は API サーバー側のトランザクション内で制御する（DB制約なし）。
+指定したイベントの開催状態をトグルする。
 
-処理内容:
-1. `UPDATE events SET is_active = FALSE WHERE is_active = TRUE`
-2. `UPDATE events SET is_active = TRUE WHERE id = :id`
+- **非開催 → 開催**: 他の開催中イベントをすべて非開催にしてから対象を開催中にする。  
+  同時に `is_published = TRUE` を強制する（開催中イベントは必ず公開）。
+- **開催中 → 非開催**: 対象イベントを非開催にする（他への影響なし）。  
+  `is_published` は変更しない。
+
+開催中イベントが0件になることも許容する。
+
+**レスポンス**: `200 OK` (イベント詳細と同形式)
+
+---
+
+## イベント公開/非公開切り替え
+```
+PATCH /api/events/:id/publish
+```
+**権限**: 管理者のみ
+
+**リクエストボディ**
+```json
+{
+  "isPublished": true
+}
+```
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| isPublished | boolean | ○ | `true` で公開、`false` で非公開 |
+
+**制約**: 開催中（`is_active = TRUE`）のイベントを非公開（`isPublished: false`）にすることはできない。
+
+**エラーレスポンス**
+
+| HTTPステータス | コード | 説明 |
+|--------------|--------|------|
+| 400 | `INVALID_OPERATION` | 開催中イベントを非公開にしようとした |
+| 400 | `VALIDATION_ERROR` | `isPublished` が boolean でない |
+| 404 | `NOT_FOUND` | 指定IDのイベントが存在しない |
 
 **レスポンス**: `200 OK` (イベント詳細と同形式)

@@ -156,7 +156,7 @@ export default function GameList() {
                   <th style={{ textAlign: 'left', width: '56px' }}>#</th>
                   <th style={{ textAlign: 'left' }}>ゲームタイトル</th>
                   <th style={{ textAlign: 'left' }}>締め切り</th>
-                  <th style={{ textAlign: 'left' }}>公開</th>
+                  {isAdmin && <th style={{ textAlign: 'left' }}>公開</th>}
                   <th>操作</th>
                 </tr>
               </thead>
@@ -166,17 +166,19 @@ export default function GameList() {
                     <td className="cell-sm">{i + 1}</td>
                     <td style={{ fontSize: '16px' }}>{g.title}</td>
                     <td className="cell-sm">{formatDeadline(g.deadline)}</td>
-                    <td>
-                      {g.isPublished ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', fontSize: '14px' }}>
-                          <EyeIcon />公開
-                        </span>
-                      ) : (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-disabled)', fontSize: '14px' }}>
-                          <EyeOffIcon />非公開
-                        </span>
-                      )}
-                    </td>
+                    {isAdmin && (
+                      <td>
+                        {g.isPublished ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', fontSize: '14px' }}>
+                            <EyeIcon />公開
+                          </span>
+                        ) : (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-disabled)', fontSize: '14px' }}>
+                            <EyeOffIcon />非公開
+                          </span>
+                        )}
+                      </td>
+                    )}
                     <td>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                         <button

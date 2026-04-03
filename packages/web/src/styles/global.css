@@ -351,6 +351,22 @@ tr:last-child td {
   font-size: 14px;
 }
 
+/* ======== ページ遷移アニメーション ======== */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: page-enter 0.2s ease-out;
+}
+
 /* ======== レスポンシブ ======== */
 @media (max-width: 768px) {
   th, td {

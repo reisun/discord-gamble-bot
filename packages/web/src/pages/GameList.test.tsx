@@ -54,13 +54,24 @@ describe('GameList', () => {
     expect(screen.getByText('第4試合')).toBeInTheDocument();
   });
 
-  it('公開/非公開の状態が表示される', async () => {
-    renderPage();
+  it('管理者には「公開」列（ヘッダー・状態）が表示される', async () => {
+    renderPage(true);
     await waitFor(() => expect(screen.getAllByText('公開')).toHaveLength(2)); // table header + status span
     expect(screen.getByText('非公開')).toBeInTheDocument();
   });
 
+<<<<<<< feature/phase6-deploy
+  it('一般ユーザーには「公開」列が表示されない', async () => {
+    renderPage(false);
+    await waitFor(() => expect(screen.getByText('第1試合')).toBeInTheDocument());
+    expect(screen.queryByText('公開')).not.toBeInTheDocument();
+    expect(screen.queryByText('非公開')).not.toBeInTheDocument();
+  });
+
+  it('非管理者は「状況」ボタンのみ表示される', async () => {
+=======
   it('非管理者は「詳細」ボタンのみ表示される', async () => {
+>>>>>>> master
     renderPage(false);
     await waitFor(() => expect(screen.getAllByText('詳細')).toHaveLength(2));
     expect(screen.queryByText('編集')).not.toBeInTheDocument();

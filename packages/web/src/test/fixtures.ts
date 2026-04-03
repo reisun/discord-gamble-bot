@@ -4,6 +4,7 @@ export const mockEvent: Event = {
   id: 1,
   name: '春季大会',
   isActive: true,
+  isPublished: true,
   initialPoints: 10000,
   resultsPublic: false,
   createdAt: '2024-01-01T00:00:00Z',
@@ -15,6 +16,7 @@ export const mockEventInactive: Event = {
   id: 2,
   name: '夏季カップ',
   isActive: false,
+  isPublished: false,
 };
 
 export const mockGameSingle: Game = {

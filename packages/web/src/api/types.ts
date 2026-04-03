@@ -3,6 +3,7 @@ export interface Event {
   id: number;
   name: string;
   isActive: boolean;
+  isPublished: boolean;
   initialPoints: number;
   resultsPublic: boolean;
   createdAt: string;
