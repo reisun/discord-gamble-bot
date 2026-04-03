@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getGame, getEvent, createGame, updateGame } from '../api/client';
 import type { BetType, Game } from '../api/types';
@@ -54,7 +54,7 @@ export default function GameEdit() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [deadline, setDeadline] = useState(() => toLocalDatetimeValue(new Date().toISOString()));
   const [betType, setBetType] = useState<BetType>('single');
   const [requiredSelections, setRequiredSelections] = useState(2);
   const [options, setOptions] = useState<BetOptionDraft[]>([
@@ -65,6 +65,13 @@ export default function GameEdit() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
 
   const isPublished = game?.isPublished ?? false;
 
@@ -200,8 +207,8 @@ export default function GameEdit() {
         </div>
       )}
 
-      <div className="card" style={{ maxWidth: '640px' }}>
-        {error && <div className="error-message">{error}</div>}
+      <div className="card" style={{ maxWidth: '640px', margin: '0 auto' }}>
+        {error && <div className="error-message" ref={errorRef}>{error}</div>}
         <form onSubmit={handleSubmit}>
 
           <div className="form-group">

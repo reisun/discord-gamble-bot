@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import GameEdit from './GameEdit';
@@ -104,9 +104,9 @@ describe('GameEdit', () => {
     const user = userEvent.setup();
     renderNew();
     await user.type(screen.getByLabelText(/ゲームタイトル/), '第5試合');
-    // 締め切りを設定（必須）
+    // 締め切りを設定（必須）- 既存値を上書きするため fireEvent.change を使用
     const deadlineInput = screen.getByLabelText(/締め切り日時/);
-    await user.type(deadlineInput, '2099-12-31T12:00');
+    fireEvent.change(deadlineInput, { target: { value: '2099-12-31T12:00' } });
     // 記号と項目名（2行分）を入力
     const symbolInputs = screen.getAllByPlaceholderText('A');
     const labelInputs = screen.getAllByPlaceholderText('チームA');

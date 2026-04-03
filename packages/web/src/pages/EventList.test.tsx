@@ -43,7 +43,7 @@ describe('EventList', () => {
   it('開催中イベントに「開催中」テキストが表示される', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('開催中')).toBeInTheDocument());
-    expect(screen.getByText('終了')).toBeInTheDocument();
+    expect(screen.getByText('ー')).toBeInTheDocument();
   });
 
   it('非管理者は「ゲーム一覧」ボタンのみ表示される', async () => {
@@ -53,11 +53,34 @@ describe('EventList', () => {
     expect(screen.queryByText('削除')).not.toBeInTheDocument();
   });
 
-  it('管理者は編集・削除・開催中切替ボタンが表示される', async () => {
+  it('管理者は編集・削除・開催中切替・公開ボタンが表示される', async () => {
     renderPage(true);
     await waitFor(() => expect(screen.getAllByText('編集')).toHaveLength(2));
     expect(screen.getAllByText('削除')).toHaveLength(2);
     expect(screen.getAllByText('開催中切替')).toHaveLength(2);
+  });
+
+  it('管理者には公開状態が表示される', async () => {
+    renderPage(true);
+    await waitFor(() => expect(screen.getAllByText('公開').length).toBeGreaterThan(0));
+    expect(screen.getByText('非公開')).toBeInTheDocument();
+  });
+
+  it('開催中切替ボタンは開催中でも押下可能', async () => {
+    renderPage(true);
+    await waitFor(() => screen.getAllByText('開催中切替'));
+    const buttons = screen.getAllByText('開催中切替');
+    // 開催中イベント（mockEvent）の開催中切替ボタンも disabled でない
+    expect(buttons[0]).not.toBeDisabled();
+    expect(buttons[1]).not.toBeDisabled();
+  });
+
+  it('開催中のイベントの「非公開にする」ボタンは disabled', async () => {
+    renderPage(true);
+    await waitFor(() => screen.getByText('非公開にする'));
+    // mockEvent は isActive=true なので非公開にするボタンは disabled
+    const publishBtn = screen.getByText('非公開にする');
+    expect(publishBtn).toBeDisabled();
   });
 
   it('削除ボタンをクリックすると確認ダイアログが表示される', async () => {

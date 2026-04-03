@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEvents, deleteEvent, activateEvent } from '../api/client';
+import { getEvents, deleteEvent, activateEvent, publishEvent } from '../api/client';
 import type { Event } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
@@ -60,6 +60,19 @@ export default function EventList() {
     }
   };
 
+  const handlePublish = async (event: Event) => {
+    if (!token) return;
+    setActionLoading(true);
+    try {
+      await publishEvent(event.id, !event.isPublished, token);
+      load();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '公開設定の変更に失敗しました');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <>
       <Breadcrumb items={[
@@ -100,6 +113,7 @@ export default function EventList() {
                 <tr>
                   <th style={{ textAlign: 'left' }}>イベント名</th>
                   <th style={{ textAlign: 'left' }}>開催状態</th>
+                  {isAdmin && <th style={{ textAlign: 'left' }}>公開</th>}
                   <th>操作</th>
                 </tr>
               </thead>
@@ -116,10 +130,17 @@ export default function EventList() {
                       ) : (
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                           <CircleInactive />
-                          <span style={{ color: 'var(--color-text-muted)', fontSize: '16px' }}>終了</span>
+                          <span style={{ color: 'var(--color-text-muted)', fontSize: '16px' }}>ー</span>
                         </span>
                       )}
                     </td>
+                    {isAdmin && (
+                      <td>
+                        <span style={{ fontSize: '14px', color: ev.isPublished ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                          {ev.isPublished ? '公開' : '非公開'}
+                        </span>
+                      </td>
+                    )}
                     <td>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                         <button
@@ -145,10 +166,18 @@ export default function EventList() {
                             </button>
                             <button
                               className="btn-secondary btn-sm"
-                              disabled={actionLoading || ev.isActive}
+                              disabled={actionLoading}
                               onClick={() => handleActivate(ev)}
                             >
                               開催中切替
+                            </button>
+                            <button
+                              className="btn-secondary btn-sm"
+                              disabled={actionLoading || ev.isActive}
+                              title={ev.isActive ? '開催中のイベントは非公開にできません' : undefined}
+                              onClick={() => handlePublish(ev)}
+                            >
+                              {ev.isPublished ? '非公開にする' : '公開にする'}
                             </button>
                           </>
                         )}

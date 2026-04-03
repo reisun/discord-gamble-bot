@@ -76,6 +76,14 @@ export function activateEvent(id: number, token: string): Promise<Event> {
   return request(`/events/${id}/activate`, { method: 'PATCH' }, token);
 }
 
+export function publishEvent(id: number, isPublished: boolean, token: string): Promise<Event> {
+  return request(
+    `/events/${id}/publish`,
+    { method: 'PATCH', body: JSON.stringify({ isPublished }) },
+    token,
+  );
+}
+
 export function updateEventResultsPublic(
   id: number,
   resultsPublic: boolean,
