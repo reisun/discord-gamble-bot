@@ -17,8 +17,8 @@ export default function Header() {
   }, [guildId]);
 
   const titleText = guildName
-    ? `${guildName} ギャンブルBOT管理アプリ`
-    : 'ギャンブルBOT管理アプリ';
+    ? `ギャンブルBOT管理ページ(${guildName})`
+    : 'ギャンブルBOT管理ページ';
 
   const homeHref = guildId ? `#/events/${guildId}${tokenSearch}` : '#/events';
 
