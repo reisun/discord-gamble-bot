@@ -144,4 +144,17 @@ describe('GameEdit', () => {
     expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
     expect(screen.queryByText('ゲーム一覧')).not.toBeInTheDocument();
   });
+
+  it('新規作成: キャンセルでゲーム一覧（イベント画面）に戻る', async () => {
+    renderNew();
+    fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/events/test-guild-001/1/games');
+  });
+
+  it('編集: キャンセルでゲーム状況画面に戻る', async () => {
+    renderEdit(mockGameSingle);
+    await waitFor(() => screen.getByDisplayValue('第1試合'));
+    fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/games/1/status');
+  });
 });
