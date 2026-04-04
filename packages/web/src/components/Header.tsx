@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getGuild } from '../api/client';
 import { LogoIcon } from './icons';
+import { useTokenSearch } from '../hooks/useTokenSearch';
 
 export default function Header() {
   const { isAdmin, isVerifying, guildId } = useAuth();
+  const tokenSearch = useTokenSearch();
   const [guildName, setGuildName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export default function Header() {
     ? `${guildName} ギャンブルBOT管理アプリ`
     : 'ギャンブルBOT管理アプリ';
 
-  const homeHref = guildId ? `#/events/${guildId}` : '#/events';
+  const homeHref = guildId ? `#/events/${guildId}${tokenSearch}` : '#/events';
 
   return (
     <header style={{
