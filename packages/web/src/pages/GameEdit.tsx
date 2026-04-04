@@ -169,9 +169,9 @@ export default function GameEdit() {
   };
 
   const eventsBase = guildId ? `/events/${guildId}` : '/events';
-  const backPath = eventId
-    ? `${eventsBase}/${eventId}/games${tokenSearch}`
-    : `${eventsBase}${tokenSearch}`;
+  const backPath = isNew
+    ? (eventId ? `${eventsBase}/${eventId}/games${tokenSearch}` : `${eventsBase}${tokenSearch}`)
+    : `/games/${gameId}/status${tokenSearch}`;
 
   const breadcrumbs = isNew
     ? [
