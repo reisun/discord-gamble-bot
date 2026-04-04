@@ -181,7 +181,7 @@ export default function EventList() {
                               開催中切替
                             </button>
                             <button
-                              className="btn-secondary btn-sm"
+                              className={`btn-sm ${ev.isPublished ? 'btn-warning' : 'btn-success'}`}
                               disabled={actionLoading || ev.isActive}
                               title={ev.isActive ? '開催中のイベントは非公開にできません' : undefined}
                               onClick={() => handlePublish(ev)}
