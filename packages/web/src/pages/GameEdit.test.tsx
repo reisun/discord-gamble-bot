@@ -52,6 +52,16 @@ describe('GameEdit', () => {
     expect(screen.getByLabelText(/ゲームタイトル/)).toBeInTheDocument();
   });
 
+  it('新規作成: パンくずが設計書どおり「ホーム > イベント名 > 新規作成」で表示される', async () => {
+    renderNew();
+
+    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', '#/events/test-guild-001');
+    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', '#/events/test-guild-001/1/games'));
+    expect(screen.getByText('新規作成')).toBeInTheDocument();
+    expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
+    expect(screen.queryByText('ゲーム一覧')).not.toBeInTheDocument();
+  });
+
   it('賭け方式「単数」の説明文が表示される', () => {
     renderNew();
     expect(screen.getByText(/記号を1つ選ぶ賭け方式/)).toBeInTheDocument();
@@ -122,5 +132,16 @@ describe('GameEdit', () => {
     renderEdit(mockGameMultiOrdered);
     await waitFor(() => expect(screen.getByDisplayValue('第2試合')).toBeInTheDocument());
     expect(screen.getByDisplayValue('3')).toBeInTheDocument(); // requiredSelections
+  });
+
+  it('編集: パンくずが設計書どおり「ホーム > イベント名 > ゲームタイトル > 編集」で表示される', async () => {
+    renderEdit(mockGameSingle);
+
+    await waitFor(() => expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', '#/events/test-guild-001'));
+    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', '#/events/test-guild-001/1/games'));
+    expect(screen.getByRole('link', { name: '第1試合' })).toHaveAttribute('href', '#/games/1/status');
+    expect(screen.getByText('編集')).toBeInTheDocument();
+    expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
+    expect(screen.queryByText('ゲーム一覧')).not.toBeInTheDocument();
   });
 });
