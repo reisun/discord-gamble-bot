@@ -6,6 +6,7 @@ import GameStatus from './GameStatus';
 import * as api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import {
+  mockEvent,
   mockGameSingle,
   mockGameMultiOrdered,
   mockGameFinished,
@@ -32,6 +33,7 @@ function renderPage(isAdmin = false) {
 describe('GameStatus', () => {
   beforeEach(() => {
     vi.mocked(api.getGame).mockResolvedValue(mockGameSingle);
+    vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
     vi.mocked(api.getBets).mockResolvedValue(mockBetsData);
     vi.mocked(api.setGameResult).mockResolvedValue({ ...mockGameSingle, resultSymbols: 'A', status: 'finished' });
   });
@@ -39,6 +41,17 @@ describe('GameStatus', () => {
   it('ゲームタイトルが表示される', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: '第1試合' })).toBeInTheDocument());
+  });
+
+  it('パンくずが設計書どおり「ホーム > イベント名 > ゲームタイトル」で表示される', async () => {
+    renderPage();
+
+    await waitFor(() => expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', '#/events/test-guild-001'));
+    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', '#/events/test-guild-001/1/games'));
+    expect(screen.getAllByText('第1試合')).toHaveLength(2);
+    expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
+    expect(screen.queryByText('ゲーム一覧')).not.toBeInTheDocument();
+    expect(screen.queryByText('状況')).not.toBeInTheDocument();
   });
 
   it('単数方式: 賭け方式バッジが表示されない', async () => {

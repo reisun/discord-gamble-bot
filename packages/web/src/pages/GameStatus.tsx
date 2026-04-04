@@ -199,10 +199,8 @@ export default function GameStatus() {
   const eventsBase = guildId ? `/events/${guildId}` : '/events';
   const breadcrumbs = [
     { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
-    { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
-    { label: 'ゲーム一覧', href: `#${eventsBase}/${game.eventId}/games${tokenSearch}` },
-    { label: game.title, href: `#${eventsBase}/${game.eventId}/games${tokenSearch}` },
-    { label: '状況' },
+    { label: event?.name ?? '...', href: `#${eventsBase}/${game.eventId}/games${tokenSearch}` },
+    { label: game.title },
   ];
 
   const status = statusLabel(game.status);

@@ -176,17 +176,14 @@ export default function GameEdit() {
   const breadcrumbs = isNew
     ? [
         { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
-        { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
         { label: eventName || '...', href: `#${eventsBase}/${eventId}/games${tokenSearch}` },
-        { label: 'ゲーム一覧', href: `#${eventsBase}/${eventId}/games${tokenSearch}` },
         { label: '新規作成' },
       ]
     : [
         { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
-        { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
         { label: eventName || '...', href: `#${eventsBase}/${eventId}/games${tokenSearch}` },
-        { label: 'ゲーム一覧', href: `#${eventsBase}/${eventId}/games${tokenSearch}` },
-        { label: title || '編集' },
+        { label: title || '...', href: `#/games/${gameId}/status${tokenSearch}` },
+        { label: '編集' },
       ];
 
   const selectedBetTypeInfo = BET_TYPE_OPTIONS.find((o) => o.value === betType);
