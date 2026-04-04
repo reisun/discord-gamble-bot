@@ -146,10 +146,7 @@ export default function EventList() {
                           <span style={{ color: 'var(--color-success)', fontWeight: 500, fontSize: '16px' }}>開催中</span>
                         </span>
                       ) : (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                          <CircleInactive />
-                          <span style={{ color: 'var(--color-text-muted)', fontSize: '16px' }}>ー</span>
-                        </span>
+                        <CircleInactive />
                       )}
                     </td>
                     {isAdmin && (

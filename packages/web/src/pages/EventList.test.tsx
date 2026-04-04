@@ -47,7 +47,7 @@ describe('EventList', () => {
   it('開催中イベントに「開催中」テキストが表示される', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('開催中')).toBeInTheDocument());
-    expect(screen.getByText('ー')).toBeInTheDocument();
+    expect(screen.queryByText('ー')).not.toBeInTheDocument();
   });
 
   it('非管理者は「詳細」ボタンのみ表示される', async () => {
