@@ -42,7 +42,7 @@ describe('/mybets execute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(api.getEvents).mockResolvedValue([
-      { id: EVENT_ID, name: 'テスト大会', isActive: true, initialPoints: 10000, resultsPublic: false },
+      { id: EVENT_ID, guildId: GUILD_ID, name: 'テスト大会', isActive: true, initialPoints: 10000, resultsPublic: false },
     ]);
     vi.mocked(api.getUserByDiscordId).mockResolvedValue({
       id: USER_ID,
@@ -55,7 +55,7 @@ describe('/mybets execute', () => {
 
   it('開催中イベントがない場合はエラー', async () => {
     vi.mocked(api.getEvents).mockResolvedValue([
-      { id: 2, name: '終了大会', isActive: false, initialPoints: 10000, resultsPublic: true },
+      { id: 2, guildId: GUILD_ID, name: '終了大会', isActive: false, initialPoints: 10000, resultsPublic: true },
     ]);
 
     const interaction = makeInteraction();

@@ -21,6 +21,7 @@ cp .env.example .env
 | `DATABASE_URL` | `postgresql://<USER>:<PASSWORD>@db:5432/<DB>` 形式 |
 | `ADMIN_TOKEN` | Web 管理画面の認証トークン（推測困難なランダム文字列）|
 | `DISCORD_TOKEN` | Discord Bot トークン |
+| `DISCORD_CLIENT_ID` | Discord アプリケーション ID（スラッシュコマンド登録に使用）|
 | `DISCORD_GUILD_ID` | Bot を追加するサーバーの ID（複数はカンマ区切り）|
 | `DISCORD_ADMIN_ROLE_ID` | 管理者コマンドを使えるロールの ID |
 
@@ -43,6 +44,8 @@ docker compose up -d --build
 | `nginx` | リバースプロキシ | `127.0.0.1:80` |
 
 > サーバーは起動時にマイグレーションを自動実行します。
+
+> **bot コンテナ**は起動時にスラッシュコマンドを Discord へ自動登録します（`DISCORD_GUILD_ID` にカンマ区切りで複数サーバーを指定した場合は、すべてのサーバーに登録されます）。ソース変更後は `docker compose up -d --build` を実行するだけで再登録まで完結します。
 
 ---
 
