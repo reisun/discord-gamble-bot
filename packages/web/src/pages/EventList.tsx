@@ -5,7 +5,7 @@ import type { Event } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { CircleActive, CircleInactive } from '../components/icons';
+import { CircleActive, CircleInactive, EyeIcon, EyeOffIcon } from '../components/icons';
 import { useTokenSearch } from '../hooks/useTokenSearch';
 
 export default function EventList() {
@@ -152,9 +152,15 @@ export default function EventList() {
                     </td>
                     {isAdmin && (
                       <td>
-                        <span style={{ fontSize: '14px', color: ev.isPublished ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
-                          {ev.isPublished ? '公開' : '非公開'}
-                        </span>
+                        {ev.isPublished ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', fontSize: '14px' }}>
+                            <EyeIcon />公開
+                          </span>
+                        ) : (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-disabled)', fontSize: '14px' }}>
+                            <EyeOffIcon />非公開
+                          </span>
+                        )}
                       </td>
                     )}
                     <td>
