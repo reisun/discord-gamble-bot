@@ -171,7 +171,8 @@ export default function EventList() {
                           <>
                             <button
                               className="btn-secondary btn-sm"
-                              onClick={() => navigate(`${eventsBase}/${ev.id}/edit${tokenSearch}`)}
+                              disabled={actionLoading}
+                              onClick={() => handleActivate(ev)}
                             >
                               開催中切替
                             </button>

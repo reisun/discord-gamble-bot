@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 
 import { MemoryRouter } from 'react-router-dom';
 import EventList from './EventList';
@@ -84,6 +84,17 @@ describe('EventList', () => {
     // mockEvent は isActive=true なので非公開にするボタンは disabled
     const publishBtn = screen.getByText('非公開にする');
     expect(publishBtn).toBeDisabled();
+  });
+
+  it('開催中切替ボタンをクリックすると activateEvent が呼ばれる', async () => {
+    vi.mocked(api.activateEvent).mockResolvedValue(undefined as never);
+
+    renderPage(true);
+    await waitFor(() => screen.getAllByText('開催中切替'));
+    const buttons = screen.getAllByText('開催中切替');
+    fireEvent.click(buttons[0]);
+
+    await waitFor(() => expect(api.activateEvent).toHaveBeenCalledWith(mockEvent.id, 'tok'));
   });
 
   it('API エラー時にエラーメッセージが表示される', async () => {
