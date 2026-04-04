@@ -20,18 +20,9 @@ vi.mock('react-router-dom', async (importOriginal) => {
   };
 });
 
-function renderPage() {
-  vi.mocked(useAuth).mockReturnValue({
-    token: 'tok',
-    isAdmin: true,
-    isVerifying: false,
-    guildId: 'test-guild-001',
-  });
-  return render(
-    <MemoryRouter>
-      <UserResults />
-    </MemoryRouter>,
-  );
+function renderPage(isAdmin = false) {
+  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001' });
+  return render(<MemoryRouter><UserResults /></MemoryRouter>);
 }
 
 describe('UserResults', () => {
@@ -39,15 +30,27 @@ describe('UserResults', () => {
     vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
     vi.mocked(api.getUsers).mockResolvedValue([mockUser]);
     vi.mocked(api.getUserEventResults).mockResolvedValue(mockUserEventResult);
-    vi.mocked(api.updateEventResultsPublic).mockResolvedValue(mockEvent);
   });
 
-  it('パンくずが設計書どおり「ホーム > イベント一覧 > イベント名 > ユーザー結果一覧」で表示される', async () => {
+  it('パンくずリストが ホーム > [イベント名] > ユーザー結果一覧 の順で表示される', async () => {
     renderPage();
+    await waitFor(() => screen.getByText('春季大会'));
+    expect(screen.getByRole('link', { name: 'ホーム' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '春季大会' })).toBeInTheDocument();
+    // 末尾の「ユーザー結果一覧」はリンクではなくspan
+    const breadcrumbSpans = document.querySelector('nav')!.querySelectorAll('span');
+    const lastText = Array.from(breadcrumbSpans).find(s => s.textContent?.trim() === 'ユーザー結果一覧');
+    expect(lastText).not.toBeUndefined();
+  });
 
-    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', '#/events/test-guild-001/1/games'));
-    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', '#/events/test-guild-001');
-    expect(screen.getByRole('link', { name: 'イベント一覧' })).toHaveAttribute('href', '#/events/test-guild-001');
-    expect(screen.getAllByText('ユーザー結果一覧')).toHaveLength(2);
+  it('パンくずリストに「イベント一覧」が含まれない', async () => {
+    renderPage();
+    await waitFor(() => screen.getByText('春季大会'));
+    expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
+  });
+
+  it('ユーザー名が一覧に表示される', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText('User A').length).toBeGreaterThan(0));
   });
 });

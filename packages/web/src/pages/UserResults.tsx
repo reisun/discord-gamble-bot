@@ -90,7 +90,6 @@ export default function UserResults() {
 
   const breadcrumbs = [
     { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
-    { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
     { label: event?.name ?? '...', href: `#${eventsBase}/${evId}/games${tokenSearch}` },
     { label: 'ユーザー結果一覧' },
   ];
