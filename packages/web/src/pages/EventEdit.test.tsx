@@ -113,4 +113,14 @@ describe('EventEdit', () => {
     await user.click(screen.getByRole('button', { name: 'キャンセル' }));
     expect(mockNavigate).toHaveBeenCalledWith('/events/test-guild-001');
   });
+
+  it('編集: キャンセルボタンでイベント画面に戻る', async () => {
+    const user = userEvent.setup();
+    renderEdit();
+
+    await waitFor(() => screen.getByDisplayValue('春季大会'));
+    await user.click(screen.getByRole('button', { name: 'キャンセル' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/events/test-guild-001/1/games');
+  });
 });

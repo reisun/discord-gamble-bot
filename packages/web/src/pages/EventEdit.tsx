@@ -14,6 +14,9 @@ export default function EventEdit() {
   const tokenSearch = useTokenSearch();
 
   const eventsBase = guildId ? `/events/${guildId}` : '/events';
+  const cancelPath = isNew
+    ? `${eventsBase}${tokenSearch}`
+    : `${eventsBase}/${eventId}/games${tokenSearch}`;
 
   const [name, setName] = useState('');
   const [initialPoints, setInitialPoints] = useState(10000);
@@ -116,7 +119,7 @@ export default function EventEdit() {
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => navigate(eventsBase + tokenSearch)}
+              onClick={() => navigate(cancelPath)}
             >
               キャンセル
             </button>
