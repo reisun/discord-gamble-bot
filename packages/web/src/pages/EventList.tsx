@@ -141,12 +141,13 @@ export default function EventList() {
                     <td style={{ fontSize: '16px', color: 'var(--color-text)' }}>{ev.name}</td>
                     <td>
                       {ev.isActive ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                          <CircleActive />
-                          <span style={{ color: 'var(--color-success)', fontWeight: 500, fontSize: '16px' }}>開催中</span>
+                        <span className="badge badge-active">
+                          <CircleActive />開催中
                         </span>
                       ) : (
-                        <CircleInactive />
+                        <span className="badge badge-inactive">
+                          <CircleInactive />
+                        </span>
                       )}
                     </td>
                     {isAdmin && (
