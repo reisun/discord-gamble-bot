@@ -17,3 +17,8 @@ npm-debug.log*
 
 # OS
 .DS_Store
+
+# 進捗管理
+TASK.md
+課題一覧.md
+

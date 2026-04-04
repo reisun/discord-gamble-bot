@@ -43,6 +43,15 @@ describe('GameList', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: /春季大会/ })).toBeInTheDocument());
   });
 
+  it('パンくずが設計書どおり「ホーム > イベント名」で表示される', async () => {
+    renderPage();
+
+    await waitFor(() => expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', '#/events/test-guild-001'));
+    expect(screen.getByText('春季大会')).toBeInTheDocument();
+    expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
+    expect(screen.queryByText('ゲーム一覧')).not.toBeInTheDocument();
+  });
+
   it('開催中のイベントに「開催中」バッジが表示される', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('開催中')).toBeInTheDocument());

@@ -80,9 +80,7 @@ export default function GameList() {
 
   const breadcrumbs = [
     { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
-    { label: 'イベント一覧', href: `#${eventsBase}${tokenSearch}` },
-    { label: event?.name ?? '...', href: `#${eventsBase}/${evId}/games${tokenSearch}` },
-    { label: 'ゲーム一覧' },
+    { label: event?.name ?? '...' },
   ];
 
   if (loading) return <div className="loading">読み込み中...</div>;
