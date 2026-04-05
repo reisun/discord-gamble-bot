@@ -104,13 +104,11 @@ function CombinationCard({ combo, betType, isWinner, reveal }: CombinationCardPr
 }
 
 export default function GameStatus() {
-  const { id, guildId: paramGuildId, eventId, gameId } = useParams<{
-    id?: string;
+  const { guildId: paramGuildId, eventId, gameId } = useParams<{
     guildId?: string;
     eventId?: string;
     gameId?: string;
   }>();
-  const rawGameId = gameId ?? id;
   const { isAdmin, token, guildId: authGuildId } = useAuth();
   const guildId = paramGuildId ?? authGuildId;
   const navigate = useNavigate();
@@ -132,8 +130,8 @@ export default function GameStatus() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    if (!rawGameId) return;
-    const gameIdNum = Number(rawGameId);
+    if (!gameId) return;
+    const gameIdNum = Number(gameId);
     setLoading(true);
     Promise.all([
       getGame(gameIdNum, token ?? undefined),
@@ -150,7 +148,7 @@ export default function GameStatus() {
       .then((ev) => setEvent(ev))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [rawGameId, token]);
+  }, [gameId, token]);
 
   useEffect(() => { load(); }, [load]);
 

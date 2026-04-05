@@ -36,7 +36,7 @@ function getGuildIdFromHash(): string | null {
   const hash = window.location.hash; // e.g. "#/dashboard/123456789?token=xxx"
   const withoutHash = hash.slice(1).split('?')[0];
   const parts = withoutHash.split('/').filter(Boolean);
-  if ((parts[0] === 'dashboard' || parts[0] === 'events') && parts[1]) {
+  if (parts[0] === 'dashboard' && parts[1]) {
     return parts[1];
   }
   return null;
