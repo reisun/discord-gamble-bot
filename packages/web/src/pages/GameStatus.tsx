@@ -246,6 +246,11 @@ export default function GameStatus() {
               </span>
             </div>
           )}
+          {game.description && (
+            <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', margin: 0, whiteSpace: 'pre-wrap' }}>
+              {game.description}
+            </p>
+          )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

@@ -67,6 +67,18 @@ describe('GameStatus', () => {
     await waitFor(() => expect(screen.getByText(/複数-順番一致/)).toBeInTheDocument());
   });
 
+  it('説明が設定されている場合は表示される', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, description: 'テストの説明文です' });
+    renderPage();
+    await waitFor(() => expect(screen.getByText('テストの説明文です')).toBeInTheDocument());
+  });
+
+  it('説明が null の場合は表示されない', async () => {
+    renderPage(); // mockGameSingle.description = null
+    await waitFor(() => screen.getByRole('heading', { level: 1, name: '第1試合' }));
+    expect(screen.queryByText('テストの説明文です')).not.toBeInTheDocument();
+  });
+
   it('賭け項目リストがゲーム情報エリアに表示される', async () => {
     renderPage();
     await waitFor(() => expect(screen.getAllByText(/A: チームA/)).toHaveLength(2)); // 賭け項目 + 組み合わせ
