@@ -40,10 +40,9 @@ function toLocalDatetimeValue(iso: string): string {
 
 export default function GameEdit() {
   // Route: /dashboard/:guildId/:eventId/new-game  or  /dashboard/:guildId/:eventId/:gameId/edit
-  const params = useParams<{ guildId?: string; eventId?: string; gameId?: string; id?: string }>();
-  const rawGameId = params.gameId ?? params.id;
-  const isNew = !rawGameId;
-  const gameId = rawGameId ? Number(rawGameId) : undefined;
+  const params = useParams<{ guildId?: string; eventId?: string; gameId?: string }>();
+  const isNew = !params.gameId;
+  const gameId = params.gameId ? Number(params.gameId) : undefined;
   const { token, guildId: authGuildId } = useAuth();
   const guildId = params.guildId ?? authGuildId;
   const navigate = useNavigate();

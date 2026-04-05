@@ -24,15 +24,6 @@ export default function App() {
             <Route path="/dashboard/:guildId/:eventId/results" element={<UserResults />} />
             <Route path="/dashboard/:guildId/:eventId/:gameId/edit" element={<GameEdit />} />
             <Route path="/dashboard/:guildId/:eventId/:gameId" element={<GameStatus />} />
-            <Route path="/events" element={<EventList />} />
-            <Route path="/events/:guildId" element={<EventList />} />
-            <Route path="/events/:guildId/new" element={<EventEdit />} />
-            <Route path="/events/:guildId/:eventId/edit" element={<EventEdit />} />
-            <Route path="/events/:guildId/:eventId/games" element={<GameList />} />
-            <Route path="/events/:guildId/:eventId/games/new" element={<GameEdit />} />
-            <Route path="/games/:id/edit" element={<GameEdit />} />
-            <Route path="/games/:id/status" element={<GameStatus />} />
-            <Route path="/events/:guildId/:eventId/results" element={<UserResults />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>
