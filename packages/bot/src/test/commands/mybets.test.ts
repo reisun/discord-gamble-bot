@@ -77,13 +77,14 @@ describe('/mybets execute', () => {
     );
   });
 
-  it('賭けが0件の場合は「まだ賭けていません」', async () => {
+  it('賭けが0件の場合は「まだ賭けていません」と所持ポイントを表示', async () => {
     const interaction = makeInteraction();
     await execute(interaction);
 
     const reply = vi.mocked(interaction.editReply).mock.calls[0][0] as string;
     expect(reply).toContain('テスト大会');
     expect(reply).toContain('まだ賭けていません');
+    expect(reply).toContain('9,500pt');
   });
 
   it('受付中ゲームの賭けを表示（⏰マーク・倍率）', async () => {
