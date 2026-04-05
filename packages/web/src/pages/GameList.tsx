@@ -19,6 +19,10 @@ function formatDeadline(iso: string) {
   return `${y}/${mo}/${day} ${h}:${m}`;
 }
 
+function isPlaceholderGame(game: Game, isAdmin: boolean): boolean {
+  return !isAdmin && !game.isPublished;
+}
+
 export default function GameList() {
   const { guildId, eventId } = useParams<{ guildId: string; eventId: string }>();
   const { isAdmin, token } = useAuth();
@@ -164,8 +168,12 @@ export default function GameList() {
                 {games.map((g, i) => (
                   <tr key={g.id}>
                     <td className="cell-sm">{i + 1}</td>
-                    <td style={{ fontSize: '16px' }}>{g.title}</td>
-                    <td className="cell-sm">{formatDeadline(g.deadline)}</td>
+                    <td style={{ fontSize: '16px', color: isPlaceholderGame(g, isAdmin) ? 'var(--color-text-muted)' : 'var(--color-text)' }}>
+                      {isPlaceholderGame(g, isAdmin) ? '非公開ゲーム' : g.title}
+                    </td>
+                    <td className="cell-sm" style={{ color: isPlaceholderGame(g, isAdmin) ? 'var(--color-text-muted)' : undefined }}>
+                      {isPlaceholderGame(g, isAdmin) ? '-----/--/-- --:--' : formatDeadline(g.deadline)}
+                    </td>
                     {isAdmin && (
                       <td>
                         {g.isPublished ? (
@@ -183,6 +191,7 @@ export default function GameList() {
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                         <button
                           className="btn-outline btn-sm"
+                          disabled={isPlaceholderGame(g, isAdmin)}
                           onClick={() => navigate(toGame(guildId, evId, g.id, tokenSearch))}
                         >
                           詳細

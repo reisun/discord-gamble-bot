@@ -62,6 +62,24 @@ function formatGame(row: GameRow, betOptions: BetOptionRow[]) {
   };
 }
 
+function formatPlaceholderGame(row: GameRow) {
+  return {
+    id: row.id,
+    eventId: row.event_id,
+    title: '非公開ゲーム',
+    description: null,
+    deadline: '9999-12-31T23:59:59.000Z',
+    isPublished: false,
+    status: computeStatus(row),
+    betType: row.bet_type,
+    requiredSelections: row.required_selections,
+    resultSymbols: null,
+    betOptions: [],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 async function fetchGameWithOptions(
   client: PoolClient,
   gameId: number | string,
@@ -119,7 +137,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { eventId } = req.params;
     const adminMode = isAdmin(req);
-    const includeUnpublished = adminMode && req.query.includeUnpublished === 'true';
+    const includeUnpublished = adminMode ? req.query.includeUnpublished === 'true' : true;
 
     const whereClause = includeUnpublished
       ? 'WHERE g.event_id = $1'
@@ -154,7 +172,13 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       optionsByGame.get(opt.game_id)!.push(opt);
     }
 
-    res.json({ data: gameRows.map((g) => formatGame(g, optionsByGame.get(g.id) ?? [])) });
+    res.json({
+      data: gameRows.map((g) =>
+        adminMode || g.is_published
+          ? formatGame(g, optionsByGame.get(g.id) ?? [])
+          : formatPlaceholderGame(g),
+      ),
+    });
   } catch (err) {
     next(err);
   }
@@ -163,8 +187,12 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 // GET /api/games/:id
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const adminMode = isAdmin(req);
     const gameRows = await query<GameRow>('SELECT * FROM games WHERE id = $1', [req.params.id]);
     if (gameRows.length === 0) {
+      throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
+    }
+    if (!adminMode && !gameRows[0].is_published) {
       throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
     }
 

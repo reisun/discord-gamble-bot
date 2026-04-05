@@ -54,13 +54,16 @@ describe('GET /api/events/:eventId/games', () => {
     expect(res.status).toBe(404);
   });
 
-  it('一般ユーザーは公開済みゲームのみ取得できる', async () => {
+  it('一般ユーザーは非公開ゲームもプレースホルダー行として取得できる', async () => {
     const event = await createEvent();
     const g = await createGame(event.id);
 
-    // 未公開のまま → 一般には空
+    // 未公開のまま → 一般にはプレースホルダーで見える
     const res1 = await request(app).get(`/api/events/${event.id}/games`);
-    expect(res1.body.data).toHaveLength(0);
+    expect(res1.body.data).toHaveLength(1);
+    expect(res1.body.data[0].title).toBe('非公開ゲーム');
+    expect(res1.body.data[0].isPublished).toBe(false);
+    expect(res1.body.data[0].betOptions).toHaveLength(0);
 
     // 公開する
     await request(app)
@@ -70,6 +73,7 @@ describe('GET /api/events/:eventId/games', () => {
 
     const res2 = await request(app).get(`/api/events/${event.id}/games`);
     expect(res2.body.data).toHaveLength(1);
+    expect(res2.body.data[0].title).toBe('第1試合');
   });
 
   it('管理者は includeUnpublished=true で非公開ゲームも取得できる', async () => {
@@ -202,10 +206,23 @@ describe('GET /api/games/:id', () => {
     const event = await createEvent();
     const game = await createGame(event.id);
 
+    await request(app)
+      .patch(`/api/games/${game.id}/publish`)
+      .set(adminHeaders)
+      .send({ isPublished: true });
+
     const res = await request(app).get(`/api/games/${game.id}`);
     expect(res.status).toBe(200);
     expect(res.body.data.id).toBe(game.id);
     expect(res.body.data.betOptions).toHaveLength(3);
+  });
+
+  it('一般ユーザーは非公開ゲーム詳細を取得できない', async () => {
+    const event = await createEvent();
+    const game = await createGame(event.id);
+
+    const res = await request(app).get(`/api/games/${game.id}`);
+    expect(res.status).toBe(404);
   });
 
   it('存在しないIDだと 404 を返す', async () => {

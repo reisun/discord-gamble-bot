@@ -61,7 +61,6 @@ describe('GameList', () => {
   it('ゲームタイトルが一覧に表示される', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('第1試合')).toBeInTheDocument());
-    expect(screen.getByText('第4試合')).toBeInTheDocument();
   });
 
   it('管理者には「公開」列（ヘッダー・状態）が表示される', async () => {
@@ -82,6 +81,18 @@ describe('GameList', () => {
     await waitFor(() => expect(screen.getAllByText('詳細')).toHaveLength(2));
     expect(screen.queryByText('編集')).not.toBeInTheDocument();
     expect(screen.queryByText('削除')).not.toBeInTheDocument();
+  });
+
+  it('一般ユーザーには非公開ゲームがプレースホルダー行として表示され、詳細ボタンは押下できない', async () => {
+    renderPage(false);
+
+    await waitFor(() => expect(screen.getByText('非公開ゲーム')).toBeInTheDocument());
+    expect(screen.getByText('-----/--/-- --:--')).toBeInTheDocument();
+    expect(screen.queryByText('第4試合')).not.toBeInTheDocument();
+
+    const detailButtons = screen.getAllByRole('button', { name: '詳細' });
+    expect(detailButtons[0]).not.toBeDisabled();
+    expect(detailButtons[1]).toBeDisabled();
   });
 
   it('管理者はイベントヘッダーに編集・削除、ゲーム行に公開切替ボタンが表示される', async () => {
