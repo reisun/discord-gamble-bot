@@ -260,6 +260,24 @@ export default function GameStatus() {
             状態:{' '}
             <span style={{ color: status.color, fontWeight: 500 }}>{status.text}</span>
           </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+            {game.betOptions.map((opt) => (
+              <span
+                key={opt.symbol}
+                style={{
+                  display: 'inline-block',
+                  background: 'var(--color-surface-dark)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--border-radius-sm)',
+                  padding: '2px 8px',
+                  fontSize: '13px',
+                  color: 'var(--color-text-secondary)',
+                }}
+              >
+                {opt.symbol}: {opt.label}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
