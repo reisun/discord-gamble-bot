@@ -56,6 +56,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
   if (eventBets.bets.length === 0) {
     lines.push('このイベントにはまだ賭けていません。');
+    lines.push('');
+    lines.push(`現在の所持ポイント: ${fmtPt(eventBets.currentPoints)}`);
     await interaction.editReply(lines.join('\n'));
     return;
   }
