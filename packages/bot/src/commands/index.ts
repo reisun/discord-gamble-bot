@@ -5,7 +5,6 @@ import {
   SlashCommandOptionsOnlyBuilder,
 } from 'discord.js';
 import * as bet from './bet';
-import * as mybet from './mybet';
 import * as mybets from './mybets';
 import * as adminLink from './admin-link';
 import * as postGame from './post-game';
@@ -19,7 +18,6 @@ export type Command = {
 
 export const commands: Map<string, Command> = new Map([
   ['bet', bet],
-  ['mybet', mybet],
   ['mybets', mybets],
   ['admin-link', adminLink],
   ['post-game', postGame],
