@@ -1,9 +1,10 @@
 import {
   AutocompleteInteraction,
   ChatInputCommandInteraction,
+  EmbedBuilder,
   SlashCommandBuilder,
 } from 'discord.js';
-import { extractApiMessage, getEventGames, getEvents, getGameByNo } from '../lib/api';
+import { getEventGames, getEvents, getGameByNo } from '../lib/api';
 import { isAdminMember } from '../lib/admin';
 import { betTypeLabel, fmtDeadline } from '../lib/format';
 
@@ -88,43 +89,48 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   }
 
   const isSingle = game.betType === 'single';
-  const typeLabel = isSingle ? '' : `  [${betTypeLabel(game.betType, game.requiredSelections)}]`;
   const n = game.requiredSelections ?? 1;
 
-  const lines: string[] = [];
-  lines.push(`🎮 **ゲーム情報** - ${game.title}${typeLabel}`);
+  const embed = new EmbedBuilder()
+    .setTitle(`🎮 #${gameNo} ${game.title}`)
+    .setColor(0x5865f2); // Discord Blurple
 
   if (game.description) {
-    lines.push('');
-    lines.push(`説明: ${game.description}`);
+    embed.setDescription(game.description);
   }
 
-  lines.push('');
-  lines.push('賭け項目:');
-  for (const opt of game.betOptions) {
-    lines.push(`  ${opt.symbol}: ${opt.label}`);
+  if (!isSingle) {
+    embed.addFields({
+      name: '賭け方式',
+      value: betTypeLabel(game.betType, game.requiredSelections),
+      inline: true,
+    });
   }
 
-  lines.push('');
-  lines.push(`締め切り: ${fmtDeadline(game.deadline)}`);
-  lines.push('');
+  embed.addFields(
+    {
+      name: '締め切り',
+      value: fmtDeadline(game.deadline),
+      inline: true,
+    },
+    {
+      name: '賭け項目',
+      value: game.betOptions.map((o) => `\`${o.symbol}\` ${o.label}`).join('\n'),
+    },
+  );
 
-  if (isSingle) {
-    lines.push(
-      `賭けるには \`/bet game:${gameNo} option:<記号> amount:<ポイント>\` を使ってください。`,
-    );
-    const exSymbol = game.betOptions[0]?.symbol ?? 'A';
-    lines.push(`例: \`/bet game:${gameNo} option:${exSymbol} amount:100\``);
-  } else {
-    lines.push(
-      `賭けるには \`/bet game:${gameNo} option:<記号を${n}文字> amount:<ポイント>\` を使ってください。`,
-    );
-    const exSymbols = game.betOptions
-      .slice(0, n)
-      .map((o) => o.symbol)
-      .join('');
-    lines.push(`例: \`/bet game:${gameNo} option:${exSymbols} amount:100\``);
-  }
+  const exSymbols = isSingle
+    ? (game.betOptions[0]?.symbol ?? 'A')
+    : game.betOptions.slice(0, n).map((o) => o.symbol).join('');
+  const usageHint = isSingle
+    ? `\`/bet game:${gameNo} option:<記号> amount:<ポイント>\``
+    : `\`/bet game:${gameNo} option:<記号を${n}文字> amount:<ポイント>\``;
+  const exampleLine = `/bet game:${gameNo} option:${exSymbols} amount:100`;
 
-  await interaction.editReply(lines.join('\n'));
+  embed.addFields({
+    name: '賭け方法',
+    value: `${usageHint}\n例: \`${exampleLine}\``,
+  });
+
+  await interaction.editReply({ embeds: [embed] });
 }

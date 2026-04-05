@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ChatInputCommandInteraction, Guild, GuildMember } from 'discord.js';
+import type { EmbedBuilder } from 'discord.js';
 import type { Game } from '../../lib/api';
 
 vi.mock('../../config', () => ({
@@ -10,6 +11,8 @@ vi.mock('../../config', () => ({
 
 vi.mock('../../lib/api', () => ({
   getGameByNo: vi.fn(),
+  getEvents: vi.fn(),
+  getEventGames: vi.fn(),
   extractApiMessage: vi.fn(() => 'APIエラー'),
 }));
 
@@ -59,12 +62,18 @@ function makeInteraction(isAdmin: boolean, gameNo: number): ChatInputCommandInte
   } as unknown as ChatInputCommandInteraction;
 }
 
+/** editReply に渡された embeds[0] の data を返すヘルパー */
+function getEmbedData(interaction: ChatInputCommandInteraction) {
+  const arg = vi.mocked(interaction.editReply).mock.calls[0][0] as { embeds: EmbedBuilder[] };
+  return arg.embeds[0].data;
+}
+
 describe('/post-game execute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('管理者: single 方式のゲーム情報を全員向けに投稿する', async () => {
+  it('管理者: single 方式のゲーム情報を Embed で全員向けに投稿する', async () => {
     vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
     const interaction = makeInteraction(true, 3);
     await execute(interaction);
@@ -72,16 +81,18 @@ describe('/post-game execute', () => {
     // deferReply は ephemeral: false
     expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: false });
 
-    const reply = vi.mocked(interaction.editReply).mock.calls[0][0] as string;
-    expect(reply).toContain('🎮 **ゲーム情報**');
-    expect(reply).toContain('第1試合');
-    expect(reply).toContain('説明文です');
-    expect(reply).toContain('A: チームA');
-    expect(reply).toContain('B: チームB');
-    expect(reply).toContain('/bet game:3');
+    const embed = getEmbedData(interaction);
+    expect(embed.title).toContain('第1試合');
+    expect(embed.title).toContain('#3');
+    expect(embed.description).toBe('説明文です');
+
+    const fieldValues = embed.fields?.map((f) => f.value) ?? [];
+    expect(fieldValues.some((v) => v.includes('チームA'))).toBe(true);
+    expect(fieldValues.some((v) => v.includes('チームB'))).toBe(true);
+    expect(fieldValues.some((v) => v.includes('/bet game:3'))).toBe(true);
   });
 
-  it('管理者: multi_ordered 方式は方式ラベルと記号数ヒントを含む', async () => {
+  it('管理者: multi_ordered 方式は賭け方式フィールドと記号数ヒントを含む', async () => {
     vi.mocked(api.getGameByNo).mockResolvedValue(
       makeGame({
         betType: 'multi_ordered',
@@ -96,9 +107,10 @@ describe('/post-game execute', () => {
     const interaction = makeInteraction(true, 3);
     await execute(interaction);
 
-    const reply = vi.mocked(interaction.editReply).mock.calls[0][0] as string;
-    expect(reply).toContain('複数-順番一致（重複なし）');
-    expect(reply).toContain('2文字');
+    const embed = getEmbedData(interaction);
+    const fieldValues = embed.fields?.map((f) => f.value) ?? [];
+    expect(fieldValues.some((v) => v.includes('複数-順番一致（重複なし）'))).toBe(true);
+    expect(fieldValues.some((v) => v.includes('2文字'))).toBe(true);
   });
 
   it('管理者ロールなし: Ephemeral エラーを返す（投稿しない）', async () => {
@@ -132,12 +144,12 @@ describe('/post-game execute', () => {
     );
   });
 
-  it('description が null の場合は説明行を省略する', async () => {
+  it('description が null の場合は Embed の description が設定されない', async () => {
     vi.mocked(api.getGameByNo).mockResolvedValue(makeGame({ description: null }));
     const interaction = makeInteraction(true, 3);
     await execute(interaction);
 
-    const reply = vi.mocked(interaction.editReply).mock.calls[0][0] as string;
-    expect(reply).not.toContain('説明:');
+    const embed = getEmbedData(interaction);
+    expect(embed.description).toBeUndefined();
   });
 });
