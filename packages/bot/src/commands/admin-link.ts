@@ -38,7 +38,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   }
 
   // ハッシュフラグメントにトークンを埋め込む（サーバーログに残らないように）
-  const url = `${config.webAppBaseUrl.replace(/\/$/, '')}/#/events/${guildId}?token=${config.adminToken}`;
+  const url = `${config.webAppBaseUrl.replace(/\/$/, '')}/#/dashboard/${guildId}?token=${config.adminToken}`;
 
   await interaction.reply({
     content: `🔑 管理者用URLです。他の人に共有しないでください。\n\n${url}`,

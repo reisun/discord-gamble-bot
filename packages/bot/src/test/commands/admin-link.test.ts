@@ -53,7 +53,7 @@ describe('/admin-link execute', () => {
       expect.objectContaining({
         ephemeral: true,
         content: expect.stringContaining(
-          `https://example.github.io/app/#/events/${TEST_GUILD_ID}?token=secret-admin-token`,
+          `https://example.github.io/app/#/dashboard/${TEST_GUILD_ID}?token=secret-admin-token`,
         ),
       }),
     );
