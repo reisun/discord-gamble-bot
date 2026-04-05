@@ -162,4 +162,28 @@ describe('GameEdit', () => {
     fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }));
     expect(mockNavigate).toHaveBeenCalledWith(toGame('test-guild-001', 1, 1));
   });
+
+  it('新規作成: 保存後はイベント画面（ゲーム一覧）に遷移する', async () => {
+    const user = userEvent.setup();
+    renderNew();
+    await user.type(screen.getByLabelText(/ゲームタイトル/), '第5試合');
+    fireEvent.change(screen.getByLabelText(/締め切り日時/), { target: { value: '2099-12-31T12:00' } });
+    const symbolInputs = screen.getAllByPlaceholderText('A');
+    const labelInputs = screen.getAllByPlaceholderText('チームA');
+    await user.type(symbolInputs[0], 'A');
+    await user.type(labelInputs[0], 'チームA');
+    await user.type(symbolInputs[1], 'B');
+    await user.type(labelInputs[1], 'チームB');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith(toEvent('test-guild-001', 1)));
+  });
+
+  it('編集: 保存後はゲーム状況画面に遷移する', async () => {
+    renderEdit(mockGameSingle);
+    await waitFor(() => screen.getByDisplayValue('第1試合'));
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith(toGame('test-guild-001', mockGameSingle.eventId, mockGameSingle.id)),
+    );
+  });
 });

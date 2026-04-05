@@ -152,15 +152,15 @@ export default function GameEdit() {
     };
 
     try {
-      const gamePath = guildId
-        ? toEvent(guildId, eventId, tokenSearch)
-        : toDashboard(undefined, tokenSearch);
       if (isNew) {
         await createGame(eventId!, body, token);
-        navigate(gamePath);
+        const newEventPath = guildId
+          ? toEvent(guildId, eventId, tokenSearch)
+          : toDashboard(undefined, tokenSearch);
+        navigate(newEventPath);
       } else {
-        await updateGame(gameId!, body, token);
-        navigate(gamePath);
+        const saved = await updateGame(gameId!, body, token);
+        navigate(toGame(guildId, saved.eventId, gameId, tokenSearch));
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存に失敗しました');
