@@ -178,6 +178,19 @@ export async function getEventBets(
   return res.data.data;
 }
 
+export async function getGameByNo(
+  guildId: string,
+  gameNo: number,
+): Promise<Game> {
+  const events = await getEvents(guildId);
+  const activeEvent = events.find((e) => e.isActive);
+  if (!activeEvent) throw new Error('開催中のイベントが見つかりません。');
+  const allGames = await getEventGames(activeEvent.id);
+  const game = allGames[gameNo - 1];
+  if (!game) throw new Error(`ゲーム番号 ${gameNo} が見つかりません。`);
+  return game;
+}
+
 export async function registerGuild(guildId: string, guildName: string): Promise<void> {
   await api.put(
     `/api/guilds/${guildId}`,

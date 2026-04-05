@@ -7,7 +7,7 @@ import {
   extractApiMessage,
   getEventGames,
   getEvents,
-  getGame,
+  getGameByNo,
   getUserByDiscordId,
   placeBet,
 } from '../lib/api';
@@ -19,7 +19,7 @@ export const data = new SlashCommandBuilder()
   .addIntegerOption((opt) =>
     opt
       .setName('game')
-      .setDescription('ゲームID（受付中のゲームが候補に表示されます）')
+      .setDescription('ゲーム番号（受付中のゲームが候補に表示されます）')
       .setRequired(true)
       .setAutocomplete(true),
   )
@@ -55,19 +55,23 @@ export async function autocomplete(interaction: AutocompleteInteraction): Promis
         await interaction.respond([]);
         return;
       }
-      const games = await getEventGames(activeEvent.id);
-      const openGames = games.filter((g) => g.isPublished && g.status === 'open');
+      const allGames = await getEventGames(activeEvent.id);
+      const openGames = allGames.filter((g) => g.isPublished && g.status === 'open');
 
       const query = focused.value.toString().toLowerCase();
       const choices = openGames
         .filter((g) => {
+          const gameNo = allGames.findIndex((ag) => ag.id === g.id) + 1;
           if (!query) return true;
           return (
-            String(g.id).includes(query) || g.title.toLowerCase().includes(query)
+            String(gameNo).includes(query) || g.title.toLowerCase().includes(query)
           );
         })
         .slice(0, 25)
-        .map((g) => ({ name: `#${g.id} ${g.title}`, value: g.id }));
+        .map((g) => {
+          const gameNo = allGames.findIndex((ag) => ag.id === g.id) + 1;
+          return { name: `#${gameNo} ${g.title}`, value: gameNo };
+        });
 
       await interaction.respond(choices);
     } catch {
@@ -78,13 +82,15 @@ export async function autocomplete(interaction: AutocompleteInteraction): Promis
 
   if (focused.name === 'option') {
     // 選択されたゲームに応じた入力ヒントを返す
-    const gameId = interaction.options.getInteger('game');
-    if (!gameId) {
+    const gameNo = interaction.options.getInteger('game');
+    if (!gameNo) {
       await interaction.respond([{ name: '先にゲームを選択してください', value: '' }]);
       return;
     }
     try {
-      const game = await getGame(gameId);
+      const guildId = interaction.guild?.id;
+      if (!guildId) { await interaction.respond([]); return; }
+      const game = await getGameByNo(guildId, gameNo);
       const hint = optionHint(game.betType, game.requiredSelections);
       const optList = game.betOptions
         .map((o) => `${o.symbol}: ${o.label}`)
@@ -102,16 +108,22 @@ export async function autocomplete(interaction: AutocompleteInteraction): Promis
 export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply({ ephemeral: true });
 
-  const gameId = interaction.options.getInteger('game', true);
+  const gameNo = interaction.options.getInteger('game', true);
   const optionInput = interaction.options.getString('option', true).toUpperCase();
   const amount = interaction.options.getInteger('amount', true);
   const borrow = interaction.options.getBoolean('borrow') ?? false;
   const discordId = interaction.user.id;
+  const guildId = interaction.guild?.id;
 
-  // ゲーム取得
+  if (!guildId) {
+    await interaction.editReply('❌ サーバー情報が取得できませんでした。');
+    return;
+  }
+
+  // ゲーム取得（gameNo → game）
   let game;
   try {
-    game = await getGame(gameId);
+    game = await getGameByNo(guildId, gameNo);
   } catch {
     await interaction.editReply('❌ 指定されたゲームが見つかりません。');
     return;
@@ -178,7 +190,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   // 賭け実行
   let result;
   try {
-    result = await placeBet(gameId, discordId, normalizedSymbols, amount, borrow);
+    result = await placeBet(game.id, discordId, normalizedSymbols, amount, borrow);
   } catch (err) {
     await interaction.editReply(`❌ 賭けに失敗しました。\n理由: ${extractApiMessage(err)}`);
     return;

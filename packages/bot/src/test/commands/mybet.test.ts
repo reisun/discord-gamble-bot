@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ChatInputCommandInteraction } from 'discord.js';
-import type { BetListResponse, Game } from '../../lib/api';
+import type { BetListResponse, Event, Game } from '../../lib/api';
 
 vi.mock('../../lib/api', () => ({
-  getGame: vi.fn(),
+  getGameByNo: vi.fn(),
+  getEvents: vi.fn(),
+  getEventGames: vi.fn(),
   getBetList: vi.fn(),
   getUserByDiscordId: vi.fn(),
   extractApiMessage: vi.fn(() => 'APIエラー'),
@@ -57,11 +59,12 @@ function makeBetList(overrides: Partial<BetListResponse> = {}): BetListResponse 
   };
 }
 
-function makeInteraction(gameId: number): ChatInputCommandInteraction {
+function makeInteraction(gameNo: number): ChatInputCommandInteraction {
   return {
     user: { id: DISCORD_ID },
+    guild: { id: 'test-guild-001' },
     options: {
-      getInteger: (name: string) => (name === 'game' ? gameId : null),
+      getInteger: (name: string) => (name === 'game' ? gameNo : null),
     },
     deferReply: vi.fn().mockResolvedValue(undefined),
     editReply: vi.fn().mockResolvedValue(undefined),
@@ -80,10 +83,10 @@ describe('/mybet execute', () => {
   });
 
   it('受付中ゲームで賭けあり: 倍率と予想獲得ポイントを表示', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame());
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
     vi.mocked(api.getBetList).mockResolvedValue(makeBetList());
 
-    const interaction = makeInteraction(5);
+    const interaction = makeInteraction(1);
     await execute(interaction);
 
     const reply = vi.mocked(interaction.editReply).mock.calls[0][0] as string;
@@ -94,7 +97,7 @@ describe('/mybet execute', () => {
   });
 
   it('終了ゲームで当選: 当選マークと獲得ポイントを表示', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(
+    vi.mocked(api.getGameByNo).mockResolvedValue(
       makeGame({ status: 'finished', resultSymbols: 'A' }),
     );
     vi.mocked(api.getBetList).mockResolvedValue(
@@ -114,7 +117,7 @@ describe('/mybet execute', () => {
       }),
     );
 
-    const interaction = makeInteraction(5);
+    const interaction = makeInteraction(1);
     await execute(interaction);
 
     const reply = vi.mocked(interaction.editReply).mock.calls[0][0] as string;
@@ -123,7 +126,7 @@ describe('/mybet execute', () => {
   });
 
   it('終了ゲームで落選: 落選マークと獲得0ptを表示', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(
+    vi.mocked(api.getGameByNo).mockResolvedValue(
       makeGame({ status: 'finished', resultSymbols: 'B' }),
     );
     vi.mocked(api.getBetList).mockResolvedValue(
@@ -142,7 +145,7 @@ describe('/mybet execute', () => {
       }),
     );
 
-    const interaction = makeInteraction(5);
+    const interaction = makeInteraction(1);
     await execute(interaction);
 
     const reply = vi.mocked(interaction.editReply).mock.calls[0][0] as string;
@@ -151,10 +154,10 @@ describe('/mybet execute', () => {
   });
 
   it('ユーザー未登録: 賭けなしメッセージを返す', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame());
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
     vi.mocked(api.getUserByDiscordId).mockRejectedValue(new Error('not found'));
 
-    const interaction = makeInteraction(5);
+    const interaction = makeInteraction(1);
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
@@ -163,10 +166,10 @@ describe('/mybet execute', () => {
   });
 
   it('自分の賭けが賭け一覧に存在しない: 賭けなしメッセージを返す', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame());
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
     vi.mocked(api.getBetList).mockResolvedValue(makeBetList({ bets: [] }));
 
-    const interaction = makeInteraction(5);
+    const interaction = makeInteraction(1);
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
@@ -175,7 +178,7 @@ describe('/mybet execute', () => {
   });
 
   it('ゲームが見つからない: エラーメッセージ', async () => {
-    vi.mocked(api.getGame).mockRejectedValue(new Error('not found'));
+    vi.mocked(api.getGameByNo).mockRejectedValue(new Error('not found'));
 
     const interaction = makeInteraction(999);
     await execute(interaction);

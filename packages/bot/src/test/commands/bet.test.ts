@@ -4,11 +4,9 @@ import type { Game } from '../../lib/api';
 
 // API モジュールをモック
 vi.mock('../../lib/api', () => ({
-  getGame: vi.fn(),
+  getGameByNo: vi.fn(),
   placeBet: vi.fn(),
   getUserByDiscordId: vi.fn(),
-  getEventGames: vi.fn(),
-  getEvents: vi.fn(),
   extractApiMessage: vi.fn(() => 'APIエラーが発生しました'),
 }));
 
@@ -39,15 +37,16 @@ function makeGame(overrides: Partial<Game> = {}): Game {
 }
 
 function makeInteraction(
-  gameId: number,
+  gameNo: number,
   option: string,
   amount: number,
   borrow = false,
 ): ChatInputCommandInteraction {
   return {
     user: { id: DISCORD_ID },
+    guild: { id: 'test-guild-001' },
     options: {
-      getInteger: (name: string) => (name === 'game' ? gameId : name === 'amount' ? amount : null),
+      getInteger: (name: string) => (name === 'game' ? gameNo : name === 'amount' ? amount : null),
       getString: (name: string) => (name === 'option' ? option : null),
       getBoolean: (name: string) => (name === 'borrow' ? borrow : null),
     },
@@ -68,7 +67,7 @@ describe('/bet execute', () => {
   });
 
   it('single 方式: 正常に賭けを登録できる', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame());
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
     vi.mocked(api.placeBet).mockResolvedValue({
       id: 100,
       gameId: 1,
@@ -91,7 +90,7 @@ describe('/bet execute', () => {
   });
 
   it('multi_unordered: option を昇順ソートして API に送信する', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(
+    vi.mocked(api.getGameByNo).mockResolvedValue(
       makeGame({ betType: 'multi_unordered', requiredSelections: 3 }),
     );
     vi.mocked(api.placeBet).mockResolvedValue({
@@ -117,7 +116,7 @@ describe('/bet execute', () => {
   });
 
   it('賭けの上書き: 🔄 変更メッセージが表示される', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame());
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
     vi.mocked(api.placeBet).mockResolvedValue({
       id: 100,
       gameId: 1,
@@ -139,7 +138,7 @@ describe('/bet execute', () => {
   });
 
   it('借金賭け: isDebt=true の場合は借金メッセージ', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame());
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
     vi.mocked(api.placeBet).mockResolvedValue({
       id: 102,
       gameId: 1,
@@ -162,7 +161,7 @@ describe('/bet execute', () => {
   });
 
   it('ゲームが見つからない場合はエラーメッセージ', async () => {
-    vi.mocked(api.getGame).mockRejectedValue(new Error('not found'));
+    vi.mocked(api.getGameByNo).mockRejectedValue(new Error('not found'));
 
     const interaction = makeInteraction(999, 'A', 100);
     await execute(interaction);
@@ -174,7 +173,7 @@ describe('/bet execute', () => {
   });
 
   it('ゲームが非公開の場合はエラーメッセージ', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame({ isPublished: false }));
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame({ isPublished: false }));
 
     const interaction = makeInteraction(1, 'A', 100);
     await execute(interaction);
@@ -186,7 +185,7 @@ describe('/bet execute', () => {
   });
 
   it('締め切り済みゲームはエラーメッセージ', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame({ status: 'closed' }));
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame({ status: 'closed' }));
 
     const interaction = makeInteraction(1, 'A', 100);
     await execute(interaction);
@@ -198,7 +197,7 @@ describe('/bet execute', () => {
   });
 
   it('single 方式: 文字数が不正な場合はエラー', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame({ betType: 'single' }));
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame({ betType: 'single' }));
 
     const interaction = makeInteraction(1, 'AB', 100);
     await execute(interaction);
@@ -210,7 +209,7 @@ describe('/bet execute', () => {
   });
 
   it('multi_ordered: 文字数が不正な場合はエラー', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(
+    vi.mocked(api.getGameByNo).mockResolvedValue(
       makeGame({ betType: 'multi_ordered', requiredSelections: 3 }),
     );
 
@@ -223,7 +222,7 @@ describe('/bet execute', () => {
   });
 
   it('存在しない記号を含む場合はエラー', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame());
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
 
     const interaction = makeInteraction(1, 'Z', 100);
     await execute(interaction);
@@ -234,7 +233,7 @@ describe('/bet execute', () => {
   });
 
   it('multi_ordered: 重複記号はエラー', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(
+    vi.mocked(api.getGameByNo).mockResolvedValue(
       makeGame({ betType: 'multi_ordered', requiredSelections: 2 }),
     );
 
@@ -247,7 +246,7 @@ describe('/bet execute', () => {
   });
 
   it('multi_ordered_dup: 重複記号でもエラーにならない', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(
+    vi.mocked(api.getGameByNo).mockResolvedValue(
       makeGame({ betType: 'multi_ordered_dup', requiredSelections: 2 }),
     );
     vi.mocked(api.placeBet).mockResolvedValue({
@@ -272,7 +271,7 @@ describe('/bet execute', () => {
   });
 
   it('borrow=false でポイント不足の場合はエラー', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame());
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
     vi.mocked(api.getUserByDiscordId).mockResolvedValue({
       id: 1,
       discordId: DISCORD_ID,
@@ -290,7 +289,7 @@ describe('/bet execute', () => {
   });
 
   it('API エラー時はエラーメッセージを表示', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame());
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
     vi.mocked(api.placeBet).mockRejectedValue(new Error('conflict'));
 
     const interaction = makeInteraction(1, 'A', 100);
