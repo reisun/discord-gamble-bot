@@ -85,6 +85,23 @@ describe('GameStatus', () => {
     expect(screen.queryByText('(800pt / 2人)')).not.toBeInTheDocument();
   });
 
+  it('odds が null の組み合わせが返ってきてもクラッシュせずプレースホルダー表示になる', async () => {
+    vi.mocked(api.getBets).mockResolvedValue({
+      ...mockBetsData,
+      combinations: [
+        {
+          ...mockBetsData.combinations[0],
+          odds: null,
+        },
+      ],
+    });
+
+    renderPage(false);
+
+    await waitFor(() => expect(screen.getByText('×--倍')).toBeInTheDocument());
+    expect(screen.getByRole('heading', { level: 1, name: '第1試合' })).toBeInTheDocument();
+  });
+
   it('管理者: 倍率が数値で表示される', async () => {
     renderPage(true);
     await waitFor(() => expect(screen.getByText('×1.67倍')).toBeInTheDocument());
