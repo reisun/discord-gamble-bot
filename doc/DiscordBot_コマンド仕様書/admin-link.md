@@ -10,14 +10,14 @@
 
 1. 管理者ロールを確認（なければ拒否）
 2. 環境変数からトークンと WebアプリのベースURLを取得
-3. ハッシュフラグメント内にトークンを埋め込んだホーム画面の URL を生成して返信
+3. ハッシュフラグメント内にトークンを埋め込んだ Webアプリのホーム画面 URL（`#/dashboard/:guildId`）を生成して返信
 
 ## 応答メッセージ（Ephemeral）
 
 ```
 🔑 管理者用URLです。他の人に共有しないでください。
 
-https://<github-pages-url>/#/events/<guildId>?token=xxxxxxxxxxxxxxxx
+https://<github-pages-url>/#/dashboard/<guildId>?token=xxxxxxxxxxxxxxxx
 ```
 
 トークンはハッシュ内クエリパラメータとして付与するため、サーバーのアクセスログには残らない。
