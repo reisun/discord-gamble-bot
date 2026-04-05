@@ -7,6 +7,7 @@ import Breadcrumb from '../components/Breadcrumb';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { ClockIcon, CheckCircleIcon } from '../components/icons';
 import { useTokenSearch } from '../hooks/useTokenSearch';
+import { toDashboard, toEvent, toGameEdit, toHashPath } from '../routes';
 
 function betTypeLabel(betType: BetType, requiredSelections: number | null): string {
   switch (betType) {
@@ -103,8 +104,15 @@ function CombinationCard({ combo, betType, isWinner, reveal }: CombinationCardPr
 }
 
 export default function GameStatus() {
-  const { id } = useParams<{ id: string }>();
-  const { isAdmin, token, guildId } = useAuth();
+  const { id, guildId: paramGuildId, eventId, gameId } = useParams<{
+    id?: string;
+    guildId?: string;
+    eventId?: string;
+    gameId?: string;
+  }>();
+  const rawGameId = gameId ?? id;
+  const { isAdmin, token, guildId: authGuildId } = useAuth();
+  const guildId = paramGuildId ?? authGuildId;
   const navigate = useNavigate();
   const tokenSearch = useTokenSearch();
 
@@ -124,8 +132,8 @@ export default function GameStatus() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    if (!id) return;
-    const gameIdNum = Number(id);
+    if (!rawGameId) return;
+    const gameIdNum = Number(rawGameId);
     setLoading(true);
     Promise.all([
       getGame(gameIdNum, token ?? undefined),
@@ -142,7 +150,7 @@ export default function GameStatus() {
       .then((ev) => setEvent(ev))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [id, token]);
+  }, [rawGameId, token]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -182,7 +190,7 @@ export default function GameStatus() {
     setActionLoading(true);
     try {
       await deleteGame(game.id, token);
-      navigate(`/events/${game.eventId}/games${tokenSearch}`);
+      navigate(toEvent(guildId, eventId ?? game.eventId, tokenSearch));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '削除に失敗しました');
       setDeleteTarget(false);
@@ -196,10 +204,9 @@ export default function GameStatus() {
   if (loading) return <div className="loading">読み込み中...</div>;
   if (!game || !bets) return <div className="error-message">{error ?? 'データが取得できませんでした'}</div>;
 
-  const eventsBase = guildId ? `/events/${guildId}` : '/events';
   const breadcrumbs = [
-    { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
-    { label: event?.name ?? '...', href: `#${eventsBase}/${game.eventId}/games${tokenSearch}` },
+    { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
+    { label: event?.name ?? '...', href: toHashPath(toEvent(guildId, eventId ?? game.eventId, tokenSearch)) },
     { label: game.title },
   ];
 
@@ -220,7 +227,7 @@ export default function GameStatus() {
               <>
                 <button
                   className="btn-secondary btn-sm"
-                  onClick={() => navigate(`/games/${game.id}/edit${tokenSearch}`)}
+                  onClick={() => navigate(toGameEdit(guildId, eventId ?? game.eventId, game.id, tokenSearch))}
                 >
                   編集
                 </button>

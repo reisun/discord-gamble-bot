@@ -17,10 +17,10 @@ const AuthContext = createContext<AuthContextValue>({
 
 /**
  * ハッシュフラグメント内のクエリパラメータから token を取得する。
- * 例: /#/events/123456789?token=xxx  → "xxx"
+ * 例: /#/dashboard/123456789?token=xxx  → "xxx"
  */
 function getTokenFromHash(): string | null {
-  const hash = window.location.hash; // e.g. "#/events/123456789?token=xxx"
+  const hash = window.location.hash; // e.g. "#/dashboard/123456789?token=xxx"
   const queryIndex = hash.indexOf('?');
   if (queryIndex === -1) return null;
   const query = hash.slice(queryIndex + 1);
@@ -30,13 +30,13 @@ function getTokenFromHash(): string | null {
 
 /**
  * ハッシュフラグメントから guildId を取得する。
- * 例: /#/events/123456789/...  → "123456789"
+ * 例: /#/dashboard/123456789/...  → "123456789"
  */
 function getGuildIdFromHash(): string | null {
-  const hash = window.location.hash; // e.g. "#/events/123456789?token=xxx"
-  const withoutHash = hash.slice(1).split('?')[0]; // "/events/123456789"
-  const parts = withoutHash.split('/').filter(Boolean); // ["events", "123456789", ...]
-  if (parts[0] === 'events' && parts[1]) {
+  const hash = window.location.hash; // e.g. "#/dashboard/123456789?token=xxx"
+  const withoutHash = hash.slice(1).split('?')[0];
+  const parts = withoutHash.split('/').filter(Boolean);
+  if ((parts[0] === 'dashboard' || parts[0] === 'events') && parts[1]) {
     return parts[1];
   }
   return null;

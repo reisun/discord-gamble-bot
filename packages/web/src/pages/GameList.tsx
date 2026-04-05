@@ -7,6 +7,7 @@ import Breadcrumb from '../components/Breadcrumb';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { EyeIcon, EyeOffIcon } from '../components/icons';
 import { useTokenSearch } from '../hooks/useTokenSearch';
+import { toDashboard, toEventEdit, toEventResults, toGame, toHashPath, toNewGame } from '../routes';
 
 function formatDeadline(iso: string) {
   const d = new Date(iso);
@@ -23,8 +24,6 @@ export default function GameList() {
   const { isAdmin, token } = useAuth();
   const navigate = useNavigate();
   const tokenSearch = useTokenSearch();
-
-  const eventsBase = guildId ? `/events/${guildId}` : '/events';
   const evId = Number(eventId);
 
   const [event, setEvent] = useState<Event | null>(null);
@@ -56,7 +55,7 @@ export default function GameList() {
     setActionLoading(true);
     try {
       await deleteEvent(evId, token);
-      navigate(eventsBase + tokenSearch);
+      navigate(toDashboard(guildId, tokenSearch));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '削除に失敗しました');
       setDeleteEventTarget(false);
@@ -79,7 +78,7 @@ export default function GameList() {
   };
 
   const breadcrumbs = [
-    { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
+    { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
     { label: event?.name ?? '...' },
   ];
 
@@ -101,7 +100,7 @@ export default function GameList() {
           <>
             <button
               className="btn-secondary btn-sm"
-              onClick={() => navigate(`${eventsBase}/${evId}/edit${tokenSearch}`)}
+              onClick={() => navigate(toEventEdit(guildId, evId, tokenSearch))}
             >
               編集
             </button>
@@ -122,14 +121,14 @@ export default function GameList() {
           <>
             <button
               className="btn-secondary"
-              onClick={() => navigate(`${eventsBase}/${evId}/results${tokenSearch}`)}
+              onClick={() => navigate(toEventResults(guildId, evId, tokenSearch))}
             >
               ユーザー結果一覧
             </button>
             <button
               className="btn-primary"
               style={{ marginLeft: 'auto' }}
-              onClick={() => navigate(`${eventsBase}/${evId}/games/new${tokenSearch}`)}
+              onClick={() => navigate(toNewGame(guildId, evId, tokenSearch))}
             >
               + 新規ゲーム作成
             </button>
@@ -184,7 +183,7 @@ export default function GameList() {
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                         <button
                           className="btn-outline btn-sm"
-                          onClick={() => navigate(`/games/${g.id}/status${tokenSearch}`)}
+                          onClick={() => navigate(toGame(guildId, evId, g.id, tokenSearch))}
                         >
                           詳細
                         </button>

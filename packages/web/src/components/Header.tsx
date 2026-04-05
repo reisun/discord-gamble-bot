@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getGuild } from '../api/client';
 import { LogoIcon } from './icons';
 import { useTokenSearch } from '../hooks/useTokenSearch';
+import { toDashboard, toHashPath } from '../routes';
 
 export default function Header() {
   const { isAdmin, isVerifying, guildId } = useAuth();
@@ -20,7 +21,7 @@ export default function Header() {
     ? `ギャンブルBOT管理ページ(${guildName})`
     : 'ギャンブルBOT管理ページ';
 
-  const homeHref = guildId ? `#/events/${guildId}${tokenSearch}` : '#/events';
+  const homeHref = toHashPath(toDashboard(guildId, tokenSearch));
 
   return (
     <header style={{
