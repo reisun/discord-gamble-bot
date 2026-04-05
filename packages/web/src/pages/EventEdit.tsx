@@ -4,19 +4,19 @@ import { getEvent, createEvent, updateEvent } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import { useTokenSearch } from '../hooks/useTokenSearch';
+import { toDashboard, toEvent, toHashPath } from '../routes';
 
 export default function EventEdit() {
-  // Route: /events/:guildId/new  or  /events/:guildId/:eventId/edit
+  // Route: /dashboard/:guildId/new-event  or  /dashboard/:guildId/:eventId/edit
   const { guildId, eventId } = useParams<{ guildId?: string; eventId?: string }>();
   const isNew = !eventId;
   const { token } = useAuth();
   const navigate = useNavigate();
   const tokenSearch = useTokenSearch();
 
-  const eventsBase = guildId ? `/events/${guildId}` : '/events';
   const cancelPath = isNew
-    ? `${eventsBase}${tokenSearch}`
-    : `${eventsBase}/${eventId}/games${tokenSearch}`;
+    ? toDashboard(guildId, tokenSearch)
+    : toEvent(guildId, eventId, tokenSearch);
 
   const [name, setName] = useState('');
   const [initialPoints, setInitialPoints] = useState(10000);
@@ -58,7 +58,7 @@ export default function EventEdit() {
       } else {
         await updateEvent(Number(eventId), { name: name.trim(), initialPoints }, token);
       }
-      navigate(eventsBase + tokenSearch);
+      navigate(toDashboard(guildId, tokenSearch));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存に失敗しました');
     } finally {
@@ -68,12 +68,12 @@ export default function EventEdit() {
 
   const breadcrumbItems = isNew
     ? [
-        { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
+        { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
         { label: '新規作成' },
       ]
     : [
-        { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
-        { label: name || '...', href: `#${eventsBase}/${eventId}/games${tokenSearch}` },
+        { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
+        { label: name || '...', href: toHashPath(toEvent(guildId, eventId, tokenSearch)) },
         { label: '編集' },
       ];
 

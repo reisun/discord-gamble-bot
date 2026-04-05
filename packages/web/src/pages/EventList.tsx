@@ -7,6 +7,7 @@ import Breadcrumb from '../components/Breadcrumb';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { CircleActive, CircleInactive, EyeIcon, EyeOffIcon } from '../components/icons';
 import { useTokenSearch } from '../hooks/useTokenSearch';
+import { toEvent, toNewEvent } from '../routes';
 
 export default function EventList() {
   const { guildId: paramGuildId } = useParams<{ guildId?: string }>();
@@ -16,7 +17,6 @@ export default function EventList() {
 
   // guildId は URL パラメータから取得
   const guildId = paramGuildId ?? null;
-  const eventsBase = guildId ? `/events/${guildId}` : '/events';
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +103,7 @@ export default function EventList() {
           <button
             className="btn-primary"
             style={{ marginLeft: 'auto' }}
-            onClick={() => navigate(`${eventsBase}/new${tokenSearch}`)}
+            onClick={() => navigate(toNewEvent(guildId, tokenSearch))}
           >
             + 新規イベント作成
           </button>
@@ -167,7 +167,7 @@ export default function EventList() {
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                         <button
                           className="btn-outline btn-sm"
-                          onClick={() => navigate(`${eventsBase}/${ev.id}/games${tokenSearch}`)}
+                          onClick={() => navigate(toEvent(guildId, ev.id, tokenSearch))}
                         >
                           詳細
                         </button>

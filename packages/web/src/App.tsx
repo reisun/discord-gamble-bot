@@ -14,7 +14,16 @@ export default function App() {
       <HashRouter>
         <Routes>
           <Route element={<Layout />}>
-            <Route index element={<Navigate to="/events" replace />} />
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<EventList />} />
+            <Route path="/dashboard/:guildId" element={<EventList />} />
+            <Route path="/dashboard/:guildId/new-event" element={<EventEdit />} />
+            <Route path="/dashboard/:guildId/:eventId/edit" element={<EventEdit />} />
+            <Route path="/dashboard/:guildId/:eventId" element={<GameList />} />
+            <Route path="/dashboard/:guildId/:eventId/new-game" element={<GameEdit />} />
+            <Route path="/dashboard/:guildId/:eventId/results" element={<UserResults />} />
+            <Route path="/dashboard/:guildId/:eventId/:gameId/edit" element={<GameEdit />} />
+            <Route path="/dashboard/:guildId/:eventId/:gameId" element={<GameStatus />} />
             <Route path="/events" element={<EventList />} />
             <Route path="/events/:guildId" element={<EventList />} />
             <Route path="/events/:guildId/new" element={<EventEdit />} />
@@ -24,7 +33,7 @@ export default function App() {
             <Route path="/games/:id/edit" element={<GameEdit />} />
             <Route path="/games/:id/status" element={<GameStatus />} />
             <Route path="/events/:guildId/:eventId/results" element={<UserResults />} />
-            <Route path="*" element={<Navigate to="/events" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>
       </HashRouter>
