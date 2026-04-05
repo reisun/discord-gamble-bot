@@ -7,10 +7,13 @@ docker/nginx/certs/*
 !docker/nginx/certs/README.md
 
 # Build outputs
+dist
 dist/
+build
 build/
 
 # Dependencies
+node_modules
 node_modules/
 
 # Logs
