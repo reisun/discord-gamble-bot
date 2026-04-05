@@ -113,7 +113,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   const amount = interaction.options.getInteger('amount', true);
   const borrow = interaction.options.getBoolean('borrow') ?? false;
   const discordId = interaction.user.id;
-  const discordName = interaction.user.globalName ?? interaction.user.username ?? discordId;
+  const discordName = interaction.user.username;
   const guildId = interaction.guild?.id;
 
   if (!guildId) {

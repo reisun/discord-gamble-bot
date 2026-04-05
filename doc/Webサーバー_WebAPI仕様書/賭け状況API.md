@@ -72,6 +72,7 @@ PUT /api/games/:gameId/bets
 ```json
 {
   "discordId": "123456789012345678",
+  "discordName": "username",
   "selectedSymbols": "BDE",
   "amount": 50,
   "allowDebt": false
@@ -81,6 +82,7 @@ PUT /api/games/:gameId/bets
 | フィールド | 型 | 必須 | バリデーション |
 |-----------|-----|------|--------------|
 | discordId | string | ○ | Discord ユーザーID |
+| discordName | string | - | Discord ユーザー名。指定時はユーザーレコードの `discord_name` を最新値に更新する。省略時は既存名を保持（新規作成時は `discordId` をフォールバックとして使用） |
 | selectedSymbols | string | ○ | 選択する記号の結合文字列。`betType` に応じたバリデーションを適用 |
 | amount | number | ○ | 1以上の整数 |
 | allowDebt | boolean | - | 借金を許可するか（省略時: `false`） |

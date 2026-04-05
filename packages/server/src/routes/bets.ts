@@ -234,7 +234,8 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
         }
       }
 
-      // Ensure user exists (upsert by discordId)
+      // Ensure user exists (upsert by discordId); update name if provided
+      const resolvedName = discordName ?? discordId;
       let userRows = await client.query<UserRow>(
         'SELECT id, discord_id, discord_name FROM users WHERE discord_id = $1',
         [discordId],
@@ -244,12 +245,12 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
       if (userRows.rows.length === 0) {
         userRows = await client.query<UserRow>(
           'INSERT INTO users (discord_id, discord_name) VALUES ($1, $2) RETURNING id, discord_id, discord_name',
-          [discordId, normalizedDiscordName],
+          [discordId, resolvedName],
         );
-      } else if (discordName && userRows.rows[0].discord_name !== normalizedDiscordName) {
+      } else if (discordName && userRows.rows[0].discord_name !== discordName) {
         userRows = await client.query<UserRow>(
-          'UPDATE users SET discord_name = $1 WHERE discord_id = $2 RETURNING id, discord_id, discord_name',
-          [normalizedDiscordName, discordId],
+          'UPDATE users SET discord_name = $1, updated_at = NOW() WHERE discord_id = $2 RETURNING id, discord_id, discord_name',
+          [discordName, discordId],
         );
       }
       const user = userRows.rows[0];
