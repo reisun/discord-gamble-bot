@@ -16,7 +16,7 @@ export type Command = {
   autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
 };
 
-export const commands: Map<string, Command> = new Map([
+export const commands: Map<string, Command> = new Map<string, Command>([
   ['bet', bet],
   ['mybets', mybets],
   ['admin-link', adminLink],
