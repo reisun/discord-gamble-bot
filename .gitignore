@@ -2,7 +2,9 @@
 .env
 
 # TLS certificates
-docker/nginx/certs/
+docker/nginx/certs/*
+!docker/nginx/certs/.gitkeep
+!docker/nginx/certs/README.md
 
 # Build outputs
 dist/

@@ -122,6 +122,7 @@ cp key.pem docker/nginx/certs/key.pem
 ```
 
 > `docker/nginx/certs/` は `.gitignore` に含まれているためコミットされない。
+> `fullchain.pem` または `key.pem` が無い状態で `nginx` を起動すると、コンテナは明示エラーで停止する。
 
 #### 2. `.env` の設定
 

@@ -65,11 +65,13 @@ services:
   nginx:
     image: nginx:1.25-alpine
     restart: unless-stopped
+    command: ["/bin/sh", "/etc/nginx/check-and-run.sh"]
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/check-and-run.sh:/etc/nginx/check-and-run.sh:ro
       - ./docker/nginx/certs:/etc/nginx/certs:ro
     depends_on:
       - server
