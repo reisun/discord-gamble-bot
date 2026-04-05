@@ -193,22 +193,21 @@ export default function GameEdit() {
   return (
     <>
       <Breadcrumb items={breadcrumbs} />
-      <h1 className="page-title">{isNew ? '新規ゲーム作成' : 'ゲーム編集'}</h1>
-
-      {isPublished && (
-        <div style={{
-          background: '#fff3cd',
-          color: '#856404',
-          padding: '10px 16px',
-          borderRadius: '6px',
-          marginBottom: '16px',
-          fontSize: '13px',
-        }}>
-          このゲームは公開済みです。一部フィールドは編集できません。
-        </div>
-      )}
 
       <div className="card" style={{ maxWidth: '640px', margin: '0 auto' }}>
+        <h1 className="page-title">{isNew ? '新規ゲーム作成' : 'ゲーム編集'}</h1>
+        {isPublished && (
+          <div style={{
+            background: '#fff3cd',
+            color: '#856404',
+            padding: '10px 16px',
+            borderRadius: '6px',
+            marginBottom: '16px',
+            fontSize: '13px',
+          }}>
+            このゲームは公開済みです。一部フィールドは編集できません。
+          </div>
+        )}
         {error && <div className="error-message" ref={errorRef}>{error}</div>}
         <form onSubmit={handleSubmit}>
 
