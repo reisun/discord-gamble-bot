@@ -112,7 +112,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       selectedLabels: symbolsToLabels(selectedSymbols, optMap),
       totalPoints: adminMode || isFinished ? stats.totalPoints : undefined,
       betCount: adminMode || isFinished ? stats.betCount : undefined,
-      odds: adminMode || isFinished ? stats.odds : null,
+      odds: stats.odds,
     }));
 
     // pointChange per bet (only for finished)

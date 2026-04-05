@@ -67,6 +67,10 @@ interface CombinationCardProps {
   revealStats: boolean;
 }
 
+function formatOdds(odds: number | null): string {
+  return odds == null ? '--' : odds.toFixed(2);
+}
+
 function CombinationCard({ combo, betType, isWinner, revealStats }: CombinationCardProps) {
   return (
     <div style={{
@@ -85,11 +89,11 @@ function CombinationCard({ combo, betType, isWinner, revealStats }: CombinationC
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
         <>
           <span style={{ color: 'var(--color-primary-text)', fontSize: '18px', fontWeight: 600 }}>
-            ×{combo.odds.toFixed(2)}倍
+            ×{formatOdds(combo.odds)}倍
           </span>
           {revealStats && (
             <span style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>
-              ({combo.totalPoints.toLocaleString()}pt / {combo.betCount}人)
+              ({(combo.totalPoints ?? 0).toLocaleString()}pt / {combo.betCount ?? 0}人)
             </span>
           )}
         </>

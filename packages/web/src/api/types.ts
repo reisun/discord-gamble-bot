@@ -52,9 +52,9 @@ export interface Game {
 export interface BetCombination {
   selectedSymbols: string;
   selectedLabels: string[];
-  totalPoints: number;
-  betCount: number;
-  odds: number;
+  totalPoints?: number;
+  betCount?: number;
+  odds: number | null;
 }
 
 // 個別の賭け

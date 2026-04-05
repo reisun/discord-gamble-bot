@@ -170,7 +170,7 @@ describe('GET /api/games/:gameId/bets', () => {
     expect(combA.betCount).toBe(1);
   });
 
-  it('一般ユーザーは結果確定前に倍率を見られない', async () => {
+  it('一般ユーザーも結果確定前に倍率を見られるが、人数と賭け総数は見られない', async () => {
     const { game } = await setupEventAndGame();
     await request(app)
       .put(`/api/games/${game.id}/bets`)
@@ -180,8 +180,9 @@ describe('GET /api/games/:gameId/bets', () => {
 
     expect(res.status).toBe(200);
     const combinations = res.body.data.combinations;
-    expect(combinations[0].odds).toBeNull();
+    expect(combinations[0].odds).toBe(1);
     expect(combinations[0].betCount).toBeUndefined();
+    expect(combinations[0].totalPoints).toBeUndefined();
   });
 
   it('結果確定後はパリミュチュエルに基づき当選者にポイントが付与される', async () => {
