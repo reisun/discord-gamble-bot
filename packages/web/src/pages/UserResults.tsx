@@ -149,7 +149,7 @@ export default function UserResults() {
                 <th>ユーザー名</th>
                 <th>ポイント増減</th>
                 <th>勝/敗</th>
-                {isAdmin && <th>借金総額</th>}
+                <th>借金総額</th>
                 <th>総資産増減</th>
               </tr>
             </thead>
@@ -162,13 +162,11 @@ export default function UserResults() {
                     <td>{u.discordName}</td>
                     <td>{r ? <PointChange value={r.totalPointChange} /> : '-'}</td>
                     <td>{r ? `${r.wins}勝${r.losses}敗` : '-'}</td>
-                    {isAdmin && (
-                      <td>
-                        {r ? (r.totalDebt > 0 ? (
-                          <span className="text-danger">{r.totalDebt.toLocaleString()} pt</span>
-                        ) : '0 pt') : '-'}
-                      </td>
-                    )}
+                    <td>
+                      {r ? (r.totalDebt > 0 ? (
+                        <span className="text-danger">{r.totalDebt.toLocaleString()} pt</span>
+                      ) : '0 pt') : '-'}
+                    </td>
                     <td>{r ? <PointChange value={r.totalAssetsChange} /> : '-'}</td>
                   </tr>
                 );

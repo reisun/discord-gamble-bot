@@ -53,4 +53,17 @@ describe('UserResults', () => {
     renderPage();
     await waitFor(() => expect(screen.getAllByText('User A').length).toBeGreaterThan(0));
   });
+
+  it('一般ユーザーにも借金総額列が表示される', async () => {
+    renderPage(false);
+
+    await waitFor(() => expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeInTheDocument());
+    expect(screen.getByText('0 pt')).toBeInTheDocument();
+  });
+
+  it('管理者には公開切替チェックボックスが表示される', async () => {
+    renderPage(true);
+
+    await waitFor(() => expect(screen.getByLabelText('一般ユーザーに公開する')).toBeInTheDocument());
+  });
 });
