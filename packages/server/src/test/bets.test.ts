@@ -49,7 +49,7 @@ describe('PUT /api/games/:gameId/bets', () => {
 
     const res = await request(app)
       .put(`/api/games/${game.id}/bets`)
-      .send({ discordId: 'user001', selectedSymbols: 'A', amount: 500 });
+      .send({ discordId: 'user001', discordName: 'User One', selectedSymbols: 'A', amount: 500 });
 
     expect(res.status).toBe(200);
     expect(res.body.data.selectedSymbols).toBe('A');
@@ -57,6 +57,25 @@ describe('PUT /api/games/:gameId/bets', () => {
     expect(res.body.data.isDebt).toBe(false);
     expect(res.body.data.isUpdated).toBe(false);
     expect(res.body.data.selectedLabels).toEqual(['チームA']);
+  });
+
+  it('discordName を受け取った場合は users.discord_name を更新する', async () => {
+    const { game } = await setupEventAndGame();
+
+    await request(app)
+      .put(`/api/games/${game.id}/bets`)
+      .send({ discordId: 'user001', discordName: 'Old Name', selectedSymbols: 'A', amount: 300 });
+
+    await request(app)
+      .put(`/api/games/${game.id}/bets`)
+      .send({ discordId: 'user001', discordName: 'New Name', selectedSymbols: 'B', amount: 200 });
+
+    const res = await request(app)
+      .get(`/api/games/${game.id}/bets`)
+      .set(adminHeaders);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.bets[0].userName).toBe('New Name');
   });
 
   it('同じゲームに再度賭けると上書き（isUpdated: true）', async () => {

@@ -149,4 +149,11 @@ describe('GameStatus', () => {
     await user.click(screen.getByRole('button', { name: '確定' }));
     await waitFor(() => expect(api.setGameResult).toHaveBeenCalledWith(mockGameSingle.id, 'A', 'tok'));
   });
+
+  it('管理者の個別賭け一覧にユーザー名が表示される', async () => {
+    renderPage(true);
+
+    await waitFor(() => expect(screen.getByText('個別賭け一覧')).toBeInTheDocument());
+    expect(screen.getByText('User A')).toBeInTheDocument();
+  });
 });

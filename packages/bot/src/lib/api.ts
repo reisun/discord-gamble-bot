@@ -136,6 +136,7 @@ export async function getBetList(gameId: number): Promise<BetListResponse> {
 export async function placeBet(
   gameId: number,
   discordId: string,
+  discordName: string,
   selectedSymbols: string,
   amount: number,
   allowDebt: boolean,
@@ -152,6 +153,7 @@ export async function placeBet(
 }> {
   const res = await api.put(`/api/games/${gameId}/bets`, {
     discordId,
+    discordName,
     selectedSymbols,
     amount,
     allowDebt,
