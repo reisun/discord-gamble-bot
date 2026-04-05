@@ -234,8 +234,14 @@ tr:last-child td {
 }
 
 .badge-inactive {
-  background: transparent;
-  color: var(--color-text-muted);
+  background: var(--color-surface-subtle, #f3f4f6);
+  color: var(--color-text-disabled);
+}
+
+.event-status-badge {
+  justify-content: center;
+  min-width: 92px;
+  white-space: nowrap;
 }
 
 .badge-bet-type {
