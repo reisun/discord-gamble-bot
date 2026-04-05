@@ -67,10 +67,16 @@ describe('GameStatus', () => {
     await waitFor(() => expect(screen.getByText(/複数-順番一致/)).toBeInTheDocument());
   });
 
+  it('賭け項目リストがゲーム情報エリアに表示される', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText(/A: チームA/)).toHaveLength(2)); // 賭け項目 + 組み合わせ
+    expect(screen.getAllByText(/B: チームB/)).toHaveLength(2);
+  });
+
   it('組み合わせ一覧が表示される', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByText(/A: チームA/)).toBeInTheDocument());
-    expect(screen.getByText(/B: チームB/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText(/A: チームA/)[0]).toBeInTheDocument());
+    expect(screen.getAllByText(/B: チームB/)[0]).toBeInTheDocument();
   });
 
   it('非管理者・受付中: 倍率が数値で表示される', async () => {
