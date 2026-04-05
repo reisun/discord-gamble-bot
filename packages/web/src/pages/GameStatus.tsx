@@ -284,7 +284,7 @@ export default function GameStatus() {
       {/* 賭け組み合わせ・倍率カード */}
       <div className="card" style={{ marginBottom: '16px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-text)', marginBottom: '16px' }}>
-          賭け組み合わせ・倍率（パリミュチュエル方式）
+          賭け組み合わせ・倍率
         </h2>
         {bets.combinations.length === 0 ? (
           <p style={{ color: 'var(--color-text-muted)' }}>まだ賭けがありません。</p>
