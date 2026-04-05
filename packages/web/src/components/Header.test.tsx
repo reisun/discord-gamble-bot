@@ -31,6 +31,7 @@ describe('Header', () => {
   it('ロゴ・タイトルが表示される', () => {
     renderHeader();
     expect(screen.getByText('ギャンブルBOT管理ページ')).toBeInTheDocument();
+    expect(screen.getByRole('link').querySelector('svg')).toBeInTheDocument();
   });
 
   it('管理者バッジが表示される', () => {
