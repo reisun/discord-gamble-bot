@@ -30,7 +30,7 @@ describe('Header', () => {
 
   it('ロゴ・タイトルが表示される', () => {
     renderHeader();
-    expect(screen.getByText('ギャンブルBOT管理ページ')).toBeInTheDocument();
+    expect(screen.getByText('賭けダッシュボード')).toBeInTheDocument();
     expect(screen.getByRole('link').querySelector('svg')).toBeInTheDocument();
   });
 
@@ -64,6 +64,6 @@ describe('Header', () => {
 
   it('guildId ありでサーバー名が取得できた場合タイトルに反映される', async () => {
     renderHeader({ guildId: 'guild-123' });
-    await waitFor(() => expect(screen.getByText('ギャンブルBOT管理ページ(テストサーバー)')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('賭けダッシュボード(テストサーバー)')).toBeInTheDocument());
   });
 });

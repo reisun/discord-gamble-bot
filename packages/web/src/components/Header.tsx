@@ -18,8 +18,8 @@ export default function Header() {
   }, [guildId]);
 
   const titleText = guildName
-    ? `ギャンブルBOT管理ページ(${guildName})`
-    : 'ギャンブルBOT管理ページ';
+    ? `賭けダッシュボード(${guildName})`
+    : '賭けダッシュボード';
 
   const homeHref = toHashPath(toDashboard(guildId, tokenSearch));
 
