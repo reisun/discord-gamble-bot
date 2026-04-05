@@ -87,6 +87,7 @@ describe('/post-game execute', () => {
     expect(embed.description).toBe('説明文です');
 
     const fieldValues = embed.fields?.map((f) => f.value) ?? [];
+    expect(fieldValues).toContain('2024-06-01 21:00');
     expect(fieldValues.some((v) => v.includes('チームA'))).toBe(true);
     expect(fieldValues.some((v) => v.includes('チームB'))).toBe(true);
     expect(fieldValues.some((v) => v.includes('/bet game:3'))).toBe(true);

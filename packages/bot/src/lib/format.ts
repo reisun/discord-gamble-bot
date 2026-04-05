@@ -54,11 +54,21 @@ export function buildOptMap(game: Game): Map<string, string> {
 /** datetime 文字列を「YYYY-MM-DD HH:mm」形式にフォーマット */
 export function fmtDeadline(deadline: string): string {
   const d = new Date(deadline);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
+  const parts = new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(d);
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const yyyy = map.year;
+  const mm = map.month;
+  const dd = map.day;
+  const hh = map.hour;
+  const min = map.minute;
   return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
 }
 
