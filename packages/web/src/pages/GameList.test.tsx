@@ -117,4 +117,20 @@ describe('GameList', () => {
     renderPage(true);
     await waitFor(() => expect(screen.getByText('+ 新規ゲーム作成')).toBeInTheDocument());
   });
+
+  it('一般ユーザーでも結果公開中のイベントでは「ユーザー結果一覧」ボタンが表示される', async () => {
+    vi.mocked(api.getEvent).mockResolvedValue({ ...mockEvent, resultsPublic: true });
+
+    renderPage(false);
+
+    await waitFor(() => expect(screen.getByText('ユーザー結果一覧')).toBeInTheDocument());
+    expect(screen.queryByText('+ 新規ゲーム作成')).not.toBeInTheDocument();
+  });
+
+  it('一般ユーザーで結果未公開のイベントでは「ユーザー結果一覧」ボタンは表示されない', async () => {
+    renderPage(false);
+
+    await waitFor(() => expect(screen.getByText('第1試合')).toBeInTheDocument());
+    expect(screen.queryByText('ユーザー結果一覧')).not.toBeInTheDocument();
+  });
 });

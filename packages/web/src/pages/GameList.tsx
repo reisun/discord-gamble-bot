@@ -117,22 +117,22 @@ export default function GameList() {
 
       {/* アクションバー */}
       <div className="action-bar" style={{ marginBottom: '16px' }}>
+        {(isAdmin || event?.resultsPublic) && (
+          <button
+            className="btn-secondary"
+            onClick={() => navigate(toEventResults(guildId, evId, tokenSearch))}
+          >
+            ユーザー結果一覧
+          </button>
+        )}
         {isAdmin && (
-          <>
-            <button
-              className="btn-secondary"
-              onClick={() => navigate(toEventResults(guildId, evId, tokenSearch))}
-            >
-              ユーザー結果一覧
-            </button>
-            <button
-              className="btn-primary"
-              style={{ marginLeft: 'auto' }}
-              onClick={() => navigate(toNewGame(guildId, evId, tokenSearch))}
-            >
-              + 新規ゲーム作成
-            </button>
-          </>
+          <button
+            className="btn-primary"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => navigate(toNewGame(guildId, evId, tokenSearch))}
+          >
+            + 新規ゲーム作成
+          </button>
         )}
       </div>
 
