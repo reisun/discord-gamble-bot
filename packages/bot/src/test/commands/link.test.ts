@@ -34,7 +34,7 @@ describe('/link execute', () => {
       expect.objectContaining({
         ephemeral: true,
         content: expect.stringContaining(
-          `https://example.github.io/app/#/events/${TEST_GUILD_ID}`,
+          `https://example.github.io/app/#/dashboard/${TEST_GUILD_ID}`,
         ),
       }),
     );
@@ -46,7 +46,7 @@ describe('/link execute', () => {
 
   it('webAppBaseUrl 末尾スラッシュがあっても正しい URL を生成する', async () => {
     // vi.mock は巻き上げられるため動的に書き換え
-    const { config } = await import('../../config');
+    const { config } = await import('../../config.js');
     const originalUrl = config.webAppBaseUrl;
     (config as { webAppBaseUrl: string }).webAppBaseUrl = 'https://example.github.io/app/';
 
@@ -54,7 +54,7 @@ describe('/link execute', () => {
     await execute(interaction);
 
     const call = vi.mocked(interaction.reply).mock.calls[0][0] as { content: string };
-    expect(call.content).toContain(`https://example.github.io/app/#/events/${TEST_GUILD_ID}`);
+    expect(call.content).toContain(`https://example.github.io/app/#/dashboard/${TEST_GUILD_ID}`);
     expect(call.content).not.toContain('//#/');
 
     (config as { webAppBaseUrl: string }).webAppBaseUrl = originalUrl;
@@ -73,7 +73,7 @@ describe('/link execute', () => {
   });
 
   it('webAppBaseUrl 未設定: エラーメッセージ（Ephemeral）', async () => {
-    const { config } = await import('../../config');
+    const { config } = await import('../../config.js');
     const originalUrl = config.webAppBaseUrl;
     (config as { webAppBaseUrl: string }).webAppBaseUrl = '';
 

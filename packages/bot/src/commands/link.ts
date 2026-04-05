@@ -24,7 +24,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   }
 
   // 一般ユーザー向けURL（トークンなし）
-  const url = `${config.webAppBaseUrl.replace(/\/$/, '')}/#/events/${guildId}`;
+  const url = `${config.webAppBaseUrl.replace(/\/$/, '')}/#/dashboard/${guildId}`;
 
   await interaction.reply({
     content: `🌐 WebアプリのURLです。\n\n${url}`,
