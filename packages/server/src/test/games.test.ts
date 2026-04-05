@@ -310,6 +310,104 @@ describe('DELETE /api/games/:id', () => {
     const getRes = await request(app).get(`/api/games/${game.id}`);
     expect(getRes.status).toBe(404);
   });
+
+  it('削除時にポイント履歴と借金履歴へ打ち消し差分を登録する', async () => {
+    const event = await createEvent();
+    const game = await createGame(event.id);
+
+    await request(app)
+      .patch(`/api/games/${game.id}/publish`)
+      .set(adminHeaders)
+      .send({ isPublished: true });
+
+    await request(app)
+      .put(`/api/games/${game.id}/bets`)
+      .send({ discordId: 'user-point', selectedSymbols: 'A', amount: 300 });
+    await request(app)
+      .put(`/api/games/${game.id}/bets`)
+      .send({ discordId: 'user-point', selectedSymbols: 'B', amount: 200 });
+    await request(app)
+      .put(`/api/games/${game.id}/bets`)
+      .send({ discordId: 'user-debt', selectedSymbols: 'A', amount: 400, allowDebt: true });
+
+    await pool.query('UPDATE games SET deadline = $1 WHERE id = $2', [pastDeadline, game.id]);
+    await request(app)
+      .patch(`/api/games/${game.id}/result`)
+      .set(adminHeaders)
+      .send({ resultSymbols: 'B' });
+
+    const deleteRes = await request(app)
+      .delete(`/api/games/${game.id}`)
+      .set(adminHeaders);
+    expect(deleteRes.status).toBe(204);
+
+    const pointHistory = await pool.query<{
+      user_id: number;
+      change_amount: number;
+      reason: string;
+      game_id: number | null;
+    }>(
+      `SELECT user_id, change_amount, reason, game_id
+       FROM point_history
+       WHERE event_id = $1
+       ORDER BY id`,
+      [event.id],
+    );
+    const debtHistory = await pool.query<{
+      user_id: number;
+      change_amount: number;
+      reason: string;
+      game_id: number | null;
+    }>(
+      `SELECT user_id, change_amount, reason, game_id
+       FROM debt_history
+       WHERE event_id = $1
+       ORDER BY id`,
+      [event.id],
+    );
+
+    expect(pointHistory.rows.map((row) => row.reason)).toEqual([
+      'bet_placed',
+      'bet_refunded',
+      'bet_placed',
+      'game_result',
+      'game_deleted',
+    ]);
+    expect(pointHistory.rows.map((row) => row.change_amount)).toEqual([
+      -300,
+      300,
+      -200,
+      600,
+      -400,
+    ]);
+    expect(pointHistory.rows.every((row) => row.game_id === null)).toBe(true);
+
+    expect(debtHistory.rows.map((row) => row.reason)).toEqual([
+      'bet_placed',
+      'game_deleted',
+    ]);
+    expect(debtHistory.rows.map((row) => row.change_amount)).toEqual([
+      400,
+      -400,
+    ]);
+    expect(debtHistory.rows.every((row) => row.game_id === null)).toBe(true);
+
+    const pointSum = await pool.query<{ total: number }>(
+      `SELECT COALESCE(SUM(change_amount), 0)::integer AS total
+       FROM point_history
+       WHERE event_id = $1 AND user_id = (SELECT id FROM users WHERE discord_id = 'user-point')`,
+      [event.id],
+    );
+    const debtSum = await pool.query<{ total: number }>(
+      `SELECT COALESCE(SUM(change_amount), 0)::integer AS total
+       FROM debt_history
+       WHERE event_id = $1 AND user_id = (SELECT id FROM users WHERE discord_id = 'user-debt')`,
+      [event.id],
+    );
+
+    expect(pointSum.rows[0].total).toBe(0);
+    expect(debtSum.rows[0].total).toBe(0);
+  });
 });
 
 describe('PATCH /api/games/:id/publish', () => {

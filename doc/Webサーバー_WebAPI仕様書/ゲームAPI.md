@@ -119,6 +119,16 @@ DELETE /api/games/:id
 ```
 **権限**: 管理者のみ
 
+処理内容:
+1. `point_history` を `game_id = ?` 単位で `user_id, event_id` ごとに集計
+2. 集計結果の逆符号を `point_history` に INSERT（`reason = 'game_deleted'`）
+3. `debt_history` も同様に逆符号を `debt_history` に INSERT（`reason = 'game_deleted'`）
+4. ゲーム本体を削除
+
+**備考**:
+- 賭け変更や結果確定を含む、そのゲーム起因の履歴を合算して打ち消す
+- 削除後、既存の履歴と打ち消し履歴の `game_id` は FK 制約により `NULL` になる
+
 **レスポンス**: `204 No Content`
 
 ---

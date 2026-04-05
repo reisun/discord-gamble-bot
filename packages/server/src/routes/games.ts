@@ -428,11 +428,60 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
 // DELETE /api/games/:id
 router.delete('/:id', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await query<{ id: number }>(
-      'DELETE FROM games WHERE id = $1 RETURNING id',
-      [req.params.id],
-    );
-    if (result.length === 0) {
+    const result = await withTransaction(async (client) => {
+      const found = await fetchGameWithOptions(client, req.params.id);
+      if (!found) throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
+
+      const pointAdjustments = await client.query<{
+        user_id: number;
+        event_id: number;
+        change_amount: number;
+      }>(
+        `SELECT user_id, event_id, SUM(change_amount)::integer AS change_amount
+         FROM point_history
+         WHERE game_id = $1
+         GROUP BY user_id, event_id
+         HAVING SUM(change_amount) <> 0`,
+        [req.params.id],
+      );
+
+      for (const row of pointAdjustments.rows) {
+        await client.query(
+          `INSERT INTO point_history (user_id, event_id, game_id, change_amount, reason)
+           VALUES ($1, $2, $3, $4, 'game_deleted')`,
+          [row.user_id, row.event_id, req.params.id, -row.change_amount],
+        );
+      }
+
+      const debtAdjustments = await client.query<{
+        user_id: number;
+        event_id: number;
+        change_amount: number;
+      }>(
+        `SELECT user_id, event_id, SUM(change_amount)::integer AS change_amount
+         FROM debt_history
+         WHERE game_id = $1
+         GROUP BY user_id, event_id
+         HAVING SUM(change_amount) <> 0`,
+        [req.params.id],
+      );
+
+      for (const row of debtAdjustments.rows) {
+        await client.query(
+          `INSERT INTO debt_history (user_id, event_id, game_id, change_amount, reason)
+           VALUES ($1, $2, $3, $4, 'game_deleted')`,
+          [row.user_id, row.event_id, req.params.id, -row.change_amount],
+        );
+      }
+
+      const deleted = await client.query<{ id: number }>(
+        'DELETE FROM games WHERE id = $1 RETURNING id',
+        [req.params.id],
+      );
+      return deleted.rows[0];
+    });
+
+    if (!result) {
       throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
     }
     res.status(204).send();
