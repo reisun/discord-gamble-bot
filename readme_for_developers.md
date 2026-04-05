@@ -33,6 +33,20 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+再デプロイ時の判断基準:
+
+- コードを変えた: `--build`
+- 設定だけ変えたかも: `--force-recreate`
+- 迷ったら開発中は `--build`
+- 確実性重視なら `--build --force-recreate`
+
+補足:
+
+- `--build` は Docker イメージを再ビルドする。ソースコード変更、`package.json` 変更、Dockerfile変更を反映したい時に使う
+- `--force-recreate` は既存イメージを使ってコンテナを作り直す。イメージ自体は作り直さない
+- Bot や Server のコード変更を反映したい場合は `docker compose up -d --build <service>` を使う
+- 例: Bot だけ更新したい場合は `docker compose up -d --build bot`
+
 起動するサービス：
 
 | サービス | 用途 | ホスト側ポート |
