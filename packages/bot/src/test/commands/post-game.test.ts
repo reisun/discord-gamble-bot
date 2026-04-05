@@ -9,7 +9,7 @@ vi.mock('../../config', () => ({
 }));
 
 vi.mock('../../lib/api', () => ({
-  getGame: vi.fn(),
+  getGameByNo: vi.fn(),
   extractApiMessage: vi.fn(() => 'APIエラー'),
 }));
 
@@ -42,15 +42,16 @@ function makeGame(overrides: Partial<Game> = {}): Game {
   };
 }
 
-function makeInteraction(isAdmin: boolean, gameId: number): ChatInputCommandInteraction {
+function makeInteraction(isAdmin: boolean, gameNo: number): ChatInputCommandInteraction {
   const member = makeMember(isAdmin);
   return {
     user: { id: 'user-001' },
     guild: {
+      id: 'test-guild-001',
       members: { fetch: vi.fn().mockResolvedValue(member) },
     } as unknown as Guild,
     options: {
-      getInteger: (name: string) => (name === 'game' ? gameId : null),
+      getInteger: (name: string) => (name === 'game' ? gameNo : null),
     },
     reply: vi.fn().mockResolvedValue(undefined),
     deferReply: vi.fn().mockResolvedValue(undefined),
@@ -64,7 +65,7 @@ describe('/post-game execute', () => {
   });
 
   it('管理者: single 方式のゲーム情報を全員向けに投稿する', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame());
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
     const interaction = makeInteraction(true, 3);
     await execute(interaction);
 
@@ -81,7 +82,7 @@ describe('/post-game execute', () => {
   });
 
   it('管理者: multi_ordered 方式は方式ラベルと記号数ヒントを含む', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(
+    vi.mocked(api.getGameByNo).mockResolvedValue(
       makeGame({
         betType: 'multi_ordered',
         requiredSelections: 2,
@@ -108,11 +109,11 @@ describe('/post-game execute', () => {
       expect.objectContaining({ ephemeral: true, content: expect.stringContaining('管理者のみ') }),
     );
     expect(interaction.deferReply).not.toHaveBeenCalled();
-    expect(api.getGame).not.toHaveBeenCalled();
+    expect(api.getGameByNo).not.toHaveBeenCalled();
   });
 
   it('ゲームが見つからない: エラーメッセージ', async () => {
-    vi.mocked(api.getGame).mockRejectedValue(new Error('not found'));
+    vi.mocked(api.getGameByNo).mockRejectedValue(new Error('not found'));
     const interaction = makeInteraction(true, 999);
     await execute(interaction);
 
@@ -122,7 +123,7 @@ describe('/post-game execute', () => {
   });
 
   it('非公開ゲームは投稿できない: エラーメッセージ', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame({ isPublished: false }));
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame({ isPublished: false }));
     const interaction = makeInteraction(true, 3);
     await execute(interaction);
 
@@ -132,7 +133,7 @@ describe('/post-game execute', () => {
   });
 
   it('description が null の場合は説明行を省略する', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(makeGame({ description: null }));
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame({ description: null }));
     const interaction = makeInteraction(true, 3);
     await execute(interaction);
 
