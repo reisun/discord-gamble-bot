@@ -62,8 +62,4 @@ describe('Header', () => {
     expect(link).toHaveAttribute('href', toHashPath(toDashboard('guild-123')));
   });
 
-  it('guildId ありでサーバー名が取得できた場合タイトルに反映される', async () => {
-    renderHeader({ guildId: 'guild-123' });
-    await waitFor(() => expect(screen.getByText('賭けダッシュボード(テストサーバー)')).toBeInTheDocument());
-  });
 });

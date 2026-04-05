@@ -17,9 +17,7 @@ export default function Header() {
       .catch(() => setGuildName(null));
   }, [guildId]);
 
-  const titleText = guildName
-    ? `賭けダッシュボード(${guildName})`
-    : '賭けダッシュボード';
+  const titleText = '賭けダッシュボード';
 
   const homeHref = toHashPath(toDashboard(guildId, tokenSearch));
 
