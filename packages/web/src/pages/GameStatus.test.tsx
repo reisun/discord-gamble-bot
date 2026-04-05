@@ -73,10 +73,16 @@ describe('GameStatus', () => {
     expect(screen.getByText(/B: チームB/)).toBeInTheDocument();
   });
 
-  it('非管理者・受付中: 倍率が「×--倍」で表示される', async () => {
+  it('非管理者・受付中: 倍率が数値で表示される', async () => {
     renderPage(false);
-    await waitFor(() => expect(screen.getAllByText('×--倍')).toHaveLength(2));
-    expect(screen.queryByText('×1.67倍')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('×1.67倍')).toBeInTheDocument());
+    expect(screen.getByText('×2.50倍')).toBeInTheDocument();
+  });
+
+  it('非管理者・受付中: 賭け総数と参加人数は表示されない', async () => {
+    renderPage(false);
+    await waitFor(() => expect(screen.getByText('×1.67倍')).toBeInTheDocument());
+    expect(screen.queryByText('(800pt / 2人)')).not.toBeInTheDocument();
   });
 
   it('管理者: 倍率が数値で表示される', async () => {

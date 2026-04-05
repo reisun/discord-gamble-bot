@@ -64,10 +64,10 @@ interface CombinationCardProps {
   combo: BetCombination;
   betType: BetType;
   isWinner: boolean;
-  reveal: boolean;
+  revealStats: boolean;
 }
 
-function CombinationCard({ combo, betType, isWinner, reveal }: CombinationCardProps) {
+function CombinationCard({ combo, betType, isWinner, revealStats }: CombinationCardProps) {
   return (
     <div style={{
       background: isWinner ? 'var(--color-success-bg)' : 'var(--color-surface-dark)',
@@ -83,20 +83,16 @@ function CombinationCard({ combo, betType, isWinner, reveal }: CombinationCardPr
         {combinationLabel(combo.selectedSymbols, combo.selectedLabels, betType)}
       </span>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
-        {reveal ? (
-          <>
-            <span style={{ color: 'var(--color-primary-text)', fontSize: '18px', fontWeight: 600 }}>
-              ×{combo.odds.toFixed(2)}倍
-            </span>
+        <>
+          <span style={{ color: 'var(--color-primary-text)', fontSize: '18px', fontWeight: 600 }}>
+            ×{combo.odds.toFixed(2)}倍
+          </span>
+          {revealStats && (
             <span style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>
               ({combo.totalPoints.toLocaleString()}pt / {combo.betCount}人)
             </span>
-          </>
-        ) : (
-          <span style={{ color: 'var(--color-text-muted)', fontSize: '18px', fontWeight: 600 }}>
-            ×--倍
-          </span>
-        )}
+          )}
+        </>
         {isWinner && <CheckCircleIcon />}
       </div>
     </div>
@@ -197,7 +193,7 @@ export default function GameStatus() {
     }
   };
 
-  const revealDetails = isAdmin || game?.status === 'finished';
+  const revealStats = isAdmin || game?.status === 'finished';
 
   if (loading) return <div className="loading">読み込み中...</div>;
   if (!game || !bets) return <div className="error-message">{error ?? 'データが取得できませんでした'}</div>;
@@ -278,12 +274,12 @@ export default function GameStatus() {
                 combo={c}
                 betType={game.betType}
                 isWinner={game.resultSymbols === c.selectedSymbols}
-                reveal={revealDetails}
+                revealStats={revealStats}
               />
             ))}
-            {!revealDetails && (
+            {!revealStats && (
               <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                ※ 倍率・賭け総数・参加人数は結果確定後に公開されます
+                ※ 賭け総数・参加人数は結果確定後に公開されます
               </p>
             )}
           </div>
