@@ -86,7 +86,7 @@ describe('/bet execute', () => {
     expect(interaction.editReply).toHaveBeenCalledWith(
       expect.stringContaining('✅ 賭けを受け付けました'),
     );
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'A', 500, false);
+    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, DISCORD_ID, 'A', 500, false);
   });
 
   it('multi_unordered: option を昇順ソートして API に送信する', async () => {
@@ -109,7 +109,7 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     // ソートされた 'ABC' が API に渡されているか
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'ABC', 100, false);
+    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, DISCORD_ID, 'ABC', 100, false);
     expect(interaction.editReply).toHaveBeenCalledWith(
       expect.stringContaining('✅ 賭けを受け付けました'),
     );
@@ -154,7 +154,7 @@ describe('/bet execute', () => {
     const interaction = makeInteraction(1, 'A', 200, true);
     await execute(interaction);
 
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'A', 200, true);
+    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, DISCORD_ID, 'A', 200, true);
     expect(interaction.editReply).toHaveBeenCalledWith(
       expect.stringContaining('借金'),
     );
@@ -264,7 +264,7 @@ describe('/bet execute', () => {
     const interaction = makeInteraction(1, 'AA', 100);
     await execute(interaction);
 
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'AA', 100, false);
+    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, DISCORD_ID, 'AA', 100, false);
     expect(interaction.editReply).toHaveBeenCalledWith(
       expect.stringContaining('✅'),
     );
