@@ -5,7 +5,7 @@ import type { Event } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { CircleActive, CircleInactive, EyeIcon, EyeOffIcon } from '../components/icons';
+import { CircleActive, EyeIcon, EyeOffIcon } from '../components/icons';
 import { useTokenSearch } from '../hooks/useTokenSearch';
 import { toEvent, toNewEvent } from '../routes';
 
@@ -146,7 +146,7 @@ export default function EventList() {
                         </span>
                       ) : (
                         <span className="badge badge-inactive event-status-badge">
-                          <CircleInactive />ー 非開催
+                          ー 非開催
                         </span>
                       )}
                     </td>

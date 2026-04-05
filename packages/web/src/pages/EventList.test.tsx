@@ -50,6 +50,15 @@ describe('EventList', () => {
     expect(screen.getByText('ー 非開催')).toBeInTheDocument();
   });
 
+  it('非開催イベントの開催状態には丸アイコンが表示されない', async () => {
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('ー 非開催')).toBeInTheDocument());
+
+    const inactiveBadge = screen.getByText('ー 非開催').closest('span');
+    expect(inactiveBadge?.querySelector('svg')).toBeNull();
+  });
+
   it('非管理者は「詳細」ボタンのみ表示される', async () => {
     renderPage(false);
     await waitFor(() => expect(screen.getAllByText('詳細')).toHaveLength(2));
