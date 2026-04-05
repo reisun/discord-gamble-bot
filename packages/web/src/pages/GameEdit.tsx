@@ -5,6 +5,7 @@ import type { BetType, Game } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import { useTokenSearch } from '../hooks/useTokenSearch';
+import { toDashboard, toEvent, toGame, toHashPath } from '../routes';
 
 interface BetOptionDraft {
   id?: number;
@@ -38,10 +39,11 @@ function toLocalDatetimeValue(iso: string): string {
 }
 
 export default function GameEdit() {
-  // Route: /events/:guildId/:eventId/games/new  or  /games/:id/edit
-  const params = useParams<{ guildId?: string; eventId?: string; id?: string }>();
-  const isNew = !params.id;
-  const gameId = params.id ? Number(params.id) : undefined;
+  // Route: /dashboard/:guildId/:eventId/new-game  or  /dashboard/:guildId/:eventId/:gameId/edit
+  const params = useParams<{ guildId?: string; eventId?: string; gameId?: string; id?: string }>();
+  const rawGameId = params.gameId ?? params.id;
+  const isNew = !rawGameId;
+  const gameId = rawGameId ? Number(rawGameId) : undefined;
   const { token, guildId: authGuildId } = useAuth();
   const guildId = params.guildId ?? authGuildId;
   const navigate = useNavigate();
@@ -152,8 +154,8 @@ export default function GameEdit() {
 
     try {
       const gamePath = guildId
-        ? `/events/${guildId}/${eventId}/games${tokenSearch}`
-        : `/events${tokenSearch}`;
+        ? toEvent(guildId, eventId, tokenSearch)
+        : toDashboard(undefined, tokenSearch);
       if (isNew) {
         await createGame(eventId!, body, token);
         navigate(gamePath);
@@ -168,21 +170,20 @@ export default function GameEdit() {
     }
   };
 
-  const eventsBase = guildId ? `/events/${guildId}` : '/events';
   const backPath = isNew
-    ? (eventId ? `${eventsBase}/${eventId}/games${tokenSearch}` : `${eventsBase}${tokenSearch}`)
-    : `/games/${gameId}/status${tokenSearch}`;
+    ? toEvent(guildId, eventId, tokenSearch)
+    : toGame(guildId, eventId, gameId, tokenSearch);
 
   const breadcrumbs = isNew
     ? [
-        { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
-        { label: eventName || '...', href: `#${eventsBase}/${eventId}/games${tokenSearch}` },
+        { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
+        { label: eventName || '...', href: toHashPath(toEvent(guildId, eventId, tokenSearch)) },
         { label: '新規作成' },
       ]
     : [
-        { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
-        { label: eventName || '...', href: `#${eventsBase}/${eventId}/games${tokenSearch}` },
-        { label: title || '...', href: `#/games/${gameId}/status${tokenSearch}` },
+        { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
+        { label: eventName || '...', href: toHashPath(toEvent(guildId, eventId, tokenSearch)) },
+        { label: title || '...', href: toHashPath(toGame(guildId, eventId, gameId, tokenSearch)) },
         { label: '編集' },
       ];
 

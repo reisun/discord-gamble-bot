@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import EventEdit from './EventEdit';
 import * as api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import { toDashboard, toEvent, toHashPath } from '../routes';
 import { mockEvent } from '../test/fixtures';
 
 vi.mock('../api/client');
@@ -56,7 +57,7 @@ describe('EventEdit', () => {
   it('新規作成: パンくずが設計書どおり「ホーム > 新規作成」で表示される', () => {
     renderNew();
 
-    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', '#/events/test-guild-001');
+    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', toHashPath(toDashboard('test-guild-001')));
     expect(screen.getByText('新規作成')).toBeInTheDocument();
     expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
   });
@@ -70,8 +71,8 @@ describe('EventEdit', () => {
   it('編集: パンくずが設計書どおり「ホーム > イベント名 > 編集」で表示される', async () => {
     renderEdit();
 
-    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', '#/events/test-guild-001/1/games'));
-    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', '#/events/test-guild-001');
+    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', toHashPath(toEvent('test-guild-001', 1))));
+    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', toHashPath(toDashboard('test-guild-001')));
     expect(screen.getByText('編集')).toBeInTheDocument();
     expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
   });
@@ -92,7 +93,7 @@ describe('EventEdit', () => {
       expect.objectContaining({ name: '秋季大会', guildId: 'test-guild-001' }),
       'tok',
     ));
-    expect(mockNavigate).toHaveBeenCalledWith('/events/test-guild-001');
+    expect(mockNavigate).toHaveBeenCalledWith(toDashboard('test-guild-001'));
   });
 
   it('編集: 正常送信で updateEvent が呼ばれる', async () => {
@@ -111,7 +112,7 @@ describe('EventEdit', () => {
     const user = userEvent.setup();
     renderNew();
     await user.click(screen.getByRole('button', { name: 'キャンセル' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/events/test-guild-001');
+    expect(mockNavigate).toHaveBeenCalledWith(toDashboard('test-guild-001'));
   });
 
   it('編集: キャンセルボタンでイベント画面に戻る', async () => {
@@ -121,6 +122,6 @@ describe('EventEdit', () => {
     await waitFor(() => screen.getByDisplayValue('春季大会'));
     await user.click(screen.getByRole('button', { name: 'キャンセル' }));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/events/test-guild-001/1/games');
+    expect(mockNavigate).toHaveBeenCalledWith(toEvent('test-guild-001', 1));
   });
 });

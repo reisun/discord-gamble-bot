@@ -5,6 +5,7 @@ import type { Event, User, UserEventResult } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import { useTokenSearch } from '../hooks/useTokenSearch';
+import { toDashboard, toEvent, toHashPath } from '../routes';
 
 type SortKey = 'points' | 'assets';
 
@@ -19,7 +20,6 @@ export default function UserResults() {
   const { isAdmin, token } = useAuth();
   const tokenSearch = useTokenSearch();
   const evId = Number(eventId);
-  const eventsBase = guildId ? `/events/${guildId}` : '/events';
 
   const [event, setEvent] = useState<Event | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -89,8 +89,8 @@ export default function UserResults() {
   });
 
   const breadcrumbs = [
-    { label: 'ホーム', href: `#${eventsBase}${tokenSearch}` },
-    { label: event?.name ?? '...', href: `#${eventsBase}/${evId}/games${tokenSearch}` },
+    { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
+    { label: event?.name ?? '...', href: toHashPath(toEvent(guildId, evId, tokenSearch)) },
     { label: 'ユーザー結果一覧' },
   ];
 

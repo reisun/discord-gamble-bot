@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import GameStatus from './GameStatus';
 import * as api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import { toDashboard, toEvent, toHashPath } from '../routes';
 import {
   mockEvent,
   mockGameSingle,
@@ -22,7 +23,7 @@ vi.mock('../contexts/AuthContext', () => ({
 vi.mock('../hooks/useTokenSearch', () => ({ useTokenSearch: () => '' }));
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
-  return { ...actual, useParams: () => ({ id: '1' }) };
+  return { ...actual, useParams: () => ({ guildId: 'test-guild-001', eventId: '1', gameId: '1' }) };
 });
 
 function renderPage(isAdmin = false) {
@@ -46,8 +47,8 @@ describe('GameStatus', () => {
   it('パンくずが設計書どおり「ホーム > イベント名 > ゲームタイトル」で表示される', async () => {
     renderPage();
 
-    await waitFor(() => expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', '#/events/test-guild-001'));
-    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', '#/events/test-guild-001/1/games'));
+    await waitFor(() => expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', toHashPath(toDashboard('test-guild-001'))));
+    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', toHashPath(toEvent('test-guild-001', 1))));
     expect(screen.getAllByText('第1試合')).toHaveLength(2);
     expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
     expect(screen.queryByText('ゲーム一覧')).not.toBeInTheDocument();

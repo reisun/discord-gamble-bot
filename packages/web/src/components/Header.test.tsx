@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import Header from './Header';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../api/client';
+import { toDashboard, toHashPath } from '../routes';
 
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: vi.fn(),
@@ -29,7 +30,7 @@ describe('Header', () => {
 
   it('ロゴ・タイトルが表示される', () => {
     renderHeader();
-    expect(screen.getByText('ギャンブルBOT管理アプリ')).toBeInTheDocument();
+    expect(screen.getByText('ギャンブルBOT管理ページ')).toBeInTheDocument();
   });
 
   it('管理者バッジが表示される', () => {
@@ -51,17 +52,17 @@ describe('Header', () => {
   it('管理者でタイトルを押下してもトークンが href に含まれる（権限が消えない）', () => {
     renderHeader({ isAdmin: true, guildId: 'guild-123', token: 'mytoken' });
     const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', '#/events/guild-123?token=mytoken');
+    expect(link).toHaveAttribute('href', toHashPath(toDashboard('guild-123', '?token=mytoken')));
   });
 
   it('トークンなしの場合、href にトークンが含まれない', () => {
     renderHeader({ guildId: 'guild-123', token: null });
     const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', '#/events/guild-123');
+    expect(link).toHaveAttribute('href', toHashPath(toDashboard('guild-123')));
   });
 
   it('guildId ありでサーバー名が取得できた場合タイトルに反映される', async () => {
     renderHeader({ guildId: 'guild-123' });
-    await waitFor(() => expect(screen.getByText('テストサーバー ギャンブルBOT管理アプリ')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('ギャンブルBOT管理ページ(テストサーバー)')).toBeInTheDocument());
   });
 });

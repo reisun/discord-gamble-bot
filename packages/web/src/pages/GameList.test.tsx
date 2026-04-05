@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import GameList from './GameList';
 import * as api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import { toDashboard, toEventEdit, toHashPath } from '../routes';
 import { mockEvent, mockGameSingle, mockGameUnpublished } from '../test/fixtures';
 
 vi.mock('../api/client');
@@ -46,7 +47,7 @@ describe('GameList', () => {
   it('パンくずが設計書どおり「ホーム > イベント名」で表示される', async () => {
     renderPage();
 
-    await waitFor(() => expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', '#/events/test-guild-001'));
+    await waitFor(() => expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', toHashPath(toDashboard('test-guild-001'))));
     expect(screen.getByText('春季大会')).toBeInTheDocument();
     expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
     expect(screen.queryByText('ゲーム一覧')).not.toBeInTheDocument();
@@ -98,7 +99,7 @@ describe('GameList', () => {
     await waitFor(() => screen.getByText('編集'));
     await user.click(screen.getByText('編集'));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/events/test-guild-001/1/edit');
+    expect(mockNavigate).toHaveBeenCalledWith(toEventEdit('test-guild-001', 1));
   });
 
   it('削除ボタンで確認ダイアログが表示され、確定で deleteEvent が呼ばれる', async () => {
