@@ -37,12 +37,10 @@ export default function Header() {
       zIndex: 100,
       flexShrink: 0,
     }}>
-      <a href={homeHref} style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+      <a href={homeHref} style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
         <div style={{
-          background: '#155dfc',
-          borderRadius: '4px',
-          width: '44px',
-          height: '32px',
+          width: '40px',
+          height: '40px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
