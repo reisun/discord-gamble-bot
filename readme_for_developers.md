@@ -113,8 +113,9 @@ curl "http://127.0.0.1:3000/api/auth/verify?token=<ADMIN_TOKEN>"
 ルーター管理画面から以下のファイルをダウンロードし、`docker/nginx/certs/` に配置する。
 
 ```bash
+cd docker/nginx/certs
 # サーバー証明書と CA 証明書を結合して fullchain.pem を作成
-cat cert.pem cert.crt > docker/nginx/certs/fullchain.pem
+cat cert.pem cert.crt > fullchain.pem
 
 # 秘密鍵をコピー
 cp key.pem docker/nginx/certs/key.pem
