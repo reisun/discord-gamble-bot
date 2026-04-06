@@ -150,6 +150,25 @@ describe('GameStatus', () => {
     await waitFor(() => expect(api.setGameResult).toHaveBeenCalledWith(mockGameSingle.id, 'A', 'tok'));
   });
 
+  it('管理者: 非公開ゲームでは「公開する」ボタンが表示される', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false });
+    renderPage(true);
+    await waitFor(() => expect(screen.getByRole('button', { name: '公開する' })).toBeInTheDocument());
+  });
+
+  it('管理者: 公開済みゲームでは「非公開にする」ボタンが表示される', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: true });
+    renderPage(true);
+    await waitFor(() => expect(screen.getByRole('button', { name: '非公開にする' })).toBeInTheDocument());
+  });
+
+  it('非管理者: 公開切替ボタンが表示されない', async () => {
+    renderPage(false);
+    await waitFor(() => screen.getByRole('heading', { level: 1, name: '第1試合' }));
+    expect(screen.queryByRole('button', { name: '公開する' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '非公開にする' })).not.toBeInTheDocument();
+  });
+
   it('管理者の個別賭け一覧にユーザー名が表示される', async () => {
     renderPage(true);
 
