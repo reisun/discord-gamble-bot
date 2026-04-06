@@ -141,9 +141,9 @@ export default function UserResults() {
               <col style={{ width: '112px' }} />
               <col style={{ width: '120px' }} />
               <col style={{ width: '80px' }} />
-              {sortKey === 'assets' && <col style={{ width: '108px' }} />}
-              {sortKey === 'assets' && <col style={{ width: '112px' }} />}
-              {sortKey === 'assets' && <col style={{ width: '120px' }} />}
+              <col style={{ width: '108px' }} />
+              <col style={{ width: '112px' }} />
+              <col style={{ width: '120px' }} />
             </colgroup>
             <thead>
               <tr>
@@ -152,14 +152,15 @@ export default function UserResults() {
                 <th>ポイント総額</th>
                 <th>ポイント増減</th>
                 <th>勝/敗</th>
-                {sortKey === 'assets' && <th>借金総額</th>}
-                {sortKey === 'assets' && <th>総資産額</th>}
-                {sortKey === 'assets' && <th>総資産増減</th>}
+                <th style={{ visibility: sortKey === 'points' ? 'hidden' : undefined }}>借金総額</th>
+                <th style={{ visibility: sortKey === 'points' ? 'hidden' : undefined }}>総資産額</th>
+                <th style={{ visibility: sortKey === 'points' ? 'hidden' : undefined }}>総資産増減</th>
               </tr>
             </thead>
             <tbody>
               {sortedUsers.map((u, i) => {
                 const r = results.get(u.id);
+                const hideAssets = sortKey === 'points';
                 return (
                   <tr key={u.id}>
                     <td>{i + 1}</td>
@@ -176,15 +177,17 @@ export default function UserResults() {
                     <td>{u.points.toLocaleString()} pt</td>
                     <td>{r ? <PointChange value={r.totalPointChange} /> : '-'}</td>
                     <td>{r ? `${r.wins}勝${r.losses}敗` : '-'}</td>
-                    {sortKey === 'assets' && (
-                      <td>
-                        {r ? (r.totalDebt > 0 ? (
-                          <span className="text-danger">{r.totalDebt.toLocaleString()} pt</span>
-                        ) : '0 pt') : '-'}
-                      </td>
-                    )}
-                    {sortKey === 'assets' && <td>{r ? `${r.totalAssets.toLocaleString()} pt` : '-'}</td>}
-                    {sortKey === 'assets' && <td>{r ? <PointChange value={r.totalAssetsChange} /> : '-'}</td>}
+                    <td style={{ visibility: hideAssets ? 'hidden' : undefined }}>
+                      {r ? (r.totalDebt > 0 ? (
+                        <span className="text-danger">{r.totalDebt.toLocaleString()} pt</span>
+                      ) : '0 pt') : '-'}
+                    </td>
+                    <td style={{ visibility: hideAssets ? 'hidden' : undefined }}>
+                      {r ? `${r.totalAssets.toLocaleString()} pt` : '-'}
+                    </td>
+                    <td style={{ visibility: hideAssets ? 'hidden' : undefined }}>
+                      {r ? <PointChange value={r.totalAssetsChange} /> : '-'}
+                    </td>
                   </tr>
                 );
               })}

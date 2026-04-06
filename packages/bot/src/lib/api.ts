@@ -131,7 +131,7 @@ export async function getEventGames(eventId: number): Promise<Game[]> {
 
 /** 管理者トークンで非公開ゲームを含む全ゲームを取得する */
 export async function getEventGamesAdmin(eventId: number): Promise<Game[]> {
-  const res = await api.get<{ data: Game[] }>(`/api/events/${eventId}/games`, {
+  const res = await api.get<{ data: Game[] }>(`/api/events/${eventId}/games?includeUnpublished=true`, {
     headers: { Authorization: `Bearer ${config.adminToken}` },
   });
   return res.data.data;

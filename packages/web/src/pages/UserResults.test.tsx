@@ -65,32 +65,37 @@ describe('UserResults', () => {
     renderPage();
     await waitFor(() => screen.getByRole('button', { name: '総資産順' }));
     fireEvent.click(screen.getByRole('button', { name: '総資産順' }));
-    expect(screen.getByRole('columnheader', { name: '総資産額' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '総資産額' })).toBeVisible();
     expect(screen.getAllByText('10,500 pt').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('所持ポイント順（デフォルト）では借金総額・総資産額・総資産増減列が非表示', async () => {
+  it('所持ポイント順（デフォルト）では借金総額・総資産額・総資産増減列がプレースホルダー（不可視）', async () => {
     renderPage();
     await waitFor(() => screen.getByRole('columnheader', { name: 'ポイント総額' }));
-    expect(screen.queryByRole('columnheader', { name: '借金総額' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: '総資産額' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: '総資産増減' })).not.toBeInTheDocument();
+    // visibility: hidden のため DOM には存在するが不可視（直接 DOM で確認）
+    const ths = Array.from(document.querySelectorAll('th'));
+    const hiddenLabels = ['借金総額', '総資産額', '総資産増減'];
+    for (const label of hiddenLabels) {
+      const th = ths.find((el) => el.textContent === label);
+      expect(th, `${label} の th が存在すること`).toBeDefined();
+      expect(th?.style.visibility, `${label} が visibility: hidden であること`).toBe('hidden');
+    }
   });
 
-  it('総資産順に切り替えると借金総額・総資産額・総資産増減列が表示される', async () => {
+  it('総資産順に切り替えると借金総額・総資産額・総資産増減列が可視になる', async () => {
     renderPage();
     await waitFor(() => screen.getByRole('button', { name: '総資産順' }));
     fireEvent.click(screen.getByRole('button', { name: '総資産順' }));
-    expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: '総資産額' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: '総資産増減' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeVisible();
+    expect(screen.getByRole('columnheader', { name: '総資産額' })).toBeVisible();
+    expect(screen.getByRole('columnheader', { name: '総資産増減' })).toBeVisible();
   });
 
   it('一般ユーザーにも借金総額列が表示される（総資産順切替後）', async () => {
     renderPage(false);
     await waitFor(() => screen.getByRole('button', { name: '総資産順' }));
     fireEvent.click(screen.getByRole('button', { name: '総資産順' }));
-    expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeVisible();
     expect(screen.getByText('0 pt')).toBeInTheDocument();
   });
 
