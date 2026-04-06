@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import UserResults from './UserResults';
 import * as api from '../api/client';
@@ -60,16 +60,36 @@ describe('UserResults', () => {
     expect(screen.getAllByText('10,500 pt').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('総資産額列が表示される', async () => {
+  it('総資産額列が総資産順で表示される', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByRole('columnheader', { name: '総資産額' })).toBeInTheDocument());
+    await waitFor(() => screen.getByRole('button', { name: '総資産順' }));
+    fireEvent.click(screen.getByRole('button', { name: '総資産順' }));
+    expect(screen.getByRole('columnheader', { name: '総資産額' })).toBeInTheDocument();
     expect(screen.getAllByText('10,500 pt').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('一般ユーザーにも借金総額列が表示される', async () => {
-    renderPage(false);
+  it('所持ポイント順（デフォルト）では借金総額・総資産額・総資産増減列が非表示', async () => {
+    renderPage();
+    await waitFor(() => screen.getByRole('columnheader', { name: 'ポイント総額' }));
+    expect(screen.queryByRole('columnheader', { name: '借金総額' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '総資産額' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '総資産増減' })).not.toBeInTheDocument();
+  });
 
-    await waitFor(() => expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeInTheDocument());
+  it('総資産順に切り替えると借金総額・総資産額・総資産増減列が表示される', async () => {
+    renderPage();
+    await waitFor(() => screen.getByRole('button', { name: '総資産順' }));
+    fireEvent.click(screen.getByRole('button', { name: '総資産順' }));
+    expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '総資産額' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '総資産増減' })).toBeInTheDocument();
+  });
+
+  it('一般ユーザーにも借金総額列が表示される（総資産順切替後）', async () => {
+    renderPage(false);
+    await waitFor(() => screen.getByRole('button', { name: '総資産順' }));
+    fireEvent.click(screen.getByRole('button', { name: '総資産順' }));
+    expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeInTheDocument();
     expect(screen.getByText('0 pt')).toBeInTheDocument();
   });
 

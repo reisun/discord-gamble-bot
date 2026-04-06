@@ -150,9 +150,9 @@ export default function UserResults() {
                 <th>ポイント総額</th>
                 <th>ポイント増減</th>
                 <th>勝/敗</th>
-                <th>借金総額</th>
-                <th>総資産額</th>
-                <th>総資産増減</th>
+                {sortKey === 'assets' && <th>借金総額</th>}
+                {sortKey === 'assets' && <th>総資産額</th>}
+                {sortKey === 'assets' && <th>総資産増減</th>}
               </tr>
             </thead>
             <tbody>
@@ -174,13 +174,15 @@ export default function UserResults() {
                     <td>{u.points.toLocaleString()} pt</td>
                     <td>{r ? <PointChange value={r.totalPointChange} /> : '-'}</td>
                     <td>{r ? `${r.wins}勝${r.losses}敗` : '-'}</td>
-                    <td>
-                      {r ? (r.totalDebt > 0 ? (
-                        <span className="text-danger">{r.totalDebt.toLocaleString()} pt</span>
-                      ) : '0 pt') : '-'}
-                    </td>
-                    <td>{r ? `${r.totalAssets.toLocaleString()} pt` : '-'}</td>
-                    <td>{r ? <PointChange value={r.totalAssetsChange} /> : '-'}</td>
+                    {sortKey === 'assets' && (
+                      <td>
+                        {r ? (r.totalDebt > 0 ? (
+                          <span className="text-danger">{r.totalDebt.toLocaleString()} pt</span>
+                        ) : '0 pt') : '-'}
+                      </td>
+                    )}
+                    {sortKey === 'assets' && <td>{r ? `${r.totalAssets.toLocaleString()} pt` : '-'}</td>}
+                    {sortKey === 'assets' && <td>{r ? <PointChange value={r.totalAssetsChange} /> : '-'}</td>}
                   </tr>
                 );
               })}
