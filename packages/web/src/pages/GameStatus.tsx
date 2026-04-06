@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getGame, getEvent, getBets, setGameResult, deleteGame, publishGame } from '../api/client';
+import { getGame, getEvent, getBets, setGameResult, deleteGame, publishGame, updateGame } from '../api/client';
 import type { BetType, BetsData, BetCombination, Game, Event } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
@@ -210,6 +210,20 @@ export default function GameStatus() {
     }
   };
 
+  const handleImmediateClose = async () => {
+    if (!game || !token) return;
+    setActionLoading(true);
+    const deadline = new Date(Date.now() + 60000).toISOString();
+    try {
+      const updated = await updateGame(game.id, { title: game.title, deadline }, token);
+      setGame(updated);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '締め切り設定に失敗しました');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const revealStats = isAdmin || game?.status === 'finished';
 
   if (loading) return <div className="loading">読み込み中...</div>;
@@ -256,6 +270,15 @@ export default function GameStatus() {
                 >
                   {game.isPublished ? '非公開にする' : '公開する'}
                 </button>
+                {game.isPublished && game.status === 'open' && (
+                  <button
+                    className="btn-secondary btn-sm"
+                    disabled={actionLoading}
+                    onClick={handleImmediateClose}
+                  >
+                    即時締め切り
+                  </button>
+                )}
               </>
             )}
           </div>

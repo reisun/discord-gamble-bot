@@ -169,6 +169,19 @@ describe('GameStatus', () => {
     expect(screen.queryByRole('button', { name: '非公開にする' })).not.toBeInTheDocument();
   });
 
+  it('管理者: 公開中・受付中のゲームでは即時締め切りボタンが表示される', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: true, status: 'open' });
+    renderPage(true);
+    await waitFor(() => expect(screen.getByRole('button', { name: '即時締め切り' })).toBeInTheDocument());
+  });
+
+  it('管理者: 非公開ゲームでは即時締め切りボタンが表示されない', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false, status: 'open' });
+    renderPage(true);
+    await waitFor(() => screen.getByRole('heading', { level: 1, name: '第1試合' }));
+    expect(screen.queryByRole('button', { name: '即時締め切り' })).not.toBeInTheDocument();
+  });
+
   it('管理者の個別賭け一覧にユーザー名が表示される', async () => {
     renderPage(true);
 
