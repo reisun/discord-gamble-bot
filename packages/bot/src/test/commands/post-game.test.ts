@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ChatInputCommandInteraction, Guild, GuildMember } from 'discord.js';
 import type { EmbedBuilder } from 'discord.js';
-import type { Game } from '../../lib/api';
+import type { Event, Game } from '../../lib/api';
 
 vi.mock('../../config', () => ({
   config: {
@@ -10,9 +10,9 @@ vi.mock('../../config', () => ({
 }));
 
 vi.mock('../../lib/api', () => ({
-  getGameByNo: vi.fn(),
   getEvents: vi.fn(),
-  getEventGames: vi.fn(),
+  getEventGamesAdmin: vi.fn(),
+  publishGame: vi.fn(),
   extractApiMessage: vi.fn(() => 'APIエラー'),
 }));
 
@@ -23,6 +23,10 @@ function makeMember(isAdmin: boolean): GuildMember {
   return {
     roles: { cache: { has: (id: string) => isAdmin && id === 'role-admin' } },
   } as unknown as GuildMember;
+}
+
+function makeEvent(): Event {
+  return { id: 1, guildId: 'test-guild-001', name: 'テストイベント', isActive: true, initialPoints: 1000, resultsPublic: false };
 }
 
 function makeGame(overrides: Partial<Game> = {}): Game {
@@ -71,11 +75,13 @@ function getEmbedData(interaction: ChatInputCommandInteraction) {
 describe('/post-game execute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(api.getEvents).mockResolvedValue([makeEvent()]);
+    vi.mocked(api.publishGame).mockResolvedValue(undefined);
   });
 
   it('管理者: single 方式のゲーム情報を Embed で全員向けに投稿する', async () => {
-    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
-    const interaction = makeInteraction(true, 3);
+    vi.mocked(api.getEventGamesAdmin).mockResolvedValue([makeGame()]);
+    const interaction = makeInteraction(true, 1);
     await execute(interaction);
 
     // deferReply は ephemeral: false
@@ -83,18 +89,18 @@ describe('/post-game execute', () => {
 
     const embed = getEmbedData(interaction);
     expect(embed.title).toContain('第1試合');
-    expect(embed.title).toContain('#3');
+    expect(embed.title).toContain('#1');
     expect(embed.description).toBe('説明文です');
 
     const fieldValues = embed.fields?.map((f) => f.value) ?? [];
     expect(fieldValues).toContain('2024-06-01 21:00');
     expect(fieldValues.some((v) => v.includes('チームA'))).toBe(true);
     expect(fieldValues.some((v) => v.includes('チームB'))).toBe(true);
-    expect(fieldValues.some((v) => v.includes('/bet game:3'))).toBe(true);
+    expect(fieldValues.some((v) => v.includes('/bet game:1'))).toBe(true);
   });
 
   it('管理者: multi_ordered 方式は賭け方式フィールドと記号数ヒントを含む', async () => {
-    vi.mocked(api.getGameByNo).mockResolvedValue(
+    vi.mocked(api.getEventGamesAdmin).mockResolvedValue([
       makeGame({
         betType: 'multi_ordered',
         requiredSelections: 2,
@@ -104,8 +110,8 @@ describe('/post-game execute', () => {
           { id: 3, symbol: 'C', label: 'チームC', order: 3 },
         ],
       }),
-    );
-    const interaction = makeInteraction(true, 3);
+    ]);
+    const interaction = makeInteraction(true, 1);
     await execute(interaction);
 
     const embed = getEmbedData(interaction);
@@ -115,18 +121,18 @@ describe('/post-game execute', () => {
   });
 
   it('管理者ロールなし: Ephemeral エラーを返す（投稿しない）', async () => {
-    const interaction = makeInteraction(false, 3);
+    const interaction = makeInteraction(false, 1);
     await execute(interaction);
 
     expect(interaction.reply).toHaveBeenCalledWith(
       expect.objectContaining({ ephemeral: true, content: expect.stringContaining('管理者のみ') }),
     );
     expect(interaction.deferReply).not.toHaveBeenCalled();
-    expect(api.getGameByNo).not.toHaveBeenCalled();
+    expect(api.getEventGamesAdmin).not.toHaveBeenCalled();
   });
 
   it('ゲームが見つからない: エラーメッセージ', async () => {
-    vi.mocked(api.getGameByNo).mockRejectedValue(new Error('not found'));
+    vi.mocked(api.getEventGamesAdmin).mockResolvedValue([]);
     const interaction = makeInteraction(true, 999);
     await execute(interaction);
 
@@ -135,19 +141,20 @@ describe('/post-game execute', () => {
     );
   });
 
-  it('非公開ゲームは投稿できない: エラーメッセージ', async () => {
-    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame({ isPublished: false }));
-    const interaction = makeInteraction(true, 3);
+  it('非公開ゲームは自動で公開してから投稿する', async () => {
+    vi.mocked(api.getEventGamesAdmin).mockResolvedValue([makeGame({ isPublished: false })]);
+    const interaction = makeInteraction(true, 1);
     await execute(interaction);
 
-    expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('非公開のゲームは投稿できません'),
-    );
+    expect(api.publishGame).toHaveBeenCalledWith(3);
+    // Embed が投稿されていること
+    const embed = getEmbedData(interaction);
+    expect(embed.title).toContain('第1試合');
   });
 
   it('description が null の場合は Embed の description が設定されない', async () => {
-    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame({ description: null }));
-    const interaction = makeInteraction(true, 3);
+    vi.mocked(api.getEventGamesAdmin).mockResolvedValue([makeGame({ description: null })]);
+    const interaction = makeInteraction(true, 1);
     await execute(interaction);
 
     const embed = getEmbedData(interaction);
