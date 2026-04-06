@@ -61,6 +61,7 @@ export interface BetCombination {
 export interface BetEntry {
   userId: number;
   userName: string;
+  avatarUrl: string | null;
   selectedSymbols: string;
   selectedLabels: string[];
   amount: number;
@@ -83,6 +84,7 @@ export interface User {
   id: number;
   discordId: string;
   discordName: string;
+  avatarUrl: string | null;
   points: number;
   debt?: number;
   createdAt?: string;

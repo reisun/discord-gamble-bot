@@ -41,9 +41,11 @@ function makeInteraction(
   option: string,
   amount: number,
   borrow = false,
+  nickname: string | null = 'TestNick',
 ): ChatInputCommandInteraction {
   return {
-    user: { id: DISCORD_ID, username: 'TestUser' },
+    user: { id: DISCORD_ID, username: 'testuser', displayName: 'TestUser', displayAvatarURL: () => 'https://cdn.discordapp.com/avatars/test/avatar.png' },
+    member: { nickname },
     guild: { id: 'test-guild-001' },
     options: {
       getInteger: (name: string) => (name === 'game' ? gameNo : name === 'amount' ? amount : null),
@@ -86,7 +88,7 @@ describe('/bet execute', () => {
     expect(interaction.editReply).toHaveBeenCalledWith(
       expect.stringContaining('✅ 賭けを受け付けました'),
     );
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestUser', 'A', 500, false);
+    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestNick', 'A', 500, false, 'https://cdn.discordapp.com/avatars/test/avatar.png');
   });
 
   it('multi_unordered: option を昇順ソートして API に送信する', async () => {
@@ -109,7 +111,7 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     // ソートされた 'ABC' が API に渡されているか
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestUser', 'ABC', 100, false);
+    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestNick', 'ABC', 100, false, 'https://cdn.discordapp.com/avatars/test/avatar.png');
     expect(interaction.editReply).toHaveBeenCalledWith(
       expect.stringContaining('✅ 賭けを受け付けました'),
     );
@@ -154,7 +156,7 @@ describe('/bet execute', () => {
     const interaction = makeInteraction(1, 'A', 200, true);
     await execute(interaction);
 
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestUser', 'A', 200, true);
+    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestNick', 'A', 200, true, 'https://cdn.discordapp.com/avatars/test/avatar.png');
     expect(interaction.editReply).toHaveBeenCalledWith(
       expect.stringContaining('借金'),
     );
@@ -264,7 +266,7 @@ describe('/bet execute', () => {
     const interaction = makeInteraction(1, 'AA', 100);
     await execute(interaction);
 
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestUser', 'AA', 100, false);
+    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestNick', 'AA', 100, false, 'https://cdn.discordapp.com/avatars/test/avatar.png');
     expect(interaction.editReply).toHaveBeenCalledWith(
       expect.stringContaining('✅'),
     );
@@ -286,6 +288,27 @@ describe('/bet execute', () => {
       expect.stringContaining('所持ポイントが足りません'),
     );
     expect(api.placeBet).not.toHaveBeenCalled();
+  });
+
+  it('サーバーニックネームがない場合は displayName を使う', async () => {
+    vi.mocked(api.getGameByNo).mockResolvedValue(makeGame());
+    vi.mocked(api.placeBet).mockResolvedValue({
+      id: 100,
+      gameId: 1,
+      userId: 1,
+      selectedSymbols: 'A',
+      selectedLabels: ['チームA'],
+      amount: 100,
+      isDebt: false,
+      debtAmount: 0,
+      isUpdated: false,
+    });
+
+    const interaction = makeInteraction(1, 'A', 100, false, null); // nickname = null
+    await execute(interaction);
+
+    // nickname が null の場合は displayName ('TestUser') が渡される
+    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestUser', 'A', 100, false, 'https://cdn.discordapp.com/avatars/test/avatar.png');
   });
 
   it('API エラー時はエラーメッセージを表示', async () => {

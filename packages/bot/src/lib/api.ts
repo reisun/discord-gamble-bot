@@ -140,6 +140,7 @@ export async function placeBet(
   selectedSymbols: string,
   amount: number,
   allowDebt: boolean,
+  avatarUrl?: string,
 ): Promise<{
   id: number;
   gameId: number;
@@ -154,6 +155,7 @@ export async function placeBet(
   const res = await api.put(`/api/games/${gameId}/bets`, {
     discordId,
     discordName,
+    avatarUrl,
     selectedSymbols,
     amount,
     allowDebt,

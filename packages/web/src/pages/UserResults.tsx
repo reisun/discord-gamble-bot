@@ -159,7 +159,16 @@ export default function UserResults() {
                 return (
                   <tr key={u.id}>
                     <td>{i + 1}</td>
-                    <td>{u.discordName}</td>
+                    <td>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        {u.avatarUrl ? (
+                          <img src={u.avatarUrl} alt="" width={20} height={20} style={{ borderRadius: '50%', flexShrink: 0 }} />
+                        ) : (
+                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--color-border)', display: 'inline-block', flexShrink: 0 }} />
+                        )}
+                        {u.discordName}
+                      </span>
+                    </td>
                     <td>{r ? <PointChange value={r.totalPointChange} /> : '-'}</td>
                     <td>{r ? `${r.wins}勝${r.losses}敗` : '-'}</td>
                     <td>
@@ -196,7 +205,16 @@ export default function UserResults() {
                   const r = results.get(u.id);
                   return (
                     <tr key={u.id}>
-                      <td>{u.discordName}</td>
+                      <td>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          {u.avatarUrl ? (
+                            <img src={u.avatarUrl} alt="" width={16} height={16} style={{ borderRadius: '50%', flexShrink: 0 }} />
+                          ) : (
+                            <span style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--color-border)', display: 'inline-block', flexShrink: 0 }} />
+                          )}
+                          {u.discordName}
+                        </span>
+                      </td>
                       {gameIds.map((gid) => {
                         const g = r?.games.find((g) => g.gameId === gid);
                         if (!g) return <td key={gid} style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>-</td>;
