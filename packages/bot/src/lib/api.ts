@@ -195,10 +195,10 @@ export async function getGameByNo(
   return game;
 }
 
-export async function registerGuild(guildId: string, guildName: string): Promise<void> {
+export async function registerGuild(guildId: string, guildName: string, guildIconHash?: string | null): Promise<void> {
   await api.put(
     `/api/guilds/${guildId}`,
-    { guildName },
+    { guildName, guildIconHash: guildIconHash ?? null },
     { headers: { Authorization: `Bearer ${config.adminToken}` } },
   );
 }

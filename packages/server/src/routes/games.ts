@@ -317,7 +317,7 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
 
       // Published game restriction check
       if (isPublished) {
-        const restricted = ['deadline', 'betType', 'requiredSelections'];
+        const restricted = ['betType', 'requiredSelections'];
         for (const field of restricted) {
           if (req.body[field] !== undefined) {
             throw new AppError(
@@ -325,6 +325,13 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
               'CONFLICT',
               `公開済みゲームでは ${field} は変更できません`,
             );
+          }
+        }
+        // deadline は公開済みでも変更可能
+        if (deadline !== undefined) {
+          const d = new Date(deadline);
+          if (isNaN(d.getTime()) || d <= new Date()) {
+            throw new AppError(400, 'VALIDATION_ERROR', 'deadline は現在時刻より未来の日時を指定してください');
           }
         }
         if (betOptions !== undefined) {
