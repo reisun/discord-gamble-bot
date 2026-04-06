@@ -134,7 +134,17 @@ export default function UserResults() {
         </div>
 
         <div className="table-wrapper">
-          <table>
+          <table style={{ tableLayout: 'fixed', minWidth: '480px' }}>
+            <colgroup>
+              <col style={{ width: '56px' }} />
+              <col />
+              <col style={{ width: '112px' }} />
+              <col style={{ width: '120px' }} />
+              <col style={{ width: '80px' }} />
+              {sortKey === 'assets' && <col style={{ width: '108px' }} />}
+              {sortKey === 'assets' && <col style={{ width: '112px' }} />}
+              {sortKey === 'assets' && <col style={{ width: '120px' }} />}
+            </colgroup>
             <thead>
               <tr>
                 <th>順位</th>
