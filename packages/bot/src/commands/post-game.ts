@@ -14,7 +14,7 @@ export const data = new SlashCommandBuilder()
   .addIntegerOption((opt) =>
     opt
       .setName('game')
-      .setDescription('ゲーム番号（公開中のゲームが候補に表示されます）')
+      .setDescription('ゲーム番号（未公開のゲームも候補に表示されます）')
       .setRequired(true)
       .setAutocomplete(true),
   );
