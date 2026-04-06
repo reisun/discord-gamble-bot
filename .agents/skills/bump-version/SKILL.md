@@ -6,9 +6,6 @@ disable-model-invocation: true
 
 対象: $ARGUMENTS
 
-目的:
-承認済み変更に対して、適切なバージョン種別で version を更新し、必要なら changelog や関連文書を反映する。
-
 手順:
 1. 対象コンポーネントを特定する
    - web-app

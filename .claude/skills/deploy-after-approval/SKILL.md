@@ -2,12 +2,11 @@
 name: deploy-after-approval
 description: 承認済みPRまたは承認済み変更を、条件確認のうえでデプロイするときに使う
 disable-model-invocation: true
+context: fork
+agent: Explore
 ---
 
 対象: $ARGUMENTS
-
-目的:
-承認済み変更について、デプロイ条件を確認した上で安全にデプロイする。
 
 手順:
 1. 対象変更が承認済みであることを確認する
