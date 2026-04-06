@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fmtPt, betTypeLabel, formatSelection, fmtDeadline, optionHint, buildOptMap } from '../../lib/format';
+import { fmtPt, betTypeLabel, formatSelection, fmtDeadline, fmtRemaining, optionHint, buildOptMap } from '../../lib/format';
 import type { Game } from '../../lib/api';
 
 // テスト用 optMap ヘルパー
@@ -69,6 +69,23 @@ describe('fmtDeadline', () => {
     // ローカルタイムに依存するため toMatch で部分検証
     const result = fmtDeadline('2024-06-15T12:30:00.000Z');
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+  });
+});
+
+describe('fmtRemaining', () => {
+  it('未来の日時: 残り時間文字列を返す', () => {
+    const future = new Date(Date.now() + 2 * 3600000 + 30 * 60000).toISOString();
+    expect(fmtRemaining(future)).toBe('残り 2時間30分');
+  });
+
+  it('1時間未満: 時間部分を省略する', () => {
+    const future = new Date(Date.now() + 45 * 60000).toISOString();
+    expect(fmtRemaining(future)).toBe('残り 45分');
+  });
+
+  it('過去の日時: 空文字を返す', () => {
+    const past = new Date(Date.now() - 1000).toISOString();
+    expect(fmtRemaining(past)).toBe('');
   });
 });
 

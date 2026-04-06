@@ -100,6 +100,17 @@ describe('/post-game execute', () => {
     expect(fieldValues.some((v) => v.includes('/bet game:1'))).toBe(true);
   });
 
+  it('締め切りが未来のゲームでは残り時間が付与される', async () => {
+    const futureDeadline = new Date(Date.now() + 2 * 3600000 + 30 * 60000).toISOString();
+    vi.mocked(api.getEventGamesAdmin).mockResolvedValue([makeGame({ deadline: futureDeadline })]);
+    const interaction = makeInteraction(true, 1);
+    await execute(interaction);
+
+    const embed = getEmbedData(interaction);
+    const deadlineField = embed.fields?.find((f) => f.name === '締め切り');
+    expect(deadlineField?.value).toMatch(/残り \d+時間\d+分/);
+  });
+
   it('管理者: multi_ordered 方式は賭け方式フィールドと記号数ヒントを含む', async () => {
     vi.mocked(api.getEventGamesAdmin).mockResolvedValue([
       makeGame({

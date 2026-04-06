@@ -6,7 +6,7 @@ import {
 } from 'discord.js';
 import { getEventGamesAdmin, getEvents, publishGame } from '../lib/api';
 import { isAdminMember } from '../lib/admin';
-import { betTypeLabel, fmtDeadline } from '../lib/format';
+import { betTypeLabel, fmtDeadline, fmtRemaining } from '../lib/format';
 
 export const data = new SlashCommandBuilder()
   .setName('post-game')
@@ -120,7 +120,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   embed.addFields(
     {
       name: '締め切り',
-      value: fmtDeadline(game.deadline),
+      value: [fmtDeadline(game.deadline), fmtRemaining(game.deadline)].filter(Boolean).join(' '),
       inline: true,
     },
     {

@@ -51,6 +51,16 @@ export function buildOptMap(game: Game): Map<string, string> {
   return new Map(game.betOptions.map((o) => [o.symbol, o.label]));
 }
 
+/** deadline までの残り時間文字列を返す（締め切り済みの場合は空文字） */
+export function fmtRemaining(deadline: string): string {
+  const diff = new Date(deadline).getTime() - Date.now();
+  if (diff <= 0) return '';
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  if (h > 0) return `残り ${h}時間${m}分`;
+  return `残り ${m}分`;
+}
+
 /** datetime 文字列を「YYYY-MM-DD HH:mm」形式にフォーマット */
 export function fmtDeadline(deadline: string): string {
   const d = new Date(deadline);
