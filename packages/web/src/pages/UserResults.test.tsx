@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import UserResults from './UserResults';
 import * as api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
-import { mockEvent, mockUser, mockUserEventResult } from '../test/fixtures';
+import { mockEvent, mockGameSingle, mockGameUnpublished, mockUser, mockUserEventResult } from '../test/fixtures';
 
 vi.mock('../api/client');
 vi.mock('../contexts/AuthContext', () => ({
@@ -29,6 +29,7 @@ describe('UserResults', () => {
   beforeEach(() => {
     vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
     vi.mocked(api.getUsers).mockResolvedValue([mockUser]);
+    vi.mocked(api.getGames).mockResolvedValue([mockGameSingle]);
     vi.mocked(api.getUserEventResults).mockResolvedValue(mockUserEventResult);
   });
 
@@ -91,6 +92,18 @@ describe('UserResults', () => {
     fireEvent.click(screen.getByRole('button', { name: '総資産順' }));
     expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeInTheDocument();
     expect(screen.getByText('0 pt')).toBeInTheDocument();
+  });
+
+  it('ゲーム別ポイント推移に公開ゲームのタイトルが列として表示される', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByRole('columnheader', { name: '第1試合' })).toBeInTheDocument());
+  });
+
+  it('ゲーム別ポイント推移に非公開ゲームが列として表示されない', async () => {
+    vi.mocked(api.getGames).mockResolvedValue([mockGameSingle, mockGameUnpublished]);
+    renderPage();
+    await waitFor(() => screen.getByRole('columnheader', { name: '第1試合' }));
+    expect(screen.queryByRole('columnheader', { name: '第4試合' })).not.toBeInTheDocument();
   });
 
   it('管理者には公開切替チェックボックスが表示される', async () => {
