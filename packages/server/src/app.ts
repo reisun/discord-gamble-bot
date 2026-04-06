@@ -44,6 +44,7 @@ export function createApp() {
     store: new PgSession({
       conString: process.env.DATABASE_URL,
       tableName: 'session',
+      createTableIfMissing: false,
     }),
     secret: process.env.SESSION_SECRET ?? 'dev-secret',
     resave: false,
