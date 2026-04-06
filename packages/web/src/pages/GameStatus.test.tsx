@@ -20,14 +20,13 @@ vi.mock('../contexts/AuthContext', () => ({
   useAuth: vi.fn(),
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
-vi.mock('../hooks/useTokenSearch', () => ({ useTokenSearch: () => '' }));
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
   return { ...actual, useParams: () => ({ guildId: 'test-guild-001', eventId: '1', gameId: '1' }) };
 });
 
-function renderPage(isAdmin = false) {
-  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001' });
+function renderPage(isEditor = false) {
+  vi.mocked(useAuth).mockReturnValue({ isEditor, isVerifying: false, guildId: 'test-guild-001' });
   return render(<MemoryRouter><GameStatus /></MemoryRouter>);
 }
 
@@ -75,14 +74,14 @@ describe('GameStatus', () => {
   });
 
   it('説明が null の場合は表示されない', async () => {
-    renderPage(); // mockGameSingle.description = null
+    renderPage();
     await waitFor(() => screen.getByRole('heading', { level: 1, name: '第1試合' }));
     expect(screen.queryByText('テストの説明文です')).not.toBeInTheDocument();
   });
 
   it('賭け項目リストがゲーム情報エリアに表示される', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getAllByText(/A: チームA/)).toHaveLength(2)); // 賭け項目 + 組み合わせ
+    await waitFor(() => expect(screen.getAllByText(/A: チームA/)).toHaveLength(2));
     expect(screen.getAllByText(/B: チームB/)).toHaveLength(2);
   });
 
@@ -140,7 +139,7 @@ describe('GameStatus', () => {
   });
 
   it('管理者・締切済ゲーム: 結果確定フォームが表示される', async () => {
-    vi.mocked(api.getGame).mockResolvedValue(mockGameMultiOrdered); // status: 'closed'
+    vi.mocked(api.getGame).mockResolvedValue(mockGameMultiOrdered);
     renderPage(true);
     await waitFor(() => expect(screen.getByText('結果を確定する')).toBeInTheDocument());
     expect(screen.getByRole('button', { name: '確定' })).toBeInTheDocument();
@@ -160,7 +159,7 @@ describe('GameStatus', () => {
     await waitFor(() => screen.getByText('結果を確定する'));
     await user.selectOptions(screen.getByRole('combobox'), 'A');
     await user.click(screen.getByRole('button', { name: '確定' }));
-    await waitFor(() => expect(api.setGameResult).toHaveBeenCalledWith(mockGameSingle.id, 'A', 'tok'));
+    await waitFor(() => expect(api.setGameResult).toHaveBeenCalledWith(mockGameSingle.id, 'A'));
   });
 
   it('未公開ゲームの状態は「非公開」と表示される（受付中ではない）', async () => {

@@ -6,7 +6,6 @@ import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { ClockIcon, CheckCircleIcon } from '../components/icons';
-import { useTokenSearch } from '../hooks/useTokenSearch';
 import { toDashboard, toEvent, toGameEdit, toHashPath } from '../routes';
 
 function betTypeLabel(betType: BetType, requiredSelections: number | null): string {
@@ -113,10 +112,9 @@ export default function GameStatus() {
     eventId?: string;
     gameId?: string;
   }>();
-  const { isAdmin, token, guildId: authGuildId } = useAuth();
+  const { isEditor, guildId: authGuildId } = useAuth();
   const guildId = paramGuildId ?? authGuildId;
   const navigate = useNavigate();
-  const tokenSearch = useTokenSearch();
 
   const [game, setGame] = useState<Game | null>(null);
   const [event, setEvent] = useState<Event | null>(null);
@@ -138,8 +136,8 @@ export default function GameStatus() {
     const gameIdNum = Number(gameId);
     setLoading(true);
     Promise.all([
-      getGame(gameIdNum, token ?? undefined),
-      getBets(gameIdNum, token ?? undefined),
+      getGame(gameIdNum),
+      getBets(gameIdNum),
     ])
       .then(([g, b]) => {
         setGame(g);
@@ -147,12 +145,12 @@ export default function GameStatus() {
         if (g.requiredSelections) {
           setOrderedSymbols(Array(g.requiredSelections).fill(''));
         }
-        return getEvent(g.eventId, token ?? undefined);
+        return getEvent(g.eventId);
       })
       .then((ev) => setEvent(ev))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [gameId, token]);
+  }, [gameId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -172,13 +170,13 @@ export default function GameStatus() {
   };
 
   const handleConfirmResult = async () => {
-    if (!game || !token) return;
+    if (!game) return;
     const symbols = buildResultSymbols();
     if (!symbols) { setSubmitError('結果を選択してください'); return; }
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await setGameResult(game.id, symbols, token);
+      await setGameResult(game.id, symbols);
       load();
     } catch (e: unknown) {
       setSubmitError(e instanceof Error ? e.message : '確定に失敗しました');
@@ -188,11 +186,11 @@ export default function GameStatus() {
   };
 
   const handleDelete = async () => {
-    if (!game || !token) return;
+    if (!game) return;
     setActionLoading(true);
     try {
-      await deleteGame(game.id, token);
-      navigate(toEvent(guildId, eventId ?? game.eventId, tokenSearch));
+      await deleteGame(game.id);
+      navigate(toEvent(guildId, eventId ?? game.eventId));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '削除に失敗しました');
       setDeleteTarget(false);
@@ -202,10 +200,10 @@ export default function GameStatus() {
   };
 
   const handlePublish = async () => {
-    if (!game || !token) return;
+    if (!game) return;
     setActionLoading(true);
     try {
-      const updated = await publishGame(game.id, !game.isPublished, token);
+      const updated = await publishGame(game.id, !game.isPublished);
       setGame(updated);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '公開設定の変更に失敗しました');
@@ -215,10 +213,10 @@ export default function GameStatus() {
   };
 
   const handleImmediateClose = async () => {
-    if (!game || !token) return;
+    if (!game) return;
     setActionLoading(true);
     try {
-      const updated = await closeGameNow(game.id, token);
+      const updated = await closeGameNow(game.id);
       setGame(updated);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '締め切り設定に失敗しました');
@@ -227,14 +225,14 @@ export default function GameStatus() {
     }
   };
 
-  const revealStats = isAdmin || game?.status === 'finished';
+  const revealStats = isEditor || game?.status === 'finished';
 
   if (loading) return <div className="loading">読み込み中...</div>;
   if (!game || !bets) return <div className="error-message">{error ?? 'データが取得できませんでした'}</div>;
 
   const breadcrumbs = [
-    { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
-    { label: event?.name ?? '...', href: toHashPath(toEvent(guildId, eventId ?? game.eventId, tokenSearch)) },
+    { label: 'ホーム', href: toHashPath(toDashboard(guildId)) },
+    { label: event?.name ?? '...', href: toHashPath(toEvent(guildId, eventId ?? game.eventId)) },
     { label: game.title },
   ];
 
@@ -254,11 +252,11 @@ export default function GameStatus() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <h1 style={{ fontSize: '24px', fontWeight: 600, color: 'var(--color-text)' }}>{game.title}</h1>
-            {isAdmin && (
+            {isEditor && (
               <>
                 <button
                   className="btn-secondary btn-sm"
-                  onClick={() => navigate(toGameEdit(guildId, eventId ?? game.eventId, game.id, tokenSearch))}
+                  onClick={() => navigate(toGameEdit(guildId, eventId ?? game.eventId, game.id))}
                 >
                   編集
                 </button>
@@ -389,7 +387,7 @@ export default function GameStatus() {
       </div>
 
       {/* 管理者: 結果確定フォーム */}
-      {isAdmin && (game.status === 'closed' || game.status === 'finished') && (
+      {isEditor && (game.status === 'closed' || game.status === 'finished') && (
         <div className="card" style={{ marginBottom: '16px' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-text)', marginBottom: '16px' }}>
             結果を確定する {game.status === 'finished' && <span style={{ fontSize: '14px', color: 'var(--color-text-muted)', fontWeight: 'normal' }}>（修正）</span>}
@@ -484,7 +482,7 @@ export default function GameStatus() {
       )}
 
       {/* 個別賭け一覧（管理者のみ） */}
-      {isAdmin && bets.bets.length > 0 && (
+      {isEditor && bets.bets.length > 0 && (
         <div style={{
           background: 'var(--color-surface)',
           border: '1px solid var(--color-border)',

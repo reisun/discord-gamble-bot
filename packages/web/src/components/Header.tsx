@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getGuild } from '../api/client';
 import { LogoIcon } from './icons';
-import { useTokenSearch } from '../hooks/useTokenSearch';
 import { toDashboard, toHashPath } from '../routes';
 
 export default function Header() {
-  const { isAdmin, isVerifying, guildId } = useAuth();
-  const tokenSearch = useTokenSearch();
+  const { isEditor, isVerifying, guildId } = useAuth();
   const [guildName, setGuildName] = useState<string | null>(null);
   const [guildIconUrl, setGuildIconUrl] = useState<string | null>(null);
 
@@ -20,7 +18,7 @@ export default function Header() {
 
   const titleText = '賭けダッシュボード';
 
-  const homeHref = toHashPath(toDashboard(guildId, tokenSearch));
+  const homeHref = toHashPath(toDashboard(guildId));
 
   return (
     <header style={{
@@ -70,7 +68,7 @@ export default function Header() {
       <div>
         {isVerifying ? (
           <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>認証中...</span>
-        ) : isAdmin ? (
+        ) : isEditor ? (
           <span style={{
             background: 'rgba(255, 137, 4, 0.15)',
             color: 'var(--color-warning)',

@@ -6,16 +6,13 @@ import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { CircleActive, EyeIcon, EyeOffIcon } from '../components/icons';
-import { useTokenSearch } from '../hooks/useTokenSearch';
 import { toEvent, toHashPath, toNewEvent } from '../routes';
 
 export default function EventList() {
   const { guildId: paramGuildId } = useParams<{ guildId?: string }>();
-  const { isAdmin, token } = useAuth();
+  const { isEditor } = useAuth();
   const navigate = useNavigate();
-  const tokenSearch = useTokenSearch();
 
-  // guildId は URL パラメータから取得
   const guildId = paramGuildId ?? null;
 
   const [events, setEvents] = useState<Event[]>([]);
@@ -31,7 +28,7 @@ export default function EventList() {
     }
     setLoading(true);
     setError(null);
-    getEvents(token ?? undefined, guildId)
+    getEvents(guildId)
       .then(setEvents)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -40,13 +37,13 @@ export default function EventList() {
   useEffect(() => {
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, guildId]);
+  }, [guildId]);
 
   const handleDelete = async () => {
-    if (!deleteTarget || !token) return;
+    if (!deleteTarget) return;
     setActionLoading(true);
     try {
-      await deleteEvent(deleteTarget.id, token);
+      await deleteEvent(deleteTarget.id);
       setDeleteTarget(null);
       load();
     } catch (e: unknown) {
@@ -57,10 +54,9 @@ export default function EventList() {
   };
 
   const handleActivate = async (event: Event) => {
-    if (!token) return;
     setActionLoading(true);
     try {
-      await activateEvent(event.id, token);
+      await activateEvent(event.id);
       load();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '切り替えに失敗しました');
@@ -70,10 +66,9 @@ export default function EventList() {
   };
 
   const handlePublish = async (event: Event) => {
-    if (!token) return;
     setActionLoading(true);
     try {
-      await publishEvent(event.id, !event.isPublished, token);
+      await publishEvent(event.id, !event.isPublished);
       load();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '公開設定の変更に失敗しました');
@@ -86,7 +81,7 @@ export default function EventList() {
     return (
       <div className="card" style={{ textAlign: 'center', marginTop: '48px' }}>
         <p style={{ color: 'var(--color-text-muted)' }}>
-          Discordの <code>/link</code> または <code>/admin-link</code> コマンドからアクセスしてください。
+          Discordの <code>/link</code> コマンドからアクセスしてください。
         </p>
       </div>
     );
@@ -99,11 +94,11 @@ export default function EventList() {
       ]} />
 
       <div className="action-bar">
-        {isAdmin && (
+        {isEditor && (
           <button
             className="btn-primary"
             style={{ marginLeft: 'auto' }}
-            onClick={() => navigate(toNewEvent(guildId, tokenSearch))}
+            onClick={() => navigate(toNewEvent(guildId))}
           >
             + 新規イベント作成
           </button>
@@ -131,7 +126,7 @@ export default function EventList() {
                 <tr>
                   <th style={{ textAlign: 'left' }}>イベント名</th>
                   <th style={{ textAlign: 'left' }}>開催状態</th>
-                  {isAdmin && <th style={{ textAlign: 'left' }}>公開</th>}
+                  {isEditor && <th style={{ textAlign: 'left' }}>公開</th>}
                   <th>操作</th>
                 </tr>
               </thead>
@@ -139,7 +134,7 @@ export default function EventList() {
                 {events.map((ev) => (
                   <tr key={ev.id}>
                     <td style={{ fontSize: '16px' }}>
-                      <a href={toHashPath(toEvent(guildId, ev.id, tokenSearch))} style={{ color: 'var(--color-text)', textDecoration: 'none' }} onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')} onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}>
+                      <a href={toHashPath(toEvent(guildId, ev.id))} style={{ color: 'var(--color-text)', textDecoration: 'none' }} onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')} onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}>
                         {ev.name}
                       </a>
                     </td>
@@ -154,7 +149,7 @@ export default function EventList() {
                         </span>
                       )}
                     </td>
-                    {isAdmin && (
+                    {isEditor && (
                       <td>
                         {ev.isPublished ? (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', fontSize: '14px' }}>
@@ -171,11 +166,11 @@ export default function EventList() {
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                         <button
                           className="btn-outline btn-sm"
-                          onClick={() => navigate(toEvent(guildId, ev.id, tokenSearch))}
+                          onClick={() => navigate(toEvent(guildId, ev.id))}
                         >
                           詳細
                         </button>
-                        {isAdmin && (
+                        {isEditor && (
                           <>
                             <button
                               className="btn-secondary btn-sm"
