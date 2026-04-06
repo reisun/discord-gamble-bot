@@ -40,6 +40,14 @@ export function createApp() {
     res.json({ status: 'ok' });
   });
 
+  app.get('/api/version', (_req, res) => {
+    res.json({
+      service: 'server',
+      version: process.env.APP_VERSION ?? '1.0.0',
+      commitHash: process.env.GIT_COMMIT ?? 'unknown',
+    });
+  });
+
   app.use(errorHandler);
 
   return app;

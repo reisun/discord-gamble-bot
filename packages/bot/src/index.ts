@@ -6,7 +6,10 @@ import { registerGuild } from './lib/api';
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.once(Events.ClientReady, async (c) => {
+  const version = process.env.APP_VERSION ?? '1.0.0';
+  const commitHash = process.env.GIT_COMMIT ?? 'unknown';
   console.log(`[Bot] Logged in as ${c.user.tag}`);
+  console.log(`[Bot] Version: ${version} (${commitHash})`);
 
   // 参加中のギルド情報をAPIに登録
   for (const [, guild] of c.guilds.cache) {
