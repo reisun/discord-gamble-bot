@@ -151,6 +151,7 @@ export default function UserResults() {
                 <th>ポイント増減</th>
                 <th>勝/敗</th>
                 <th>借金総額</th>
+                <th>総資産額</th>
                 <th>総資産増減</th>
               </tr>
             </thead>
@@ -178,6 +179,7 @@ export default function UserResults() {
                         <span className="text-danger">{r.totalDebt.toLocaleString()} pt</span>
                       ) : '0 pt') : '-'}
                     </td>
+                    <td>{r ? `${r.totalAssets.toLocaleString()} pt` : '-'}</td>
                     <td>{r ? <PointChange value={r.totalAssetsChange} /> : '-'}</td>
                   </tr>
                 );

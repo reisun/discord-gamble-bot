@@ -57,7 +57,13 @@ describe('UserResults', () => {
   it('ポイント総額列が表示される', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByRole('columnheader', { name: 'ポイント総額' })).toBeInTheDocument());
-    expect(screen.getByText('10,500 pt')).toBeInTheDocument();
+    expect(screen.getAllByText('10,500 pt').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('総資産額列が表示される', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByRole('columnheader', { name: '総資産額' })).toBeInTheDocument());
+    expect(screen.getAllByText('10,500 pt').length).toBeGreaterThanOrEqual(1);
   });
 
   it('一般ユーザーにも借金総額列が表示される', async () => {
