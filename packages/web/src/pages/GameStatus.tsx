@@ -213,7 +213,7 @@ export default function GameStatus() {
   const handleImmediateClose = async () => {
     if (!game || !token) return;
     setActionLoading(true);
-    const deadline = new Date(Date.now() + 60000).toISOString();
+    const deadline = new Date(Date.now() - 60000).toISOString();
     try {
       const updated = await updateGame(game.id, { title: game.title, deadline }, token);
       setGame(updated);

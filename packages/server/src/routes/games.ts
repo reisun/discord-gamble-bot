@@ -327,11 +327,11 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
             );
           }
         }
-        // deadline は公開済みでも変更可能
+        // deadline は公開済みでも変更可能（即時締め切りのため過去日時も許可）
         if (deadline !== undefined) {
           const d = new Date(deadline);
-          if (isNaN(d.getTime()) || d <= new Date()) {
-            throw new AppError(400, 'VALIDATION_ERROR', 'deadline は現在時刻より未来の日時を指定してください');
+          if (isNaN(d.getTime())) {
+            throw new AppError(400, 'VALIDATION_ERROR', 'deadline の形式が不正です');
           }
         }
         if (betOptions !== undefined) {
