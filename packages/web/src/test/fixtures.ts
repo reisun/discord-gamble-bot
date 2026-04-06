@@ -26,6 +26,7 @@ export const mockGameSingle: Game = {
   title: '第1試合',
   description: null,
   deadline: '2099-01-01T12:00:00Z',
+  closeAfterMinutes: 10,
   isPublished: true,
   status: 'open',
   betType: 'single',

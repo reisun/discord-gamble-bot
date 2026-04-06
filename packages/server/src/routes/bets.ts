@@ -8,6 +8,7 @@ const router = Router({ mergeParams: true });
 type GameRow = {
   id: number;
   event_id: number;
+  is_published: boolean;
   status: string;
   bet_type: string;
   required_selections: number | null;
@@ -40,6 +41,7 @@ type UserRow = {
 
 function computeEffectiveStatus(game: GameRow): 'open' | 'closed' | 'finished' {
   if (game.status === 'finished') return 'finished';
+  if (!game.is_published) return 'open';
   if (new Date(game.deadline) < new Date()) return 'closed';
   return 'open';
 }
@@ -86,6 +88,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
     }
     const game = gameRows[0];
+    if (!adminMode && !game.is_published) {
+      throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
+    }
     const effectiveStatus = computeEffectiveStatus(game);
     const isFinished = effectiveStatus === 'finished';
 
@@ -200,6 +205,9 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
       if (gameRows.rows.length === 0) throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
 
       const game = gameRows.rows[0];
+      if (!game.is_published) {
+        throw new AppError(409, 'CONFLICT', 'このゲームはまだ公開されていません');
+      }
       const effectiveStatus = computeEffectiveStatus(game);
 
       if (effectiveStatus !== 'open') {

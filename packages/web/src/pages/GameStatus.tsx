@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getGame, getEvent, getBets, setGameResult, deleteGame, publishGame, updateGame } from '../api/client';
+import { getGame, getEvent, getBets, setGameResult, deleteGame, publishGame, closeGameNow } from '../api/client';
 import type { BetType, BetsData, BetCombination, Game, Event } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
@@ -58,6 +58,10 @@ function Countdown({ deadline }: { deadline: string }) {
 function formatDeadline(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+}
+
+function deadlineLabel(game: Game): string {
+  return game.isPublished ? formatDeadline(game.deadline) : `公開から${game.closeAfterMinutes}分後`;
 }
 
 interface CombinationCardProps {
@@ -213,9 +217,8 @@ export default function GameStatus() {
   const handleImmediateClose = async () => {
     if (!game || !token) return;
     setActionLoading(true);
-    const deadline = new Date(Date.now() - 60000).toISOString();
     try {
-      const updated = await updateGame(game.id, { title: game.title, deadline }, token);
+      const updated = await closeGameNow(game.id, token);
       setGame(updated);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '締め切り設定に失敗しました');
@@ -302,9 +305,9 @@ export default function GameStatus() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <ClockIcon />
             <span style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>
-              締め切り: {formatDeadline(game.deadline)}
+              締め切り: {deadlineLabel(game)}
             </span>
-            {game.status === 'open' && <Countdown deadline={game.deadline} />}
+            {game.isPublished && game.status === 'open' && <Countdown deadline={game.deadline} />}
           </div>
           <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
             状態:{' '}

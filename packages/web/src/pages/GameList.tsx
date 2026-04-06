@@ -19,6 +19,14 @@ function formatDeadline(iso: string) {
   return `${y}/${mo}/${day} ${h}:${m}`;
 }
 
+function formatListDeadline(game: Game, isAdmin: boolean): string {
+  if (!game.isPublished) {
+    if (!isAdmin) return '-----/--/-- --:--';
+    return `公開から${game.closeAfterMinutes}分後`;
+  }
+  return formatDeadline(game.deadline);
+}
+
 function isPlaceholderGame(game: Game, isAdmin: boolean): boolean {
   return !isAdmin && !game.isPublished;
 }
@@ -176,7 +184,7 @@ export default function GameList() {
                       )}
                     </td>
                     <td className="cell-sm" style={{ color: isPlaceholderGame(g, isAdmin) ? 'var(--color-text-muted)' : undefined }}>
-                      {isPlaceholderGame(g, isAdmin) ? '-----/--/-- --:--' : formatDeadline(g.deadline)}
+                      {formatListDeadline(g, isAdmin)}
                     </td>
                     {isAdmin && (
                       <td>

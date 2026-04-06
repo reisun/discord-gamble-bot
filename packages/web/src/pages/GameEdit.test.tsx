@@ -85,11 +85,11 @@ describe('GameEdit', () => {
     expect(screen.getByText(/順序に関わらず/)).toBeInTheDocument();
   });
 
-  it('公開済みゲーム編集: 締め切り日時は disabled にならない', async () => {
+  it('公開済みゲーム編集: 公開後の締め切り分数は disabled になる', async () => {
     const publishedGame = { ...mockGameSingle, isPublished: true };
     renderEdit(publishedGame);
     await waitFor(() => screen.getByDisplayValue('第1試合'));
-    expect(screen.getByLabelText(/締め切り日時/)).not.toBeDisabled();
+    expect(screen.getByLabelText(/公開後の何分後に締め切るか/)).toBeDisabled();
   });
 
   it('公開済みゲーム編集: 賭け方式が disabled になる', async () => {
@@ -119,9 +119,7 @@ describe('GameEdit', () => {
     const user = userEvent.setup();
     renderNew();
     await user.type(screen.getByLabelText(/ゲームタイトル/), '第5試合');
-    // 締め切りを設定（必須）- 既存値を上書きするため fireEvent.change を使用
-    const deadlineInput = screen.getByLabelText(/締め切り日時/);
-    fireEvent.change(deadlineInput, { target: { value: '2099-12-31T12:00' } });
+    fireEvent.change(screen.getByLabelText(/公開後の何分後に締め切るか/), { target: { value: '12' } });
     // 記号と項目名（2行分）を入力
     const symbolInputs = screen.getAllByPlaceholderText('A');
     const labelInputs = screen.getAllByPlaceholderText('チームA');
@@ -167,7 +165,7 @@ describe('GameEdit', () => {
     const user = userEvent.setup();
     renderNew();
     await user.type(screen.getByLabelText(/ゲームタイトル/), '第5試合');
-    fireEvent.change(screen.getByLabelText(/締め切り日時/), { target: { value: '2099-12-31T12:00' } });
+    fireEvent.change(screen.getByLabelText(/公開後の何分後に締め切るか/), { target: { value: '12' } });
     const symbolInputs = screen.getAllByPlaceholderText('A');
     const labelInputs = screen.getAllByPlaceholderText('チームA');
     await user.type(symbolInputs[0], 'A');

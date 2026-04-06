@@ -37,6 +37,7 @@ describe('GameStatus', () => {
     vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
     vi.mocked(api.getBets).mockResolvedValue(mockBetsData);
     vi.mocked(api.setGameResult).mockResolvedValue({ ...mockGameSingle, resultSymbols: 'A', status: 'finished' });
+    vi.mocked(api.closeGameNow).mockResolvedValue({ ...mockGameSingle, status: 'closed' });
   });
 
   it('ゲームタイトルが表示される', async () => {
@@ -166,6 +167,12 @@ describe('GameStatus', () => {
     vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false });
     renderPage(true);
     await waitFor(() => expect(screen.getByRole('button', { name: '公開する' })).toBeInTheDocument());
+  });
+
+  it('管理者: 非公開ゲームでは締め切りが「公開からXX分後」で表示される', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false, closeAfterMinutes: 15 });
+    renderPage(true);
+    await waitFor(() => expect(screen.getByText(/締め切り: 公開から15分後/)).toBeInTheDocument());
   });
 
   it('管理者: 公開済みゲームでは「非公開にする」ボタンが表示される', async () => {

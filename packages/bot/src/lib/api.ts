@@ -38,6 +38,7 @@ export type Game = {
   title: string;
   description: string | null;
   deadline: string;
+  closeAfterMinutes: number;
   isPublished: boolean;
   status: 'open' | 'closed' | 'finished';
   betType: 'single' | 'multi_unordered' | 'multi_ordered' | 'multi_ordered_dup';
