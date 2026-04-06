@@ -40,7 +40,7 @@ type UserRow = {
 
 function computeEffectiveStatus(game: GameRow): 'open' | 'closed' | 'finished' {
   if (game.status === 'finished') return 'finished';
-  if (new Date(game.deadline) <= new Date()) return 'closed';
+  if (new Date(game.deadline) < new Date()) return 'closed';
   return 'open';
 }
 
