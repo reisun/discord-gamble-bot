@@ -85,11 +85,11 @@ describe('GameEdit', () => {
     expect(screen.getByText(/順序に関わらず/)).toBeInTheDocument();
   });
 
-  it('公開済みゲーム編集: 締め切り日時が disabled になる', async () => {
+  it('公開済みゲーム編集: 締め切り日時は disabled にならない', async () => {
     const publishedGame = { ...mockGameSingle, isPublished: true };
     renderEdit(publishedGame);
     await waitFor(() => screen.getByDisplayValue('第1試合'));
-    expect(screen.getByLabelText(/締め切り日時/)).toBeDisabled();
+    expect(screen.getByLabelText(/締め切り日時/)).not.toBeDisabled();
   });
 
   it('公開済みゲーム編集: 賭け方式が disabled になる', async () => {

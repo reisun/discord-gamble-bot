@@ -205,7 +205,7 @@ export default function GameEdit() {
             marginBottom: '16px',
             fontSize: '13px',
           }}>
-            このゲームは公開済みです。一部フィールドは編集できません。
+            このゲームは公開済みです。賭け方式・賭け項目の記号は変更できません。締め切り日時は変更可能です。
           </div>
         )}
         {error && <div className="error-message" ref={errorRef}>{error}</div>}
@@ -242,7 +242,6 @@ export default function GameEdit() {
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
               required
-              disabled={isPublished}
               style={{ maxWidth: '240px' }}
             />
           </div>

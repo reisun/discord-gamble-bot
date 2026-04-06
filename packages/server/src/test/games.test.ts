@@ -255,7 +255,7 @@ describe('PUT /api/games/:id', () => {
     expect(res.body.data.betOptions[0].symbol).toBe('X');
   });
 
-  it('公開済みゲームで deadline を変更すると 409 を返す', async () => {
+  it('公開済みゲームでも deadline を変更できる', async () => {
     const event = await createEvent();
     const game = await createGame(event.id);
     await request(app)
@@ -263,13 +263,14 @@ describe('PUT /api/games/:id', () => {
       .set(adminHeaders)
       .send({ isPublished: true });
 
+    const newDeadline = new Date(Date.now() + 7200 * 1000).toISOString();
     const res = await request(app)
       .put(`/api/games/${game.id}`)
       .set(adminHeaders)
-      .send({ deadline: new Date(Date.now() + 7200 * 1000).toISOString() });
+      .send({ deadline: newDeadline });
 
-    expect(res.status).toBe(409);
-    expect(res.body.error.code).toBe('CONFLICT');
+    expect(res.status).toBe(200);
+    expect(new Date(res.body.data.deadline).toISOString()).toBe(newDeadline);
   });
 
   it('公開済みゲームでも label は変更できる', async () => {
