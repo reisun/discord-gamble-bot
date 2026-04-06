@@ -100,7 +100,7 @@ describe('GameStatus', () => {
   it('非管理者・受付中: 賭け総数と参加人数は表示されない', async () => {
     renderPage(false);
     await waitFor(() => expect(screen.getByText('×1.67倍')).toBeInTheDocument());
-    expect(screen.queryByText('(800pt / 2人)')).not.toBeInTheDocument();
+    expect(screen.queryByText(/600pt.*3人|400pt.*2人/)).not.toBeInTheDocument();
   });
 
   it('odds が null の組み合わせが返ってきてもクラッシュせずプレースホルダー表示になる', async () => {
@@ -160,6 +160,38 @@ describe('GameStatus', () => {
     await user.selectOptions(screen.getByRole('combobox'), 'A');
     await user.click(screen.getByRole('button', { name: '確定' }));
     await waitFor(() => expect(api.setGameResult).toHaveBeenCalledWith(mockGameSingle.id, 'A', 'tok'));
+  });
+
+  it('管理者: 非公開ゲームでは「公開する」ボタンが表示される', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false });
+    renderPage(true);
+    await waitFor(() => expect(screen.getByRole('button', { name: '公開する' })).toBeInTheDocument());
+  });
+
+  it('管理者: 公開済みゲームでは「非公開にする」ボタンが表示される', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: true });
+    renderPage(true);
+    await waitFor(() => expect(screen.getByRole('button', { name: '非公開にする' })).toBeInTheDocument());
+  });
+
+  it('非管理者: 公開切替ボタンが表示されない', async () => {
+    renderPage(false);
+    await waitFor(() => screen.getByRole('heading', { level: 1, name: '第1試合' }));
+    expect(screen.queryByRole('button', { name: '公開する' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '非公開にする' })).not.toBeInTheDocument();
+  });
+
+  it('管理者: 公開中・受付中のゲームでは即時締め切りボタンが表示される', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: true, status: 'open' });
+    renderPage(true);
+    await waitFor(() => expect(screen.getByRole('button', { name: '即時締め切り' })).toBeInTheDocument());
+  });
+
+  it('管理者: 非公開ゲームでは即時締め切りボタンが表示されない', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false, status: 'open' });
+    renderPage(true);
+    await waitFor(() => screen.getByRole('heading', { level: 1, name: '第1試合' }));
+    expect(screen.queryByRole('button', { name: '即時締め切り' })).not.toBeInTheDocument();
   });
 
   it('管理者の個別賭け一覧にユーザー名が表示される', async () => {

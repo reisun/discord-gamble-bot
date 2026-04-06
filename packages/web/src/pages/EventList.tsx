@@ -7,7 +7,7 @@ import Breadcrumb from '../components/Breadcrumb';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { CircleActive, EyeIcon, EyeOffIcon } from '../components/icons';
 import { useTokenSearch } from '../hooks/useTokenSearch';
-import { toEvent, toNewEvent } from '../routes';
+import { toEvent, toHashPath, toNewEvent } from '../routes';
 
 export default function EventList() {
   const { guildId: paramGuildId } = useParams<{ guildId?: string }>();
@@ -138,7 +138,11 @@ export default function EventList() {
               <tbody>
                 {events.map((ev) => (
                   <tr key={ev.id}>
-                    <td style={{ fontSize: '16px', color: 'var(--color-text)' }}>{ev.name}</td>
+                    <td style={{ fontSize: '16px' }}>
+                      <a href={toHashPath(toEvent(guildId, ev.id, tokenSearch))} style={{ color: 'var(--color-text)', textDecoration: 'none' }} onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')} onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}>
+                        {ev.name}
+                      </a>
+                    </td>
                     <td>
                       {ev.isActive ? (
                         <span className="badge badge-active event-status-badge">

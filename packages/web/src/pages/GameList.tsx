@@ -169,7 +169,11 @@ export default function GameList() {
                   <tr key={g.id}>
                     <td className="cell-sm">{i + 1}</td>
                     <td style={{ fontSize: '16px', color: isPlaceholderGame(g, isAdmin) ? 'var(--color-text-muted)' : 'var(--color-text)' }}>
-                      {isPlaceholderGame(g, isAdmin) ? '非公開ゲーム' : g.title}
+                      {isPlaceholderGame(g, isAdmin) ? '非公開ゲーム' : (
+                        <a href={toHashPath(toGame(guildId, evId, g.id, tokenSearch))} style={{ color: 'var(--color-text)', textDecoration: 'none' }} onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')} onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}>
+                          {g.title}
+                        </a>
+                      )}
                     </td>
                     <td className="cell-sm" style={{ color: isPlaceholderGame(g, isAdmin) ? 'var(--color-text-muted)' : undefined }}>
                       {isPlaceholderGame(g, isAdmin) ? '-----/--/-- --:--' : formatDeadline(g.deadline)}

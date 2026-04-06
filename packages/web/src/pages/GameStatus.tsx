@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getGame, getEvent, getBets, setGameResult, deleteGame } from '../api/client';
+import { getGame, getEvent, getBets, setGameResult, deleteGame, publishGame, updateGame } from '../api/client';
 import type { BetType, BetsData, BetCombination, Game, Event } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
@@ -87,16 +87,16 @@ function CombinationCard({ combo, betType, isWinner, revealStats }: CombinationC
         {combinationLabel(combo.selectedSymbols, combo.selectedLabels, betType)}
       </span>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
-        <>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
           <span style={{ color: 'var(--color-primary-text)', fontSize: '18px', fontWeight: 600 }}>
             ×{formatOdds(combo.odds)}倍
           </span>
           {revealStats && (
-            <span style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>
-              ({(combo.totalPoints ?? 0).toLocaleString()}pt / {combo.betCount ?? 0}人)
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>
+              {(combo.totalPoints ?? 0).toLocaleString()}pt / {combo.betCount ?? 0}人
             </span>
           )}
-        </>
+        </div>
         {isWinner && <CheckCircleIcon />}
       </div>
     </div>
@@ -197,6 +197,33 @@ export default function GameStatus() {
     }
   };
 
+  const handlePublish = async () => {
+    if (!game || !token) return;
+    setActionLoading(true);
+    try {
+      const updated = await publishGame(game.id, !game.isPublished, token);
+      setGame(updated);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '公開設定の変更に失敗しました');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleImmediateClose = async () => {
+    if (!game || !token) return;
+    setActionLoading(true);
+    const deadline = new Date(Date.now() + 60000).toISOString();
+    try {
+      const updated = await updateGame(game.id, { title: game.title, deadline }, token);
+      setGame(updated);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '締め切り設定に失敗しました');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const revealStats = isAdmin || game?.status === 'finished';
 
   if (loading) return <div className="loading">読み込み中...</div>;
@@ -236,6 +263,22 @@ export default function GameStatus() {
                 >
                   削除
                 </button>
+                <button
+                  className={`btn-sm ${game.isPublished ? 'btn-warning' : 'btn-success'}`}
+                  disabled={actionLoading}
+                  onClick={handlePublish}
+                >
+                  {game.isPublished ? '非公開にする' : '公開する'}
+                </button>
+                {game.isPublished && game.status === 'open' && (
+                  <button
+                    className="btn-secondary btn-sm"
+                    disabled={actionLoading}
+                    onClick={handleImmediateClose}
+                  >
+                    即時締め切り
+                  </button>
+                )}
               </>
             )}
           </div>
