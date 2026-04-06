@@ -4,7 +4,7 @@ import {
   EmbedBuilder,
   SlashCommandBuilder,
 } from 'discord.js';
-import { getEventGames, getEvents, getGameByNo } from '../lib/api';
+import { getEventGamesAdmin, getEvents, publishGame } from '../lib/api';
 import { isAdminMember } from '../lib/admin';
 import { betTypeLabel, fmtDeadline } from '../lib/format';
 
@@ -29,11 +29,10 @@ export async function autocomplete(interaction: AutocompleteInteraction): Promis
     const events = await getEvents(guildId);
     const activeEvent = events.find((e) => e.isActive);
     if (!activeEvent) { await interaction.respond([]); return; }
-    const allGames = await getEventGames(activeEvent.id);
-    const publishedGames = allGames.filter((g) => g.isPublished);
+    const allGames = await getEventGamesAdmin(activeEvent.id);
 
     const query = focused.value.toString().toLowerCase();
-    const choices = publishedGames
+    const choices = allGames
       .filter((g) => {
         const gameNo = allGames.findIndex((ag) => ag.id === g.id) + 1;
         if (!query) return true;
@@ -42,7 +41,8 @@ export async function autocomplete(interaction: AutocompleteInteraction): Promis
       .slice(0, 25)
       .map((g) => {
         const gameNo = allGames.findIndex((ag) => ag.id === g.id) + 1;
-        return { name: `#${gameNo} ${g.title}`, value: gameNo };
+        const label = g.isPublished ? `#${gameNo} ${g.title}` : `#${gameNo} ${g.title} [非公開]`;
+        return { name: label, value: gameNo };
       });
 
     await interaction.respond(choices);
@@ -77,15 +77,25 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
   let game;
   try {
-    game = await getGameByNo(guildId, gameNo);
+    const events = await getEvents(guildId);
+    const activeEvent = events.find((e) => e.isActive);
+    if (!activeEvent) throw new Error('no active event');
+    const allGames = await getEventGamesAdmin(activeEvent.id);
+    game = allGames[gameNo - 1];
+    if (!game) throw new Error('not found');
   } catch {
     await interaction.editReply('❌ 指定されたゲームが見つかりません。');
     return;
   }
 
+  // 非公開の場合は自動で公開する
   if (!game.isPublished) {
-    await interaction.editReply('❌ 非公開のゲームは投稿できません。');
-    return;
+    try {
+      await publishGame(game.id);
+    } catch {
+      await interaction.editReply('❌ ゲームの公開に失敗しました。');
+      return;
+    }
   }
 
   const isSingle = game.betType === 'single';

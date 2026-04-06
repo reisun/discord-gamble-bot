@@ -129,6 +129,23 @@ export async function getEventGames(eventId: number): Promise<Game[]> {
   return res.data.data;
 }
 
+/** 管理者トークンで非公開ゲームを含む全ゲームを取得する */
+export async function getEventGamesAdmin(eventId: number): Promise<Game[]> {
+  const res = await api.get<{ data: Game[] }>(`/api/events/${eventId}/games`, {
+    headers: { Authorization: `Bearer ${config.adminToken}` },
+  });
+  return res.data.data;
+}
+
+/** ゲームの公開フラグを ON にする */
+export async function publishGame(gameId: number): Promise<void> {
+  await api.patch(
+    `/api/games/${gameId}/publish`,
+    { isPublished: true },
+    { headers: { Authorization: `Bearer ${config.adminToken}` } },
+  );
+}
+
 export async function getBetList(gameId: number): Promise<BetListResponse> {
   const res = await api.get<{ data: BetListResponse }>(`/api/games/${gameId}/bets`);
   return res.data.data;
