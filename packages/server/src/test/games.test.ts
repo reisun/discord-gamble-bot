@@ -273,6 +273,24 @@ describe('PUT /api/games/:id', () => {
     expect(new Date(res.body.data.deadline).toISOString()).toBe(newDeadline);
   });
 
+  it('公開済みゲームで deadline に過去日時を設定できる（即時締め切り）', async () => {
+    const event = await createEvent();
+    const game = await createGame(event.id);
+    await request(app)
+      .patch(`/api/games/${game.id}/publish`)
+      .set(adminHeaders)
+      .send({ isPublished: true });
+
+    const pastDeadline = new Date(Date.now() - 60 * 1000).toISOString();
+    const res = await request(app)
+      .put(`/api/games/${game.id}`)
+      .set(adminHeaders)
+      .send({ deadline: pastDeadline });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('closed');
+  });
+
   it('公開済みゲームでも label は変更できる', async () => {
     const event = await createEvent();
     const game = await createGame(event.id);
