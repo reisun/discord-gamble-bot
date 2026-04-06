@@ -87,16 +87,16 @@ function CombinationCard({ combo, betType, isWinner, revealStats }: CombinationC
         {combinationLabel(combo.selectedSymbols, combo.selectedLabels, betType)}
       </span>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
-        <>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
           <span style={{ color: 'var(--color-primary-text)', fontSize: '18px', fontWeight: 600 }}>
             ×{formatOdds(combo.odds)}倍
           </span>
           {revealStats && (
-            <span style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>
-              ({(combo.totalPoints ?? 0).toLocaleString()}pt / {combo.betCount ?? 0}人)
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>
+              {(combo.totalPoints ?? 0).toLocaleString()}pt / {combo.betCount ?? 0}人
             </span>
           )}
-        </>
+        </div>
         {isWinner && <CheckCircleIcon />}
       </div>
     </div>

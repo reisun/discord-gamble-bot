@@ -88,7 +88,7 @@ describe('GameStatus', () => {
   it('非管理者・受付中: 賭け総数と参加人数は表示されない', async () => {
     renderPage(false);
     await waitFor(() => expect(screen.getByText('×1.67倍')).toBeInTheDocument());
-    expect(screen.queryByText('(800pt / 2人)')).not.toBeInTheDocument();
+    expect(screen.queryByText(/600pt.*3人|400pt.*2人/)).not.toBeInTheDocument();
   });
 
   it('odds が null の組み合わせが返ってきてもクラッシュせずプレースホルダー表示になる', async () => {
