@@ -94,6 +94,7 @@ export const mockBetsData: BetsData = {
     {
       userId: 1,
       userName: 'User A',
+      avatarUrl: null,
       selectedSymbols: 'A',
       selectedLabels: ['チームA'],
       amount: 100,
@@ -119,6 +120,7 @@ export const mockUser: User = {
   id: 1,
   discordId: '123456789',
   discordName: 'User A',
+  avatarUrl: null,
   points: 10500,
   debt: 0,
 };

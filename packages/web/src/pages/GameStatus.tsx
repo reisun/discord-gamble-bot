@@ -502,7 +502,16 @@ export default function GameStatus() {
               <tbody>
                 {bets.bets.map((bet, i) => (
                   <tr key={i}>
-                    <td style={{ fontSize: '14px' }}>{bet.userName}</td>
+                    <td style={{ fontSize: '14px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        {bet.avatarUrl ? (
+                          <img src={bet.avatarUrl} alt="" width={20} height={20} style={{ borderRadius: '50%', flexShrink: 0 }} />
+                        ) : (
+                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--color-border)', display: 'inline-block', flexShrink: 0 }} />
+                        )}
+                        {bet.userName}
+                      </span>
+                    </td>
                     <td className="cell-sm" style={{ whiteSpace: 'normal', minWidth: '160px' }}>
                       {combinationLabel(bet.selectedSymbols, bet.selectedLabels, game.betType)}
                     </td>

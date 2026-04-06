@@ -35,6 +35,7 @@ type UserRow = {
   id: number;
   discord_id: string;
   discord_name: string;
+  discord_avatar_url: string | null;
 };
 
 function computeEffectiveStatus(game: GameRow): 'open' | 'closed' | 'finished' {
@@ -94,9 +95,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     );
     const optMap = new Map(optionRows.map((o) => [o.symbol, o.label]));
 
-    const betRows = await query<BetRow & { discord_name: string }>(
+    const betRows = await query<BetRow & { discord_name: string; discord_avatar_url: string | null }>(
       `SELECT b.id, b.user_id, b.game_id, b.selected_symbols, b.amount, b.is_debt,
-              b.created_at, b.updated_at, u.discord_name
+              b.created_at, b.updated_at, u.discord_name, u.discord_avatar_url
        FROM bets b
        JOIN users u ON u.id = b.user_id
        WHERE b.game_id = $1`,
@@ -137,6 +138,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       return {
         userId: b.user_id,
         userName: b.discord_name,
+        avatarUrl: b.discord_avatar_url ?? null,
         selectedSymbols: b.selected_symbols,
         selectedLabels: symbolsToLabels(b.selected_symbols, optMap),
         amount: b.amount,
@@ -167,12 +169,14 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
     const {
       discordId,
       discordName,
+      avatarUrl,
       selectedSymbols,
       amount,
       allowDebt = false,
     } = req.body as {
       discordId?: string;
       discordName?: string;
+      avatarUrl?: string;
       selectedSymbols?: string;
       amount?: number;
       allowDebt?: boolean;
@@ -234,24 +238,28 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
         }
       }
 
-      // Ensure user exists (upsert by discordId); update name if provided
+      // Ensure user exists (upsert by discordId); update name/avatar if provided
       const resolvedName = discordName ?? discordId;
       let userRows = await client.query<UserRow>(
-        'SELECT id, discord_id, discord_name FROM users WHERE discord_id = $1',
+        'SELECT id, discord_id, discord_name, discord_avatar_url FROM users WHERE discord_id = $1',
         [discordId],
       );
-      const normalizedDiscordName = discordName?.trim() ?? discordId;
 
       if (userRows.rows.length === 0) {
         userRows = await client.query<UserRow>(
-          'INSERT INTO users (discord_id, discord_name) VALUES ($1, $2) RETURNING id, discord_id, discord_name',
-          [discordId, resolvedName],
+          'INSERT INTO users (discord_id, discord_name, discord_avatar_url) VALUES ($1, $2, $3) RETURNING id, discord_id, discord_name, discord_avatar_url',
+          [discordId, resolvedName, avatarUrl ?? null],
         );
-      } else if (discordName && userRows.rows[0].discord_name !== discordName) {
-        userRows = await client.query<UserRow>(
-          'UPDATE users SET discord_name = $1, updated_at = NOW() WHERE discord_id = $2 RETURNING id, discord_id, discord_name',
-          [discordName, discordId],
-        );
+      } else {
+        const existing = userRows.rows[0];
+        const nameChanged = discordName && existing.discord_name !== discordName;
+        const avatarChanged = avatarUrl !== undefined && existing.discord_avatar_url !== avatarUrl;
+        if (nameChanged || avatarChanged) {
+          userRows = await client.query<UserRow>(
+            'UPDATE users SET discord_name = $1, discord_avatar_url = $2, updated_at = NOW() WHERE discord_id = $3 RETURNING id, discord_id, discord_name, discord_avatar_url',
+            [discordName ?? existing.discord_name, avatarUrl ?? existing.discord_avatar_url, discordId],
+          );
+        }
       }
       const user = userRows.rows[0];
 

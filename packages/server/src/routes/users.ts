@@ -9,6 +9,7 @@ type UserRow = {
   id: number;
   discord_id: string;
   discord_name: string;
+  discord_avatar_url: string | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -100,7 +101,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     }
 
     const users = await query<UserRow>(
-      'SELECT id, discord_id, discord_name, created_at, updated_at FROM users ORDER BY id',
+      'SELECT id, discord_id, discord_name, discord_avatar_url, created_at, updated_at FROM users ORDER BY id',
     );
     const userIds = users.map((u) => u.id);
     const initialPoints = await fetchInitialPoints(eventId as string);
@@ -114,6 +115,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         id: u.id,
         discordId: u.discord_id,
         discordName: u.discord_name,
+        avatarUrl: u.discord_avatar_url ?? null,
         points,
       };
       if (adminMode) {
@@ -132,7 +134,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 router.get('/discord/:discordId', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await query<UserRow>(
-      'SELECT id, discord_id, discord_name, created_at, updated_at FROM users WHERE discord_id = $1',
+      'SELECT id, discord_id, discord_name, discord_avatar_url, created_at, updated_at FROM users WHERE discord_id = $1',
       [req.params.discordId],
     );
     if (users.length === 0) {
@@ -153,6 +155,7 @@ router.get('/discord/:discordId', async (req: Request, res: Response, next: Next
       id: user.id,
       discordId: user.discord_id,
       discordName: user.discord_name,
+      avatarUrl: user.discord_avatar_url ?? null,
       points: pointsMap.get(user.id) ?? initialPoints,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
@@ -172,7 +175,7 @@ router.get('/discord/:discordId', async (req: Request, res: Response, next: Next
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await query<UserRow>(
-      'SELECT id, discord_id, discord_name, created_at, updated_at FROM users WHERE id = $1',
+      'SELECT id, discord_id, discord_name, discord_avatar_url, created_at, updated_at FROM users WHERE id = $1',
       [req.params.id],
     );
     if (users.length === 0) {
@@ -193,6 +196,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       id: user.id,
       discordId: user.discord_id,
       discordName: user.discord_name,
+      avatarUrl: user.discord_avatar_url ?? null,
       points: pointsMap.get(user.id) ?? initialPoints,
       createdAt: user.created_at,
       updatedAt: user.updated_at,

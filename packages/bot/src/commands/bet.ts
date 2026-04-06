@@ -116,6 +116,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   const discordId = interaction.user.id;
   const member = interaction.member as GuildMember | null;
   const discordName = member?.nickname ?? interaction.user.displayName;
+  const avatarUrl = interaction.user.displayAvatarURL({ extension: 'png', size: 64 });
   const guildId = interaction.guild?.id;
 
   if (!guildId) {
@@ -193,7 +194,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   // 賭け実行
   let result;
   try {
-    result = await placeBet(game.id, discordId, discordName, normalizedSymbols, amount, borrow);
+    result = await placeBet(game.id, discordId, discordName, normalizedSymbols, amount, borrow, avatarUrl);
   } catch (err) {
     await interaction.editReply(`❌ 賭けに失敗しました。\n理由: ${extractApiMessage(err)}`);
     return;
