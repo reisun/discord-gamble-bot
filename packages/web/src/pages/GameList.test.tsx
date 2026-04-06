@@ -63,6 +63,11 @@ describe('GameList', () => {
     await waitFor(() => expect(screen.getByText('第1試合')).toBeInTheDocument());
   });
 
+  it('ゲームタイトルがリンクとして表示される', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByRole('link', { name: '第1試合' })).toBeInTheDocument());
+  });
+
   it('管理者には「公開」列（ヘッダー・状態）が表示される', async () => {
     renderPage(true);
     await waitFor(() => expect(screen.getAllByText('公開')).toHaveLength(2)); // table header + status span

@@ -106,6 +106,11 @@ describe('EventList', () => {
     await waitFor(() => expect(api.activateEvent).toHaveBeenCalledWith(mockEvent.id, 'tok'));
   });
 
+  it('イベント名がリンクとして表示される', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toBeInTheDocument());
+  });
+
   it('API エラー時にエラーメッセージが表示される', async () => {
     vi.mocked(api.getEvents).mockRejectedValue(new Error('サーバーエラー'));
     renderPage();
