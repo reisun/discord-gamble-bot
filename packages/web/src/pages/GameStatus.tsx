@@ -236,6 +236,7 @@ export default function GameStatus() {
   ];
 
   const status = statusLabel(game.status);
+  const canDeleteGame = !game.isPublished || game.status !== 'open';
 
   return (
     <>
@@ -258,7 +259,8 @@ export default function GameStatus() {
                 </button>
                 <button
                   className="btn-danger btn-sm"
-                  disabled={actionLoading}
+                  disabled={actionLoading || !canDeleteGame}
+                  title={!canDeleteGame ? '公開済みゲームは締め切りまで削除できません' : undefined}
                   onClick={() => setDeleteTarget(true)}
                 >
                   削除

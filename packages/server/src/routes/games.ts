@@ -435,13 +435,21 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
 // DELETE /api/games/:id
 router.delete('/:id', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const found = await query<GameRow>('SELECT * FROM games WHERE id = $1', [req.params.id]);
+    if (found.length === 0) {
+      throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
+    }
+
+    const game = found[0];
+    if (game.is_published && computeStatus(game) === 'open') {
+      throw new AppError(409, 'CONFLICT', '公開済みゲームは締め切りまで削除できません');
+    }
+
     const result = await query<{ id: number }>(
       'DELETE FROM games WHERE id = $1 RETURNING id',
       [req.params.id],
     );
-    if (result.length === 0) {
-      throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
-    }
+
     res.status(204).send();
   } catch (err) {
     next(err);

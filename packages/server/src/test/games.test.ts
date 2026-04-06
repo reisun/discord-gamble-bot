@@ -311,6 +311,38 @@ describe('DELETE /api/games/:id', () => {
     const getRes = await request(app).get(`/api/games/${game.id}`);
     expect(getRes.status).toBe(404);
   });
+
+  it('公開済みかつ締め切り前のゲームは削除できない', async () => {
+    const event = await createEvent();
+    const game = await createGame(event.id);
+    await request(app)
+      .patch(`/api/games/${game.id}/publish`)
+      .set(adminHeaders)
+      .send({ isPublished: true });
+
+    const res = await request(app)
+      .delete(`/api/games/${game.id}`)
+      .set(adminHeaders);
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('CONFLICT');
+  });
+
+  it('公開済みでも締め切り後のゲームは削除できる', async () => {
+    const event = await createEvent();
+    const game = await createGame(event.id);
+    await request(app)
+      .patch(`/api/games/${game.id}/publish`)
+      .set(adminHeaders)
+      .send({ isPublished: true });
+    await pool.query('UPDATE games SET deadline = $1 WHERE id = $2', [pastDeadline, game.id]);
+
+    const deleteRes = await request(app)
+      .delete(`/api/games/${game.id}`)
+      .set(adminHeaders);
+
+    expect(deleteRes.status).toBe(204);
+  });
 });
 
 describe('PATCH /api/games/:id/publish', () => {
