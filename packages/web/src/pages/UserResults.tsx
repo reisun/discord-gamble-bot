@@ -134,7 +134,7 @@ export default function UserResults() {
         </div>
 
         <div className="table-wrapper">
-          <table style={{ tableLayout: 'fixed', minWidth: '480px' }}>
+          <table style={{ minWidth: '480px' }}>
             <colgroup>
               <col style={{ width: '56px' }} />
               <col />
