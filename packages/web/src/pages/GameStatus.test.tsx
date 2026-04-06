@@ -163,6 +163,14 @@ describe('GameStatus', () => {
     await waitFor(() => expect(api.setGameResult).toHaveBeenCalledWith(mockGameSingle.id, 'A', 'tok'));
   });
 
+  it('未公開ゲームの状態は「非公開」と表示される（受付中ではない）', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false, status: 'open' });
+    renderPage(true);
+    await waitFor(() => screen.getByRole('heading', { level: 1, name: '第1試合' }));
+    expect(screen.getByText('非公開')).toBeInTheDocument();
+    expect(screen.queryByText('受付中')).not.toBeInTheDocument();
+  });
+
   it('管理者: 非公開ゲームでは「公開する」ボタンが表示される', async () => {
     vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false });
     renderPage(true);

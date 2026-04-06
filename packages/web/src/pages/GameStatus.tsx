@@ -238,7 +238,9 @@ export default function GameStatus() {
     { label: game.title },
   ];
 
-  const status = statusLabel(game.status);
+  const status = !game.isPublished
+    ? { text: '非公開', color: 'var(--color-text-muted)' }
+    : statusLabel(game.status);
   const canDeleteGame = !game.isPublished || game.status !== 'open';
 
   return (
