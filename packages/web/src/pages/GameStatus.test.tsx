@@ -187,6 +187,24 @@ describe('GameStatus', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: '即時締め切り' })).toBeInTheDocument());
   });
 
+  it('管理者: 公開中・受付中のゲームでは削除ボタンが無効になる', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: true, status: 'open' });
+    renderPage(true);
+    await waitFor(() => expect(screen.getByRole('button', { name: '削除' })).toBeDisabled());
+  });
+
+  it('管理者: 非公開ゲームでは削除ボタンが有効になる', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false, status: 'open' });
+    renderPage(true);
+    await waitFor(() => expect(screen.getByRole('button', { name: '削除' })).not.toBeDisabled());
+  });
+
+  it('管理者: 公開済みでも締め切り後のゲームでは削除ボタンが有効になる', async () => {
+    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: true, status: 'closed' });
+    renderPage(true);
+    await waitFor(() => expect(screen.getByRole('button', { name: '削除' })).not.toBeDisabled());
+  });
+
   it('管理者: 非公開ゲームでは即時締め切りボタンが表示されない', async () => {
     vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false, status: 'open' });
     renderPage(true);
