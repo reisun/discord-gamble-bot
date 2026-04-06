@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import UserResults from './UserResults';
 import * as api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
-import { mockEvent, mockUser, mockUserEventResult } from '../test/fixtures';
+import { mockEvent, mockGameSingle, mockGameUnpublished, mockUser, mockUserEventResult } from '../test/fixtures';
 
 vi.mock('../api/client');
 vi.mock('../contexts/AuthContext', () => ({
@@ -29,6 +29,7 @@ describe('UserResults', () => {
   beforeEach(() => {
     vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
     vi.mocked(api.getUsers).mockResolvedValue([mockUser]);
+    vi.mocked(api.getGames).mockResolvedValue([mockGameSingle]);
     vi.mocked(api.getUserEventResults).mockResolvedValue(mockUserEventResult);
   });
 
@@ -54,11 +55,55 @@ describe('UserResults', () => {
     await waitFor(() => expect(screen.getAllByText('User A').length).toBeGreaterThan(0));
   });
 
-  it('一般ユーザーにも借金総額列が表示される', async () => {
-    renderPage(false);
+  it('ポイント総額列が表示される', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByRole('columnheader', { name: 'ポイント総額' })).toBeInTheDocument());
+    expect(screen.getAllByText('10,500 pt').length).toBeGreaterThanOrEqual(1);
+  });
 
-    await waitFor(() => expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeInTheDocument());
+  it('総資産額列が総資産順で表示される', async () => {
+    renderPage();
+    await waitFor(() => screen.getByRole('button', { name: '総資産順' }));
+    fireEvent.click(screen.getByRole('button', { name: '総資産順' }));
+    expect(screen.getByRole('columnheader', { name: '総資産額' })).toBeInTheDocument();
+    expect(screen.getAllByText('10,500 pt').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('所持ポイント順（デフォルト）では借金総額・総資産額・総資産増減列が非表示', async () => {
+    renderPage();
+    await waitFor(() => screen.getByRole('columnheader', { name: 'ポイント総額' }));
+    expect(screen.queryByRole('columnheader', { name: '借金総額' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '総資産額' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '総資産増減' })).not.toBeInTheDocument();
+  });
+
+  it('総資産順に切り替えると借金総額・総資産額・総資産増減列が表示される', async () => {
+    renderPage();
+    await waitFor(() => screen.getByRole('button', { name: '総資産順' }));
+    fireEvent.click(screen.getByRole('button', { name: '総資産順' }));
+    expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '総資産額' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '総資産増減' })).toBeInTheDocument();
+  });
+
+  it('一般ユーザーにも借金総額列が表示される（総資産順切替後）', async () => {
+    renderPage(false);
+    await waitFor(() => screen.getByRole('button', { name: '総資産順' }));
+    fireEvent.click(screen.getByRole('button', { name: '総資産順' }));
+    expect(screen.getByRole('columnheader', { name: '借金総額' })).toBeInTheDocument();
     expect(screen.getByText('0 pt')).toBeInTheDocument();
+  });
+
+  it('ゲーム別ポイント推移に公開ゲームのタイトルが列として表示される', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByRole('columnheader', { name: '第1試合' })).toBeInTheDocument());
+  });
+
+  it('ゲーム別ポイント推移に非公開ゲームが列として表示されない', async () => {
+    vi.mocked(api.getGames).mockResolvedValue([mockGameSingle, mockGameUnpublished]);
+    renderPage();
+    await waitFor(() => screen.getByRole('columnheader', { name: '第1試合' }));
+    expect(screen.queryByRole('columnheader', { name: '第4試合' })).not.toBeInTheDocument();
   });
 
   it('管理者には公開切替チェックボックスが表示される', async () => {

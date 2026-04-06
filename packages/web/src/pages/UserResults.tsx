@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getEvent, getUsers, getUserEventResults, updateEventResultsPublic } from '../api/client';
-import type { Event, User, UserEventResult } from '../api/types';
+import { getEvent, getGames, getUsers, getUserEventResults, updateEventResultsPublic } from '../api/client';
+import type { Event, Game, User, UserEventResult } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import { useTokenSearch } from '../hooks/useTokenSearch';
@@ -23,6 +23,7 @@ export default function UserResults() {
 
   const [event, setEvent] = useState<Event | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
   const [results, setResults] = useState<Map<number, UserEventResult>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,10 +36,12 @@ export default function UserResults() {
     Promise.all([
       getEvent(evId, token ?? undefined),
       getUsers(evId, token ?? undefined),
+      getGames(evId),
     ])
-      .then(([ev, us]) => {
+      .then(([ev, us, gs]) => {
         setEvent(ev);
         setUsers(us);
+        setGames(gs.filter((g) => g.isPublished));
         return Promise.all(
           us.map((u) => getUserEventResults(u.id, evId, token ?? undefined)),
         );
@@ -76,17 +79,6 @@ export default function UserResults() {
     return (rb?.totalAssetsChange ?? 0) - (ra?.totalAssetsChange ?? 0);
   });
 
-  // ゲームタイトル一覧（全ユーザーの全ゲームを収集）
-  const gameIds: number[] = [];
-  const gameTitleMap = new Map<number, string>();
-  results.forEach((r) => {
-    r.games.forEach((g) => {
-      if (!gameTitleMap.has(g.gameId)) {
-        gameIds.push(g.gameId);
-        gameTitleMap.set(g.gameId, g.gameTitle);
-      }
-    });
-  });
 
   const breadcrumbs = [
     { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
@@ -147,10 +139,12 @@ export default function UserResults() {
               <tr>
                 <th>順位</th>
                 <th>ユーザー名</th>
+                <th>ポイント総額</th>
                 <th>ポイント増減</th>
                 <th>勝/敗</th>
-                <th>借金総額</th>
-                <th>総資産増減</th>
+                {sortKey === 'assets' && <th>借金総額</th>}
+                {sortKey === 'assets' && <th>総資産額</th>}
+                {sortKey === 'assets' && <th>総資産増減</th>}
               </tr>
             </thead>
             <tbody>
@@ -169,14 +163,18 @@ export default function UserResults() {
                         {u.discordName}
                       </span>
                     </td>
+                    <td>{u.points.toLocaleString()} pt</td>
                     <td>{r ? <PointChange value={r.totalPointChange} /> : '-'}</td>
                     <td>{r ? `${r.wins}勝${r.losses}敗` : '-'}</td>
-                    <td>
-                      {r ? (r.totalDebt > 0 ? (
-                        <span className="text-danger">{r.totalDebt.toLocaleString()} pt</span>
-                      ) : '0 pt') : '-'}
-                    </td>
-                    <td>{r ? <PointChange value={r.totalAssetsChange} /> : '-'}</td>
+                    {sortKey === 'assets' && (
+                      <td>
+                        {r ? (r.totalDebt > 0 ? (
+                          <span className="text-danger">{r.totalDebt.toLocaleString()} pt</span>
+                        ) : '0 pt') : '-'}
+                      </td>
+                    )}
+                    {sortKey === 'assets' && <td>{r ? `${r.totalAssets.toLocaleString()} pt` : '-'}</td>}
+                    {sortKey === 'assets' && <td>{r ? <PointChange value={r.totalAssetsChange} /> : '-'}</td>}
                   </tr>
                 );
               })}
@@ -186,7 +184,7 @@ export default function UserResults() {
       </div>
 
       {/* ゲーム別ポイント推移 */}
-      {gameIds.length > 0 && (
+      {games.length > 0 && (
         <div className="card">
           <h2 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>ゲーム別ポイント推移</h2>
           <div className="table-wrapper">
@@ -194,8 +192,8 @@ export default function UserResults() {
               <thead>
                 <tr>
                   <th>ユーザー</th>
-                  {gameIds.map((gid) => (
-                    <th key={gid}>{gameTitleMap.get(gid)}</th>
+                  {games.map((g) => (
+                    <th key={g.id}>{g.title}</th>
                   ))}
                   <th>合計</th>
                 </tr>
@@ -215,17 +213,17 @@ export default function UserResults() {
                           {u.discordName}
                         </span>
                       </td>
-                      {gameIds.map((gid) => {
-                        const g = r?.games.find((g) => g.gameId === gid);
-                        if (!g) return <td key={gid} style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>-</td>;
+                      {games.map((game) => {
+                        const gr = r?.games.find((rg) => rg.gameId === game.id);
+                        if (!gr) return <td key={game.id} style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>-</td>;
                         return (
-                          <td key={gid} style={{ fontSize: '12px' }}>
+                          <td key={game.id} style={{ fontSize: '12px' }}>
                             <div>
-                              <PointChange value={g.pointChange} />
+                              <PointChange value={gr.pointChange} />
                             </div>
-                            {g.debtChange > 0 && (
+                            {gr.debtChange > 0 && (
                               <div style={{ color: 'var(--color-danger)', fontSize: '11px' }}>
-                                債: {g.debtChange.toLocaleString()} pt
+                                債: {gr.debtChange.toLocaleString()} pt
                               </div>
                             )}
                           </td>
