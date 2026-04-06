@@ -121,7 +121,7 @@ export function createGame(
   body: {
     title: string;
     description?: string;
-    deadline: string;
+    closeAfterMinutes?: number;
     betType?: string;
     requiredSelections?: number | null;
     betOptions: { symbol: string; label: string }[];
@@ -140,7 +140,7 @@ export function updateGame(
   body: {
     title: string;
     description?: string;
-    deadline?: string;
+    closeAfterMinutes?: number;
     betType?: string;
     requiredSelections?: number | null;
     betOptions?: { symbol: string; label: string }[];
@@ -164,6 +164,10 @@ export function publishGame(
     { method: 'PATCH', body: JSON.stringify({ isPublished }) },
     token,
   );
+}
+
+export function closeGameNow(id: number, token: string): Promise<Game> {
+  return request(`/games/${id}/close-now`, { method: 'PATCH' }, token);
 }
 
 export function setGameResult(

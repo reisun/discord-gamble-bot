@@ -6,7 +6,6 @@ import { pool } from '../db';
 const app = createApp();
 const ADMIN_TOKEN = 'test-admin-token';
 const adminHeaders = { Authorization: `Bearer ${ADMIN_TOKEN}` };
-const futureDeadline = new Date(Date.now() + 3600 * 1000).toISOString();
 const pastDeadline = new Date(Date.now() - 3600 * 1000).toISOString();
 
 const defaultBetOptions = [
@@ -27,7 +26,7 @@ async function setupEventAndGame(betType = 'single', requiredSelections?: number
     .set(adminHeaders)
     .send({
       title: '第1試合',
-      deadline: futureDeadline,
+      closeAfterMinutes: 10,
       betType,
       requiredSelections: requiredSelections ?? null,
       betOptions: defaultBetOptions,
@@ -124,6 +123,29 @@ describe('PUT /api/games/:gameId/bets', () => {
 
     const res = await request(app)
       .put(`/api/games/${game.id}/bets`)
+      .send({ discordId: 'user001', selectedSymbols: 'A', amount: 100 });
+
+    expect(res.status).toBe(409);
+  });
+
+  it('未公開ゲームには賭けられない', async () => {
+    const eventRes = await request(app)
+      .post('/api/events')
+      .set(adminHeaders)
+      .send({ name: 'テストイベント', initialPoints: 10000, guildId: 'test-guild-001' });
+    const event = eventRes.body.data;
+
+    const gameRes = await request(app)
+      .post(`/api/events/${event.id}/games`)
+      .set(adminHeaders)
+      .send({
+        title: '未公開試合',
+        closeAfterMinutes: 10,
+        betOptions: defaultBetOptions,
+      });
+
+    const res = await request(app)
+      .put(`/api/games/${gameRes.body.data.id}/bets`)
       .send({ discordId: 'user001', selectedSymbols: 'A', amount: 100 });
 
     expect(res.status).toBe(409);

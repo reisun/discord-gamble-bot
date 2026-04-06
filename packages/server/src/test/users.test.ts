@@ -6,7 +6,6 @@ import { pool } from '../db';
 const app = createApp();
 const ADMIN_TOKEN = 'test-admin-token';
 const adminHeaders = { Authorization: `Bearer ${ADMIN_TOKEN}` };
-const futureDeadline = new Date(Date.now() + 3600 * 1000).toISOString();
 const pastDeadline = new Date(Date.now() - 3600 * 1000).toISOString();
 
 const defaultBetOptions = [
@@ -27,7 +26,7 @@ async function setupFullScenario() {
     .set(adminHeaders)
     .send({
       title: '第1試合',
-      deadline: futureDeadline,
+      closeAfterMinutes: 10,
       betOptions: defaultBetOptions,
     });
   const game = gameRes.body.data;

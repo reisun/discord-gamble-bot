@@ -39,6 +39,7 @@ export interface Game {
   title: string;
   description: string | null;
   deadline: string;
+  closeAfterMinutes: number;
   isPublished: boolean;
   status: GameStatus;
   betType: BetType;

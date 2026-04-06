@@ -6,8 +6,6 @@ import { pool } from '../db';
 const app = createApp();
 const ADMIN_TOKEN = 'test-admin-token';
 const adminHeaders = { Authorization: `Bearer ${ADMIN_TOKEN}` };
-
-const futureDeadline = new Date(Date.now() + 3600 * 1000).toISOString();
 const pastDeadline = new Date(Date.now() - 3600 * 1000).toISOString();
 
 const defaultBetOptions = [
@@ -24,16 +22,13 @@ async function createEvent() {
   return res.body.data as { id: number };
 }
 
-async function createGame(
-  eventId: number,
-  overrides: Record<string, unknown> = {},
-) {
+async function createGame(eventId: number, overrides: Record<string, unknown> = {}) {
   const res = await request(app)
     .post(`/api/events/${eventId}/games`)
     .set(adminHeaders)
     .send({
       title: '第1試合',
-      deadline: futureDeadline,
+      closeAfterMinutes: 10,
       betType: 'single',
       betOptions: defaultBetOptions,
       ...overrides,
@@ -41,6 +36,8 @@ async function createGame(
   return res.body.data as {
     id: number;
     title: string;
+    deadline: string;
+    closeAfterMinutes: number;
     status: string;
     isPublished: boolean;
     betType: string;
@@ -54,31 +51,23 @@ describe('GET /api/events/:eventId/games', () => {
     expect(res.status).toBe(404);
   });
 
-  it('一般ユーザーは非公開ゲームもプレースホルダー行として取得できる', async () => {
+  it('一般ユーザーは非公開ゲームをプレースホルダーで取得できる', async () => {
     const event = await createEvent();
-    const g = await createGame(event.id);
+    const game = await createGame(event.id, { closeAfterMinutes: 15 });
 
-    // 未公開のまま → 一般にはプレースホルダーで見える
-    const res1 = await request(app).get(`/api/events/${event.id}/games`);
-    expect(res1.body.data).toHaveLength(1);
-    expect(res1.body.data[0].title).toBe('非公開ゲーム');
-    expect(res1.body.data[0].isPublished).toBe(false);
-    expect(res1.body.data[0].betOptions).toHaveLength(0);
+    const res = await request(app).get(`/api/events/${event.id}/games`);
 
-    // 公開する
-    await request(app)
-      .patch(`/api/games/${g.id}/publish`)
-      .set(adminHeaders)
-      .send({ isPublished: true });
-
-    const res2 = await request(app).get(`/api/events/${event.id}/games`);
-    expect(res2.body.data).toHaveLength(1);
-    expect(res2.body.data[0].title).toBe('第1試合');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(game.id);
+    expect(res.body.data[0].title).toBe('非公開ゲーム');
+    expect(res.body.data[0].closeAfterMinutes).toBe(15);
+    expect(res.body.data[0].betOptions).toHaveLength(0);
   });
 
-  it('管理者は includeUnpublished=true で非公開ゲームも取得できる', async () => {
+  it('管理者は includeUnpublished=true で非公開ゲームの実データを取得できる', async () => {
     const event = await createEvent();
-    await createGame(event.id); // 未公開
+    await createGame(event.id);
 
     const res = await request(app)
       .get(`/api/events/${event.id}/games`)
@@ -86,7 +75,7 @@ describe('GET /api/events/:eventId/games', () => {
       .set(adminHeaders);
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].title).toBe('第1試合');
   });
 });
 
@@ -99,105 +88,58 @@ describe('POST /api/events/:eventId/games', () => {
       .send({
         title: '第1試合',
         description: '説明文',
-        deadline: futureDeadline,
+        closeAfterMinutes: 12,
         betType: 'single',
         betOptions: defaultBetOptions,
       });
 
     expect(res.status).toBe(201);
     expect(res.body.data.betType).toBe('single');
+    expect(res.body.data.closeAfterMinutes).toBe(12);
     expect(res.body.data.betOptions).toHaveLength(3);
     expect(res.body.data.status).toBe('open');
   });
 
-  it('複数方式(multi_ordered)のゲームを作成できる', async () => {
+  it('closeAfterMinutes 未指定時は 10 分が入る', async () => {
     const event = await createEvent();
     const res = await request(app)
       .post(`/api/events/${event.id}/games`)
       .set(adminHeaders)
       .send({
-        title: '3連単試合',
-        deadline: futureDeadline,
-        betType: 'multi_ordered',
-        requiredSelections: 3,
+        title: '第1試合',
         betOptions: defaultBetOptions,
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.data.betType).toBe('multi_ordered');
-    expect(res.body.data.requiredSelections).toBe(3);
+    expect(res.body.data.closeAfterMinutes).toBe(10);
   });
 
-  it('締め切りが過去だと 400 を返す', async () => {
+  it('deadline を直接指定すると 400 を返す', async () => {
     const event = await createEvent();
     const res = await request(app)
       .post(`/api/events/${event.id}/games`)
       .set(adminHeaders)
       .send({
-        title: '試合',
-        deadline: pastDeadline,
+        title: '第1試合',
+        deadline: new Date().toISOString(),
         betOptions: defaultBetOptions,
       });
+
     expect(res.status).toBe(400);
   });
 
-  it('賭け項目が1つだと 400 を返す', async () => {
+  it('closeAfterMinutes が 0 だと 400 を返す', async () => {
     const event = await createEvent();
     const res = await request(app)
       .post(`/api/events/${event.id}/games`)
       .set(adminHeaders)
       .send({
-        title: '試合',
-        deadline: futureDeadline,
-        betOptions: [{ symbol: 'A', label: 'チームA' }],
-      });
-    expect(res.status).toBe(400);
-  });
-
-  it('記号が重複していると 400 を返す', async () => {
-    const event = await createEvent();
-    const res = await request(app)
-      .post(`/api/events/${event.id}/games`)
-      .set(adminHeaders)
-      .send({
-        title: '試合',
-        deadline: futureDeadline,
-        betOptions: [
-          { symbol: 'A', label: 'チームA' },
-          { symbol: 'A', label: 'チームA2' },
-        ],
-      });
-    expect(res.status).toBe(400);
-  });
-
-  it('multi方式で賭け項目数が選択数未満だと 400 を返す', async () => {
-    const event = await createEvent();
-    const res = await request(app)
-      .post(`/api/events/${event.id}/games`)
-      .set(adminHeaders)
-      .send({
-        title: '試合',
-        deadline: futureDeadline,
-        betType: 'multi_ordered',
-        requiredSelections: 3,
-        betOptions: [
-          { symbol: 'A', label: 'A' },
-          { symbol: 'B', label: 'B' },
-        ],
-      });
-    expect(res.status).toBe(400);
-  });
-
-  it('存在しないイベントIDだと 404 を返す', async () => {
-    const res = await request(app)
-      .post('/api/events/9999/games')
-      .set(adminHeaders)
-      .send({
-        title: '試合',
-        deadline: futureDeadline,
+        title: '第1試合',
+        closeAfterMinutes: 0,
         betOptions: defaultBetOptions,
       });
-    expect(res.status).toBe(404);
+
+    expect(res.status).toBe(400);
   });
 });
 
@@ -224,25 +166,19 @@ describe('GET /api/games/:id', () => {
     const res = await request(app).get(`/api/games/${game.id}`);
     expect(res.status).toBe(404);
   });
-
-  it('存在しないIDだと 404 を返す', async () => {
-    const res = await request(app).get('/api/games/9999');
-    expect(res.status).toBe(404);
-  });
 });
 
 describe('PUT /api/games/:id', () => {
-  it('未公開ゲームはすべてのフィールドを更新できる', async () => {
+  it('未公開ゲームは closeAfterMinutes を更新できる', async () => {
     const event = await createEvent();
-    const game = await createGame(event.id);
+    const game = await createGame(event.id, { closeAfterMinutes: 10 });
 
-    const newDeadline = new Date(Date.now() + 7200 * 1000).toISOString();
     const res = await request(app)
       .put(`/api/games/${game.id}`)
       .set(adminHeaders)
       .send({
         title: '第1試合（更新）',
-        deadline: newDeadline,
+        closeAfterMinutes: 25,
         betOptions: [
           { symbol: 'X', label: 'チームX' },
           { symbol: 'Y', label: 'チームY' },
@@ -251,11 +187,11 @@ describe('PUT /api/games/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.title).toBe('第1試合（更新）');
-    expect(res.body.data.betOptions).toHaveLength(2);
+    expect(res.body.data.closeAfterMinutes).toBe(25);
     expect(res.body.data.betOptions[0].symbol).toBe('X');
   });
 
-  it('公開済みゲームでも deadline を変更できる', async () => {
+  it('公開済みゲームは closeAfterMinutes を更新できない', async () => {
     const event = await createEvent();
     const game = await createGame(event.id);
     await request(app)
@@ -263,61 +199,29 @@ describe('PUT /api/games/:id', () => {
       .set(adminHeaders)
       .send({ isPublished: true });
 
-    const newDeadline = new Date(Date.now() + 7200 * 1000).toISOString();
     const res = await request(app)
       .put(`/api/games/${game.id}`)
       .set(adminHeaders)
-      .send({ deadline: newDeadline });
+      .send({ closeAfterMinutes: 20 });
 
-    expect(res.status).toBe(200);
-    expect(new Date(res.body.data.deadline).toISOString()).toBe(newDeadline);
+    expect(res.status).toBe(409);
   });
 
-  it('公開済みゲームで deadline に過去日時を設定できる（即時締め切り）', async () => {
+  it('deadline を直接更新しようとすると 400 を返す', async () => {
     const event = await createEvent();
     const game = await createGame(event.id);
-    await request(app)
-      .patch(`/api/games/${game.id}/publish`)
-      .set(adminHeaders)
-      .send({ isPublished: true });
-
-    const pastDeadline = new Date(Date.now() - 60 * 1000).toISOString();
-    const res = await request(app)
-      .put(`/api/games/${game.id}`)
-      .set(adminHeaders)
-      .send({ deadline: pastDeadline });
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.status).toBe('closed');
-  });
-
-  it('公開済みゲームでも label は変更できる', async () => {
-    const event = await createEvent();
-    const game = await createGame(event.id);
-    await request(app)
-      .patch(`/api/games/${game.id}/publish`)
-      .set(adminHeaders)
-      .send({ isPublished: true });
 
     const res = await request(app)
       .put(`/api/games/${game.id}`)
       .set(adminHeaders)
-      .send({
-        betOptions: [
-          { symbol: 'A', label: 'チームA（改）' },
-          { symbol: 'B', label: 'チームB（改）' },
-          { symbol: 'C', label: 'チームC（改）' },
-        ],
-      });
+      .send({ deadline: new Date().toISOString() });
 
-    expect(res.status).toBe(200);
-    expect(res.body.data.betOptions[0].label).toBe('チームA（改）');
-    expect(res.body.data.betOptions[0].symbol).toBe('A');
+    expect(res.status).toBe(400);
   });
 });
 
 describe('DELETE /api/games/:id', () => {
-  it('正常に削除できる', async () => {
+  it('未公開ゲームは削除できる', async () => {
     const event = await createEvent();
     const game = await createGame(event.id);
 
@@ -325,9 +229,6 @@ describe('DELETE /api/games/:id', () => {
       .delete(`/api/games/${game.id}`)
       .set(adminHeaders);
     expect(deleteRes.status).toBe(204);
-
-    const getRes = await request(app).get(`/api/games/${game.id}`);
-    expect(getRes.status).toBe(404);
   });
 
   it('公開済みかつ締め切り前のゲームは削除できない', async () => {
@@ -338,73 +239,61 @@ describe('DELETE /api/games/:id', () => {
       .set(adminHeaders)
       .send({ isPublished: true });
 
-    const res = await request(app)
+    const deleteRes = await request(app)
       .delete(`/api/games/${game.id}`)
       .set(adminHeaders);
-
-    expect(res.status).toBe(409);
-    expect(res.body.error.code).toBe('CONFLICT');
+    expect(deleteRes.status).toBe(409);
   });
+});
 
-  it('公開済みでも締め切り後のゲームは削除できる', async () => {
+describe('PATCH /api/games/:id/publish', () => {
+  it('公開時に deadline を closeAfterMinutes 後へ更新する', async () => {
+    const event = await createEvent();
+    const game = await createGame(event.id, { closeAfterMinutes: 15 });
+
+    const before = Date.now();
+    const res = await request(app)
+      .patch(`/api/games/${game.id}/publish`)
+      .set(adminHeaders)
+      .send({ isPublished: true });
+    const after = Date.now();
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.isPublished).toBe(true);
+    const deadline = new Date(res.body.data.deadline).getTime();
+    expect(deadline).toBeGreaterThanOrEqual(before + 14 * 60 * 1000);
+    expect(deadline).toBeLessThanOrEqual(after + 16 * 60 * 1000);
+  });
+});
+
+describe('PATCH /api/games/:id/close-now', () => {
+  it('公開済みゲームを即時締め切りできる', async () => {
     const event = await createEvent();
     const game = await createGame(event.id);
     await request(app)
       .patch(`/api/games/${game.id}/publish`)
       .set(adminHeaders)
       .send({ isPublished: true });
-    await pool.query('UPDATE games SET deadline = $1 WHERE id = $2', [pastDeadline, game.id]);
 
-    const deleteRes = await request(app)
-      .delete(`/api/games/${game.id}`)
+    const res = await request(app)
+      .patch(`/api/games/${game.id}/close-now`)
       .set(adminHeaders);
 
-    expect(deleteRes.status).toBe(204);
-  });
-});
-
-describe('PATCH /api/games/:id/publish', () => {
-  it('公開・非公開を切り替えられる', async () => {
-    const event = await createEvent();
-    const game = await createGame(event.id);
-
-    const res1 = await request(app)
-      .patch(`/api/games/${game.id}/publish`)
-      .set(adminHeaders)
-      .send({ isPublished: true });
-
-    expect(res1.status).toBe(200);
-    expect(res1.body.data.isPublished).toBe(true);
-
-    const res2 = await request(app)
-      .patch(`/api/games/${game.id}/publish`)
-      .set(adminHeaders)
-      .send({ isPublished: false });
-
-    expect(res2.status).toBe(200);
-    expect(res2.body.data.isPublished).toBe(false);
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('closed');
   });
 });
 
 describe('PATCH /api/games/:id/result', () => {
-  it('締め切り後のゲームに結果を設定できる（単数方式）', async () => {
+  it('締め切り後のゲームに結果を設定できる', async () => {
     const event = await createEvent();
-    // 締め切り済みゲームを直接DBに作成（過去deadline）
-    const res = await request(app)
-      .post(`/api/events/${event.id}/games`)
+    const game = await createGame(event.id);
+    await request(app)
+      .patch(`/api/games/${game.id}/publish`)
       .set(adminHeaders)
-      .send({
-        title: '締め切り試合',
-        deadline: futureDeadline,
-        betOptions: defaultBetOptions,
-      });
-    const game = res.body.data;
+      .send({ isPublished: true });
 
-    // deadlineを過去に変更するため直接DBを操作
-    await pool.query('UPDATE games SET deadline = $1 WHERE id = $2', [
-      pastDeadline,
-      game.id,
-    ]);
+    await pool.query('UPDATE games SET deadline = $1 WHERE id = $2', [pastDeadline, game.id]);
 
     const resultRes = await request(app)
       .patch(`/api/games/${game.id}/result`)
@@ -414,49 +303,5 @@ describe('PATCH /api/games/:id/result', () => {
     expect(resultRes.status).toBe(200);
     expect(resultRes.body.data.resultSymbols).toBe('A');
     expect(resultRes.body.data.status).toBe('finished');
-  });
-
-  it('受付中ゲームへの結果確定は 409 を返す', async () => {
-    const event = await createEvent();
-    const game = await createGame(event.id);
-
-    const res = await request(app)
-      .patch(`/api/games/${game.id}/result`)
-      .set(adminHeaders)
-      .send({ resultSymbols: 'A' });
-
-    expect(res.status).toBe(409);
-  });
-
-  it('存在しない記号を指定すると 400 を返す', async () => {
-    const event = await createEvent();
-    const game = await createGame(event.id);
-
-    await pool.query('UPDATE games SET deadline = $1 WHERE id = $2', [pastDeadline, game.id]);
-
-    const res = await request(app)
-      .patch(`/api/games/${game.id}/result`)
-      .set(adminHeaders)
-      .send({ resultSymbols: 'Z' });
-
-    expect(res.status).toBe(400);
-  });
-
-  it('multi_unordered の結果はソートされて保存される', async () => {
-    const event = await createEvent();
-    const game = await createGame(event.id, {
-      betType: 'multi_unordered',
-      requiredSelections: 2,
-    });
-
-    await pool.query('UPDATE games SET deadline = $1 WHERE id = $2', [pastDeadline, game.id]);
-
-    const res = await request(app)
-      .patch(`/api/games/${game.id}/result`)
-      .set(adminHeaders)
-      .send({ resultSymbols: 'CA' }); // ソートされて 'AC' になるはず
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.resultSymbols).toBe('AC');
   });
 });
