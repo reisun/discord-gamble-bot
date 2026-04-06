@@ -32,12 +32,6 @@ const BET_TYPE_OPTIONS: { value: BetType; label: string; description: string }[]
   },
 ];
 
-function toLocalDatetimeValue(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export default function GameEdit() {
   // Route: /dashboard/:guildId/:eventId/new-game  or  /dashboard/:guildId/:eventId/:gameId/edit
   const params = useParams<{ guildId?: string; eventId?: string; gameId?: string }>();
@@ -56,7 +50,7 @@ export default function GameEdit() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [deadline, setDeadline] = useState(() => toLocalDatetimeValue(new Date().toISOString()));
+  const [closeAfterMinutes, setCloseAfterMinutes] = useState(10);
   const [betType, setBetType] = useState<BetType>('single');
   const [requiredSelections, setRequiredSelections] = useState(2);
   const [options, setOptions] = useState<BetOptionDraft[]>([
@@ -94,7 +88,7 @@ export default function GameEdit() {
         setEventId(g.eventId);
         setTitle(g.title);
         setDescription(g.description ?? '');
-        setDeadline(toLocalDatetimeValue(g.deadline));
+        setCloseAfterMinutes(g.closeAfterMinutes);
         setBetType(g.betType);
         setRequiredSelections(g.requiredSelections ?? 2);
         setOptions(g.betOptions.map((o) => ({ id: o.id, symbol: o.symbol, label: o.label })));
@@ -114,8 +108,9 @@ export default function GameEdit() {
   const validate = (): string | null => {
     if (title.trim().length === 0 || title.length > 100) return 'ゲームタイトルは1〜100文字で入力してください';
     if (description.length > 500) return '説明は500文字以内で入力してください';
-    if (!deadline) return '締め切り日時を入力してください';
-    if (new Date(deadline) <= new Date()) return '締め切り日時は現在時刻より未来にしてください';
+    if (!Number.isInteger(closeAfterMinutes) || closeAfterMinutes < 1) {
+      return '公開後の締め切り分数は1以上の整数で入力してください';
+    }
     if (betType !== 'single' && (!Number.isInteger(requiredSelections) || requiredSelections < 2)) {
       return '選択数は2以上の整数を入力してください';
     }
@@ -145,7 +140,7 @@ export default function GameEdit() {
     const body = {
       title: title.trim(),
       description: description.trim() || undefined,
-      deadline: new Date(deadline).toISOString(),
+      closeAfterMinutes,
       betType,
       requiredSelections: betType !== 'single' ? requiredSelections : null,
       betOptions: options.map((o) => ({ symbol: o.symbol, label: o.label.trim() })),
@@ -205,7 +200,7 @@ export default function GameEdit() {
             marginBottom: '16px',
             fontSize: '13px',
           }}>
-            このゲームは公開済みです。賭け方式・賭け項目の記号は変更できません。締め切り日時は変更可能です。
+            このゲームは公開済みです。賭け方式・公開後の締め切り分数・賭け項目の記号は変更できません。
           </div>
         )}
         {error && <div className="error-message" ref={errorRef}>{error}</div>}
@@ -235,15 +230,21 @@ export default function GameEdit() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="deadline">締め切り日時 *</label>
+            <label htmlFor="closeAfterMinutes">公開後の何分後に締め切るか *</label>
             <input
-              id="deadline"
-              type="datetime-local"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
+              id="closeAfterMinutes"
+              type="number"
+              value={closeAfterMinutes}
+              onChange={(e) => setCloseAfterMinutes(Number(e.target.value))}
+              min={1}
+              step={1}
               required
+              disabled={isPublished}
               style={{ maxWidth: '240px' }}
             />
+            <p className="form-hint" style={{ marginTop: '6px' }}>
+              公開した時点から指定分後の時刻が、実際の締め切り日時として自動設定されます。
+            </p>
           </div>
 
           <div className="form-group">

@@ -21,6 +21,7 @@ GET /api/events/:eventId/games
       "title": "第1試合",
       "description": "...",
       "deadline": "2024-01-01T12:00:00Z",
+      "closeAfterMinutes": 10,
       "isPublished": true,
       "status": "open",
       "betType": "single",
@@ -67,7 +68,7 @@ POST /api/events/:eventId/games
 {
   "title": "第1試合",
   "description": "説明文",
-  "deadline": "2024-01-01T12:00:00Z",
+  "closeAfterMinutes": 10,
   "betType": "single",
   "requiredSelections": null,
   "betOptions": [
@@ -81,7 +82,7 @@ POST /api/events/:eventId/games
 |-----------|-----|------|--------------|
 | title | string | ○ | 1〜100文字 |
 | description | string | - | 最大500文字 |
-| deadline | ISO8601 | ○ | 現在時刻より未来 |
+| closeAfterMinutes | number | - | 1以上の整数（省略時: 10）。ゲーム公開後、現在時刻から何分後に締め切るか |
 | betType | string | - | `single` / `multi_unordered` / `multi_ordered` / `multi_ordered_dup`（省略時: `single`） |
 | requiredSelections | number | 条件付き | `betType` が `single` 以外の場合に必須。2以上の整数。`single` 時は省略または `null` |
 | betOptions | object[] | ○ | 2要素以上。`betType` が複数方式の場合は `requiredSelections` 以上の要素数が必要 |
@@ -102,10 +103,10 @@ PUT /api/games/:id
 
 | 状態 | 変更可能フィールド |
 |------|------------------|
-| 非公開（`is_published = false`） | すべてのフィールド |
+| 非公開（`is_published = false`） | `title`、`description`、`closeAfterMinutes`、`betType`、`requiredSelections`、`betOptions` |
 | 公開済み（`is_published = true`） | `title`、`description`、`betOptions[].label` のみ |
 
-公開済みゲームで上記以外のフィールド（`deadline`、`betType`、`requiredSelections`、`betOptions` の追加・削除、`betOptions[].symbol`）を変更しようとした場合は `409 CONFLICT` を返す。
+`deadline` は WebAPI 内部管理項目のため、作成・更新リクエストでは受け付けない。公開済みゲームで上記以外のフィールド（`closeAfterMinutes`、`betType`、`requiredSelections`、`betOptions` の追加・削除、`betOptions[].symbol`）を変更しようとした場合は `409 CONFLICT` を返す。
 
 **リクエストボディ**: ゲーム作成と同形式（公開済み時は制約外フィールドを無視するか `409` を返す）
 
@@ -121,6 +122,8 @@ DELETE /api/games/:id
 
 **レスポンス**: `204 No Content`
 
+公開済みかつ締め切り前のゲームは削除できず、`409 CONFLICT` を返す。
+
 ---
 
 ## 公開・非公開切り替え
@@ -135,6 +138,20 @@ PATCH /api/games/:id/publish
   "isPublished": true
 }
 ```
+
+**レスポンス**: `200 OK` (ゲーム詳細と同形式)
+
+`isPublished=true` へ切り替えた時点で、`games.deadline` は `NOW() + close_after_minutes` に更新される。
+
+---
+
+## 即時締め切り
+```
+PATCH /api/games/:id/close-now
+```
+**権限**: 管理者のみ
+
+公開済みかつ未確定のゲームに対して、`deadline` を現在時刻へ更新して即時締め切り状態にする。
 
 **レスポンス**: `200 OK` (ゲーム詳細と同形式)
 

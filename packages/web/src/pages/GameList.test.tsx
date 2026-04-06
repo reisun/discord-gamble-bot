@@ -100,6 +100,12 @@ describe('GameList', () => {
     expect(detailButtons[1]).toBeDisabled();
   });
 
+  it('管理者には非公開ゲームの締め切りが「公開からXX分後」で表示される', async () => {
+    renderPage(true);
+
+    await waitFor(() => expect(screen.getByText('公開から10分後')).toBeInTheDocument());
+  });
+
   it('管理者はイベントヘッダーに編集・削除、ゲーム行に公開切替ボタンが表示される', async () => {
     renderPage(true);
     await waitFor(() => expect(screen.getByText('編集')).toBeInTheDocument());

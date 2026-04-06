@@ -32,6 +32,7 @@ function makeGame(overrides: Partial<Game> = {}): Game {
     title: '第1試合',
     description: '説明文です',
     deadline: new Date('2024-06-01T12:00:00Z').toISOString(),
+    closeAfterMinutes: 10,
     isPublished: true,
     status: 'open',
     betType: 'single',
