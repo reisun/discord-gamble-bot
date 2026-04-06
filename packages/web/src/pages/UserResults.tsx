@@ -147,6 +147,7 @@ export default function UserResults() {
               <tr>
                 <th>順位</th>
                 <th>ユーザー名</th>
+                <th>ポイント総額</th>
                 <th>ポイント増減</th>
                 <th>勝/敗</th>
                 <th>借金総額</th>
@@ -169,6 +170,7 @@ export default function UserResults() {
                         {u.discordName}
                       </span>
                     </td>
+                    <td>{u.points.toLocaleString()} pt</td>
                     <td>{r ? <PointChange value={r.totalPointChange} /> : '-'}</td>
                     <td>{r ? `${r.wins}勝${r.losses}敗` : '-'}</td>
                     <td>
