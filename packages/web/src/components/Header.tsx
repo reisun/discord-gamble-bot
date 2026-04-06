@@ -9,12 +9,13 @@ export default function Header() {
   const { isAdmin, isVerifying, guildId } = useAuth();
   const tokenSearch = useTokenSearch();
   const [guildName, setGuildName] = useState<string | null>(null);
+  const [guildIconUrl, setGuildIconUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!guildId) { setGuildName(null); return; }
+    if (!guildId) { setGuildName(null); setGuildIconUrl(null); return; }
     getGuild(guildId)
-      .then((g) => setGuildName(g.guildName))
-      .catch(() => setGuildName(null));
+      .then((g) => { setGuildName(g.guildName); setGuildIconUrl(g.guildIconUrl); })
+      .catch(() => { setGuildName(null); setGuildIconUrl(null); });
   }, [guildId]);
 
   const titleText = '賭けダッシュボード';
@@ -44,7 +45,17 @@ export default function Header() {
           justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <LogoIcon />
+          {guildIconUrl ? (
+            <img
+              src={guildIconUrl}
+              alt={guildName ?? ''}
+              width={40}
+              height={40}
+              style={{ borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+            <LogoIcon />
+          )}
         </div>
         <span style={{
           color: '#fff',

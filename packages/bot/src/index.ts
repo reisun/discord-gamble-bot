@@ -11,7 +11,7 @@ client.once(Events.ClientReady, async (c) => {
   // 参加中のギルド情報をAPIに登録
   for (const [, guild] of c.guilds.cache) {
     try {
-      await registerGuild(guild.id, guild.name);
+      await registerGuild(guild.id, guild.name, guild.icon);
       console.log(`[Bot] Registered guild: ${guild.name} (${guild.id})`);
     } catch (err) {
       console.error(`[Bot] Failed to register guild ${guild.id}:`, err);

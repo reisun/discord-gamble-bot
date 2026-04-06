@@ -15,6 +15,7 @@ export interface Event {
 export interface Guild {
   guildId: string;
   guildName: string;
+  guildIconUrl: string | null;
 }
 
 // 賭け方式
