@@ -56,8 +56,12 @@ GET /api/entrance/:guildId?token=XXXX
    - セッション発行（Cookie: httpOnly, sameSite）
    - `${WEB_APP_BASE_URL}/#/dashboard/:guildId` へ 302 リダイレクト
 2. token がない場合:
-   - 有効なセッション（guildId 一致）があれば 302 リダイレクト
-   - セッションがなければ 401 エラー
+   - 有効なセッション（guildId 一致）があれば `${WEB_APP_BASE_URL}/#/dashboard/:guildId` へ 302 リダイレクト
+   - セッションがなければ 401 エラー（テキスト: 「/link コマンドで取得したリンクが必要です」）
+
+**前提条件**
+- nginx で `location /api` が Express サーバーへプロキシされていること
+- `WEB_APP_BASE_URL` が設定されていない場合は 503 エラーを返す
 
 **セッション有効期限**
 
