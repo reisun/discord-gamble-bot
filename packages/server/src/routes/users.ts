@@ -213,7 +213,7 @@ router.get('/:id', requireToken, async (req: Request, res: Response, next: NextF
 });
 
 // GET /api/users/:id/point-history
-router.get('/:id/point-history', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id/point-history', requireToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await query<{ id: number }>('SELECT id FROM users WHERE id = $1', [req.params.id]);
     if (users.length === 0) {
@@ -252,7 +252,7 @@ router.get('/:id/point-history', async (req: Request, res: Response, next: NextF
 });
 
 // GET /api/users/:id/event-bets/:eventId
-router.get('/:id/event-bets/:eventId', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id/event-bets/:eventId', requireToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id, eventId } = req.params;
 
@@ -410,6 +410,7 @@ router.get('/:id/event-bets/:eventId', async (req: Request, res: Response, next:
 // GET /api/users/:id/event-results/:eventId
 router.get(
   '/:id/event-results/:eventId',
+  requireToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id, eventId } = req.params;

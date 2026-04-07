@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../app';
+import { pool } from '../db';
 
 const app = createApp();
 const ADMIN_TOKEN = 'test-admin-token';
@@ -106,6 +107,24 @@ describe('POST /api/auth/token', () => {
 
     expect(verifyRes.status).toBe(200);
     expect(verifyRes.body.data.isAdmin).toBe(true);
+  });
+
+  it('期限切れトークンで GET /api/auth/verify が 401 TOKEN_EXPIRED を返す', async () => {
+    const tokenRes = await request(app)
+      .post('/api/auth/token')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .send({ guildId: 'guild-001', role: 'editor' });
+
+    const { token } = tokenRes.body.data;
+
+    await pool.query("UPDATE access_tokens SET expires_at = NOW() - interval '1 hour'");
+
+    const verifyRes = await request(app)
+      .get('/api/auth/verify')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(verifyRes.status).toBe(401);
+    expect(verifyRes.body.error.code).toBe('TOKEN_EXPIRED');
   });
 
   it('viewer トークンは isAdmin: false を返す', async () => {
