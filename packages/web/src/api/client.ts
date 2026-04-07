@@ -50,7 +50,7 @@ async function request<T>(
 
 // 認証
 export function verifyToken(token: string): Promise<{ isAdmin: boolean }> {
-  return request(`/auth/verify?token=${encodeURIComponent(token)}`);
+  return request('/auth/verify', {}, token);
 }
 
 // ギルド
