@@ -11,6 +11,7 @@ vi.mock('../contexts/AuthContext', () => ({
   useAuth: vi.fn(),
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
+vi.mock('../hooks/useTokenSearch', () => ({ useTokenSearch: () => '' }));
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
   return {
@@ -19,8 +20,8 @@ vi.mock('react-router-dom', async (importOriginal) => {
   };
 });
 
-function renderPage(isEditor = false) {
-  vi.mocked(useAuth).mockReturnValue({ isEditor, isVerifying: false, guildId: 'test-guild-001' });
+function renderPage(isAdmin = false) {
+  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001' });
   return render(<MemoryRouter><UserResults /></MemoryRouter>);
 }
 
@@ -37,6 +38,7 @@ describe('UserResults', () => {
     await waitFor(() => screen.getByText('春季大会'));
     expect(screen.getByRole('link', { name: 'ホーム' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '春季大会' })).toBeInTheDocument();
+    // 末尾の「ユーザー結果一覧」はリンクではなくspan
     const breadcrumbSpans = document.querySelector('nav')!.querySelectorAll('span');
     const lastText = Array.from(breadcrumbSpans).find(s => s.textContent?.trim() === 'ユーザー結果一覧');
     expect(lastText).not.toBeUndefined();
@@ -70,6 +72,7 @@ describe('UserResults', () => {
   it('所持ポイント順（デフォルト）では借金総額・総資産額・総資産増減列がプレースホルダー（不可視）', async () => {
     renderPage();
     await waitFor(() => screen.getByRole('columnheader', { name: 'ポイント総額' }));
+    // visibility: hidden のため DOM には存在するが不可視（直接 DOM で確認）
     const ths = Array.from(document.querySelectorAll('th'));
     const hiddenLabels = ['借金総額', '総資産額', '総資産増減'];
     for (const label of hiddenLabels) {

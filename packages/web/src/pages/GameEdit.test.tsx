@@ -13,6 +13,7 @@ vi.mock('../contexts/AuthContext', () => ({
   useAuth: vi.fn(),
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
+vi.mock('../hooks/useTokenSearch', () => ({ useTokenSearch: () => '' }));
 
 const mockNavigate = vi.fn();
 const mockUseParams = vi.fn();
@@ -26,14 +27,14 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 function renderNew() {
-  vi.mocked(useAuth).mockReturnValue({ isEditor: true, isVerifying: false, guildId: 'test-guild-001' });
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001' });
   mockUseParams.mockReturnValue({ guildId: 'test-guild-001', eventId: '1' });
   vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
   return render(<MemoryRouter><GameEdit /></MemoryRouter>);
 }
 
 function renderEdit(game = mockGameSingle) {
-  vi.mocked(useAuth).mockReturnValue({ isEditor: true, isVerifying: false, guildId: 'test-guild-001' });
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001' });
   mockUseParams.mockReturnValue({
     guildId: 'test-guild-001',
     eventId: String(game.eventId),
@@ -119,6 +120,7 @@ describe('GameEdit', () => {
     renderNew();
     await user.type(screen.getByLabelText(/ゲームタイトル/), '第5試合');
     fireEvent.change(screen.getByLabelText(/公開後の何分後に締め切るか/), { target: { value: '12' } });
+    // 記号と項目名（2行分）を入力
     const symbolInputs = screen.getAllByPlaceholderText('A');
     const labelInputs = screen.getAllByPlaceholderText('チームA');
     await user.type(symbolInputs[0], 'A');
@@ -132,7 +134,7 @@ describe('GameEdit', () => {
   it('編集: 既存データが表示される', async () => {
     renderEdit(mockGameMultiOrdered);
     await waitFor(() => expect(screen.getByDisplayValue('第2試合')).toBeInTheDocument());
-    expect(screen.getByDisplayValue('3')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('3')).toBeInTheDocument(); // requiredSelections
   });
 
   it('編集: パンくずが設計書どおり「ホーム > イベント名 > ゲームタイトル > 編集」で表示される', async () => {

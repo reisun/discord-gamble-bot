@@ -5,29 +5,25 @@ export function getToken(req: Request): string | undefined {
   if (authHeader?.startsWith('Bearer ')) {
     return authHeader.slice(7);
   }
-  return undefined;
+  return req.query.token as string | undefined;
 }
 
-export function isEditor(req: Request): boolean {
-  if (req.session?.isEditor !== undefined) {
-    return req.session.isEditor;
-  }
+export function isAdmin(req: Request): boolean {
   const token = getToken(req);
   return token !== undefined && token === process.env.ADMIN_TOKEN;
 }
 
-export function requireEditor(req: Request, res: Response, next: NextFunction): void {
-  if (isEditor(req)) {
-    next();
+export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  const token = getToken(req);
+  if (!token) {
+    res
+      .status(401)
+      .json({ error: { code: 'UNAUTHORIZED', message: '認証トークンが必要です' } });
     return;
   }
-  if (!req.session?.guildId && !getToken(req)) {
-    res.status(401).json({ error: { code: 'UNAUTHORIZED', message: '認証が必要です' } });
+  if (token !== process.env.ADMIN_TOKEN) {
+    res.status(403).json({ error: { code: 'FORBIDDEN', message: '管理者権限が必要です' } });
     return;
   }
-  res.status(403).json({ error: { code: 'FORBIDDEN', message: '編集権限が必要です' } });
+  next();
 }
-
-// 後方互換エイリアス
-export const isAdmin = isEditor;
-export const requireAdmin = requireEditor;

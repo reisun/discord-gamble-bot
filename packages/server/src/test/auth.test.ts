@@ -5,40 +5,39 @@ import { createApp } from '../app';
 const app = createApp();
 const ADMIN_TOKEN = 'test-admin-token';
 
-describe('POST /api/auth/token', () => {
-  it('トークンなしで呼ぶと 401 を返す', async () => {
+describe('GET /api/auth/verify', () => {
+  it('管理者トークンが正しい場合 isAdmin: true を返す', async () => {
     const res = await request(app)
-      .post('/api/auth/token')
-      .send({ guildId: 'guild-123', role: 'viewer' });
+      .get('/api/auth/verify')
+      .query({ token: ADMIN_TOKEN });
 
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(200);
+    expect(res.body.data.isAdmin).toBe(true);
   });
 
-  it('不正トークンで呼ぶと 403 を返す', async () => {
+  it('トークンが不正な場合 isAdmin: false を返す', async () => {
     const res = await request(app)
-      .post('/api/auth/token')
-      .set('Authorization', 'Bearer wrong-token')
-      .send({ guildId: 'guild-123', role: 'viewer' });
+      .get('/api/auth/verify')
+      .query({ token: 'wrong-token' });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
+    expect(res.body.data.isAdmin).toBe(false);
   });
 
-  it('正しいトークンでも guildId/role が不正なら 400 を返す', async () => {
-    const res = await request(app)
-      .post('/api/auth/token')
-      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
-      .send({ guildId: 'guild-123' });
+  it('トークンなしの場合 isAdmin: false を返す', async () => {
+    const res = await request(app).get('/api/auth/verify');
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
+    expect(res.body.data.isAdmin).toBe(false);
   });
-});
 
-describe('GET /api/auth/session', () => {
-  it('セッションなしで呼ぶと 401 ��返す', async () => {
-    const res = await request(app).get('/api/auth/session');
+  it('Authorization: Bearer ヘッダーでも認証できる', async () => {
+    const res = await request(app)
+      .get('/api/auth/verify')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`);
 
-    expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('UNAUTHORIZED');
+    expect(res.status).toBe(200);
+    expect(res.body.data.isAdmin).toBe(true);
   });
 });
 
@@ -60,16 +59,5 @@ describe('管理者権限が必要なエンドポイント（401/403）', () => 
 
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('FORBIDDEN');
-  });
-
-  it('Bearer ヘッダーで正しいトークンを送ると認証される', async () => {
-    const res = await request(app)
-      .post('/api/events')
-      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
-      .send({ name: 'テスト', initialPoints: 1000, guildId: 'guild-123' });
-
-    // 認証は通る (DB接続がないためエラーになる場合もあるが、401/403にはなら��い)
-    expect(res.status).not.toBe(401);
-    expect(res.status).not.toBe(403);
   });
 });
