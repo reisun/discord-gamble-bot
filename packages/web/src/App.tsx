@@ -1,5 +1,5 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import EventList from './pages/EventList';
 import EventEdit from './pages/EventEdit';
@@ -8,9 +8,32 @@ import GameEdit from './pages/GameEdit';
 import GameStatus from './pages/GameStatus';
 import UserResults from './pages/UserResults';
 
+function TokenExpiredBanner() {
+  const { isTokenExpired } = useAuth();
+  if (!isTokenExpired) return null;
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 9999,
+      background: 'var(--color-warning, #f59e0b)',
+      color: '#1a1a1a',
+      padding: '10px 16px',
+      textAlign: 'center',
+      fontSize: '14px',
+      fontWeight: 500,
+    }}>
+      ⚠️ アクセス期限が切れました。Discordで <code>/dashboard</code> コマンドを再実行してください。
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
+      <TokenExpiredBanner />
       <HashRouter>
         <Routes>
           <Route element={<Layout />}>

@@ -9,6 +9,9 @@ import type {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
+// TOKEN_EXPIRED エラーを区別するためのカスタムイベント
+export const TOKEN_EXPIRED_EVENT = 'discord-gamble-token-expired';
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -26,11 +29,16 @@ async function request<T>(
 
   if (!res.ok) {
     let errMsg = `HTTP ${res.status}`;
+    let errCode = '';
     try {
       const body = await res.json();
       errMsg = body?.error?.message ?? errMsg;
+      errCode = body?.error?.code ?? '';
     } catch {
       // ignore parse error
+    }
+    if (res.status === 401 && errCode === 'TOKEN_EXPIRED') {
+      window.dispatchEvent(new CustomEvent(TOKEN_EXPIRED_EVENT));
     }
     throw new Error(errMsg);
   }
@@ -42,7 +50,7 @@ async function request<T>(
 
 // 認証
 export function verifyToken(token: string): Promise<{ isAdmin: boolean }> {
-  return request(`/auth/verify?token=${encodeURIComponent(token)}`);
+  return request('/auth/verify', {}, token);
 }
 
 // ギルド

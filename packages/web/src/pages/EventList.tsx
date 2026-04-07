@@ -86,7 +86,7 @@ export default function EventList() {
     return (
       <div className="card" style={{ textAlign: 'center', marginTop: '48px' }}>
         <p style={{ color: 'var(--color-text-muted)' }}>
-          Discordの <code>/link</code> または <code>/admin-link</code> コマンドからアクセスしてください。
+          Discordの <code>/dashboard</code> コマンドからアクセスしてください。
         </p>
       </div>
     );
