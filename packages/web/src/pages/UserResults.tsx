@@ -4,7 +4,6 @@ import { getEvent, getGames, getUsers, getUserEventResults, updateEventResultsPu
 import type { Event, Game, User, UserEventResult } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
-import { useTokenSearch } from '../hooks/useTokenSearch';
 import { toDashboard, toEvent, toHashPath } from '../routes';
 
 type SortKey = 'points' | 'assets';
@@ -17,8 +16,7 @@ function PointChange({ value }: { value: number }) {
 
 export default function UserResults() {
   const { guildId, eventId } = useParams<{ guildId: string; eventId: string }>();
-  const { isAdmin, token } = useAuth();
-  const tokenSearch = useTokenSearch();
+  const { isEditor } = useAuth();
   const evId = Number(eventId);
 
   const [event, setEvent] = useState<Event | null>(null);
@@ -34,8 +32,8 @@ export default function UserResults() {
     setLoading(true);
     setError(null);
     Promise.all([
-      getEvent(evId, token ?? undefined),
-      getUsers(evId, token ?? undefined),
+      getEvent(evId),
+      getUsers(evId),
       getGames(evId),
     ])
       .then(([ev, us, gs]) => {
@@ -43,7 +41,7 @@ export default function UserResults() {
         setUsers(us);
         setGames(gs.filter((g) => g.isPublished));
         return Promise.all(
-          us.map((u) => getUserEventResults(u.id, evId, token ?? undefined)),
+          us.map((u) => getUserEventResults(u.id, evId)),
         );
       })
       .then((resultList) => {
@@ -55,13 +53,13 @@ export default function UserResults() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleResultsPublicToggle = async () => {
-    if (!event || !token) return;
+    if (!event) return;
     setUpdatingPublic(true);
     try {
-      const updated = await updateEventResultsPublic(event.id, !event.resultsPublic, token);
+      const updated = await updateEventResultsPublic(event.id, !event.resultsPublic);
       setEvent(updated);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '更新に失敗しました');
@@ -81,8 +79,8 @@ export default function UserResults() {
 
 
   const breadcrumbs = [
-    { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
-    { label: event?.name ?? '...', href: toHashPath(toEvent(guildId, evId, tokenSearch)) },
+    { label: 'ホーム', href: toHashPath(toDashboard(guildId)) },
+    { label: event?.name ?? '...', href: toHashPath(toEvent(guildId, evId)) },
     { label: 'ユーザー結果一覧' },
   ];
 
@@ -98,7 +96,7 @@ export default function UserResults() {
 
       {error && <div className="error-message">{error}</div>}
 
-      {isAdmin && (
+      {isEditor && (
         <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'normal' }}>
             <input

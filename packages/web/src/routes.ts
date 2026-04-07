@@ -6,59 +6,50 @@ function encodeSegment(value: string | number): string {
   return encodeURIComponent(String(value));
 }
 
-function appendSearch(path: string, tokenSearch = ''): string {
-  return `${path}${tokenSearch}`;
-}
-
 export function toHashPath(path: string): string {
   return `#${path}`;
 }
 
-export function toDashboard(guildId?: RouteParam, tokenSearch = ''): string {
-  if (guildId == null) return appendSearch(DASHBOARD_ROOT, tokenSearch);
-  return appendSearch(`${DASHBOARD_ROOT}/${encodeSegment(guildId)}`, tokenSearch);
+export function toDashboard(guildId?: RouteParam): string {
+  if (guildId == null) return DASHBOARD_ROOT;
+  return `${DASHBOARD_ROOT}/${encodeSegment(guildId)}`;
 }
 
-export function toNewEvent(guildId?: RouteParam, tokenSearch = ''): string {
-  return appendSearch(`${toDashboard(guildId)}/new-event`, tokenSearch);
+export function toNewEvent(guildId?: RouteParam): string {
+  return `${toDashboard(guildId)}/new-event`;
 }
 
-export function toEvent(guildId?: RouteParam, eventId?: RouteParam, tokenSearch = ''): string {
-  if (guildId == null) return toDashboard(undefined, tokenSearch);
-  if (eventId == null) return toDashboard(guildId, tokenSearch);
-  return appendSearch(
-    `${DASHBOARD_ROOT}/${encodeSegment(guildId)}/${encodeSegment(eventId)}`,
-    tokenSearch,
-  );
+export function toEvent(guildId?: RouteParam, eventId?: RouteParam): string {
+  if (guildId == null) return toDashboard();
+  if (eventId == null) return toDashboard(guildId);
+  return `${DASHBOARD_ROOT}/${encodeSegment(guildId)}/${encodeSegment(eventId)}`;
 }
 
-export function toEventEdit(guildId?: RouteParam, eventId?: RouteParam, tokenSearch = ''): string {
-  return appendSearch(`${toEvent(guildId, eventId)}/edit`, tokenSearch);
+export function toEventEdit(guildId?: RouteParam, eventId?: RouteParam): string {
+  return `${toEvent(guildId, eventId)}/edit`;
 }
 
-export function toNewGame(guildId?: RouteParam, eventId?: RouteParam, tokenSearch = ''): string {
-  return appendSearch(`${toEvent(guildId, eventId)}/new-game`, tokenSearch);
+export function toNewGame(guildId?: RouteParam, eventId?: RouteParam): string {
+  return `${toEvent(guildId, eventId)}/new-game`;
 }
 
 export function toGame(
   guildId?: RouteParam,
   eventId?: RouteParam,
   gameId?: RouteParam,
-  tokenSearch = '',
 ): string {
-  if (gameId == null) return toEvent(guildId, eventId, tokenSearch);
-  return appendSearch(`${toEvent(guildId, eventId)}/${encodeSegment(gameId)}`, tokenSearch);
+  if (gameId == null) return toEvent(guildId, eventId);
+  return `${toEvent(guildId, eventId)}/${encodeSegment(gameId)}`;
 }
 
 export function toGameEdit(
   guildId?: RouteParam,
   eventId?: RouteParam,
   gameId?: RouteParam,
-  tokenSearch = '',
 ): string {
-  return appendSearch(`${toGame(guildId, eventId, gameId)}/edit`, tokenSearch);
+  return `${toGame(guildId, eventId, gameId)}/edit`;
 }
 
-export function toEventResults(guildId?: RouteParam, eventId?: RouteParam, tokenSearch = ''): string {
-  return appendSearch(`${toEvent(guildId, eventId)}/results`, tokenSearch);
+export function toEventResults(guildId?: RouteParam, eventId?: RouteParam): string {
+  return `${toEvent(guildId, eventId)}/results`;
 }

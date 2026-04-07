@@ -6,7 +6,6 @@ import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { EyeIcon, EyeOffIcon } from '../components/icons';
-import { useTokenSearch } from '../hooks/useTokenSearch';
 import { toDashboard, toEventEdit, toEventResults, toGame, toHashPath, toNewGame } from '../routes';
 
 function formatDeadline(iso: string) {
@@ -19,23 +18,22 @@ function formatDeadline(iso: string) {
   return `${y}/${mo}/${day} ${h}:${m}`;
 }
 
-function formatListDeadline(game: Game, isAdmin: boolean): string {
+function formatListDeadline(game: Game, isEditor: boolean): string {
   if (!game.isPublished) {
-    if (!isAdmin) return '-----/--/-- --:--';
+    if (!isEditor) return '-----/--/-- --:--';
     return `公開から${game.closeAfterMinutes}分後`;
   }
   return formatDeadline(game.deadline);
 }
 
-function isPlaceholderGame(game: Game, isAdmin: boolean): boolean {
-  return !isAdmin && !game.isPublished;
+function isPlaceholderGame(game: Game, isEditor: boolean): boolean {
+  return !isEditor && !game.isPublished;
 }
 
 export default function GameList() {
   const { guildId, eventId } = useParams<{ guildId: string; eventId: string }>();
-  const { isAdmin, token } = useAuth();
+  const { isEditor } = useAuth();
   const navigate = useNavigate();
-  const tokenSearch = useTokenSearch();
   const evId = Number(eventId);
 
   const [event, setEvent] = useState<Event | null>(null);
@@ -49,8 +47,8 @@ export default function GameList() {
     setLoading(true);
     setError(null);
     Promise.all([
-      getEvent(evId, token ?? undefined),
-      getGames(evId, token ?? undefined),
+      getEvent(evId),
+      getGames(evId),
     ])
       .then(([ev, gs]) => {
         setEvent(ev);
@@ -60,14 +58,13 @@ export default function GameList() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDeleteEvent = async () => {
-    if (!token) return;
     setActionLoading(true);
     try {
-      await deleteEvent(evId, token);
-      navigate(toDashboard(guildId, tokenSearch));
+      await deleteEvent(evId);
+      navigate(toDashboard(guildId));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '削除に失敗しました');
       setDeleteEventTarget(false);
@@ -77,10 +74,9 @@ export default function GameList() {
   };
 
   const handlePublish = async (game: Game) => {
-    if (!token) return;
     setActionLoading(true);
     try {
-      await publishGame(game.id, !game.isPublished, token);
+      await publishGame(game.id, !game.isPublished);
       load();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '切り替えに失敗しました');
@@ -90,7 +86,7 @@ export default function GameList() {
   };
 
   const breadcrumbs = [
-    { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
+    { label: 'ホーム', href: toHashPath(toDashboard(guildId)) },
     { label: event?.name ?? '...' },
   ];
 
@@ -108,11 +104,11 @@ export default function GameList() {
         {event?.isActive && (
           <span className="badge badge-active">開催中</span>
         )}
-        {isAdmin && (
+        {isEditor && (
           <>
             <button
               className="btn-secondary btn-sm"
-              onClick={() => navigate(toEventEdit(guildId, evId, tokenSearch))}
+              onClick={() => navigate(toEventEdit(guildId, evId))}
             >
               編集
             </button>
@@ -129,19 +125,19 @@ export default function GameList() {
 
       {/* アクションバー */}
       <div className="action-bar" style={{ marginBottom: '16px' }}>
-        {(isAdmin || event?.resultsPublic) && (
+        {(isEditor || event?.resultsPublic) && (
           <button
             className="btn-secondary"
-            onClick={() => navigate(toEventResults(guildId, evId, tokenSearch))}
+            onClick={() => navigate(toEventResults(guildId, evId))}
           >
             ユーザー結果一覧
           </button>
         )}
-        {isAdmin && (
+        {isEditor && (
           <button
             className="btn-primary"
             style={{ marginLeft: 'auto' }}
-            onClick={() => navigate(toNewGame(guildId, evId, tokenSearch))}
+            onClick={() => navigate(toNewGame(guildId, evId))}
           >
             + 新規ゲーム作成
           </button>
@@ -168,7 +164,7 @@ export default function GameList() {
                   <th style={{ textAlign: 'left', width: '56px' }}>#</th>
                   <th style={{ textAlign: 'left' }}>ゲームタイトル</th>
                   <th style={{ textAlign: 'left' }}>締め切り</th>
-                  {isAdmin && <th style={{ textAlign: 'left' }}>公開</th>}
+                  {isEditor && <th style={{ textAlign: 'left' }}>公開</th>}
                   <th>操作</th>
                 </tr>
               </thead>
@@ -176,17 +172,17 @@ export default function GameList() {
                 {games.map((g, i) => (
                   <tr key={g.id}>
                     <td className="cell-sm">{i + 1}</td>
-                    <td style={{ fontSize: '16px', color: isPlaceholderGame(g, isAdmin) ? 'var(--color-text-muted)' : 'var(--color-text)' }}>
-                      {isPlaceholderGame(g, isAdmin) ? '非公開ゲーム' : (
-                        <a href={toHashPath(toGame(guildId, evId, g.id, tokenSearch))} style={{ color: 'var(--color-text)', textDecoration: 'none' }} onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')} onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}>
+                    <td style={{ fontSize: '16px', color: isPlaceholderGame(g, isEditor) ? 'var(--color-text-muted)' : 'var(--color-text)' }}>
+                      {isPlaceholderGame(g, isEditor) ? '非公開ゲーム' : (
+                        <a href={toHashPath(toGame(guildId, evId, g.id))} style={{ color: 'var(--color-text)', textDecoration: 'none' }} onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')} onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}>
                           {g.title}
                         </a>
                       )}
                     </td>
-                    <td className="cell-sm" style={{ color: isPlaceholderGame(g, isAdmin) ? 'var(--color-text-muted)' : undefined }}>
-                      {formatListDeadline(g, isAdmin)}
+                    <td className="cell-sm" style={{ color: isPlaceholderGame(g, isEditor) ? 'var(--color-text-muted)' : undefined }}>
+                      {formatListDeadline(g, isEditor)}
                     </td>
-                    {isAdmin && (
+                    {isEditor && (
                       <td>
                         {g.isPublished ? (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', fontSize: '14px' }}>
@@ -203,12 +199,12 @@ export default function GameList() {
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                         <button
                           className="btn-outline btn-sm"
-                          disabled={isPlaceholderGame(g, isAdmin)}
-                          onClick={() => navigate(toGame(guildId, evId, g.id, tokenSearch))}
+                          disabled={isPlaceholderGame(g, isEditor)}
+                          onClick={() => navigate(toGame(guildId, evId, g.id))}
                         >
                           詳細
                         </button>
-                        {isAdmin && (
+                        {isEditor && (
                           <button
                             className={`btn-sm ${g.isPublished ? 'btn-warning' : 'btn-success'}`}
                             disabled={actionLoading}

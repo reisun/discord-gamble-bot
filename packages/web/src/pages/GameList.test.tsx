@@ -13,7 +13,6 @@ vi.mock('../contexts/AuthContext', () => ({
   useAuth: vi.fn(),
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
-vi.mock('../hooks/useTokenSearch', () => ({ useTokenSearch: () => '' }));
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -25,8 +24,8 @@ vi.mock('react-router-dom', async (importOriginal) => {
   };
 });
 
-function renderPage(isAdmin = false) {
-  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001' });
+function renderPage(isEditor = false) {
+  vi.mocked(useAuth).mockReturnValue({ isEditor, isVerifying: false, guildId: 'test-guild-001' });
   return render(<MemoryRouter><GameList /></MemoryRouter>);
 }
 
@@ -70,7 +69,7 @@ describe('GameList', () => {
 
   it('管理者には「公開」列（ヘッダー・状態）が表示される', async () => {
     renderPage(true);
-    await waitFor(() => expect(screen.getAllByText('公開')).toHaveLength(2)); // table header + status span
+    await waitFor(() => expect(screen.getAllByText('公開')).toHaveLength(2));
     expect(screen.getByText('非公開')).toBeInTheDocument();
   });
 
@@ -132,7 +131,7 @@ describe('GameList', () => {
     expect(screen.getByText(/春季大会.*削除/)).toBeInTheDocument();
     const dialog = screen.getByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: '削除' }));
-    expect(api.deleteEvent).toHaveBeenCalledWith(mockEvent.id, 'tok');
+    expect(api.deleteEvent).toHaveBeenCalledWith(mockEvent.id);
   });
 
   it('管理者: 「+ 新規ゲーム作成」ボタンが表示される', async () => {

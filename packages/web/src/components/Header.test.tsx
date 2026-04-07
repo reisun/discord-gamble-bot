@@ -11,14 +11,9 @@ vi.mock('../contexts/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 vi.mock('../api/client');
-vi.mock('../hooks/useTokenSearch', () => ({
-  useTokenSearch: vi.fn(),
-}));
-import { useTokenSearch } from '../hooks/useTokenSearch';
 
-function renderHeader({ isAdmin = false, guildId = null as string | null, token = null as string | null } = {}) {
-  vi.mocked(useAuth).mockReturnValue({ token, isAdmin, isVerifying: false, guildId });
-  vi.mocked(useTokenSearch).mockReturnValue(token ? `?token=${token}` : '');
+function renderHeader({ isEditor = false, guildId = null as string | null } = {}) {
+  vi.mocked(useAuth).mockReturnValue({ isEditor, isVerifying: false, guildId });
   vi.mocked(api.getGuild).mockResolvedValue({ guildId: guildId ?? '', guildName: 'テストサーバー', guildIconUrl: null });
   return render(<MemoryRouter><Header /></MemoryRouter>);
 }
@@ -35,12 +30,12 @@ describe('Header', () => {
   });
 
   it('管理者バッジが表示される', () => {
-    renderHeader({ isAdmin: true });
+    renderHeader({ isEditor: true });
     expect(screen.getByText('管理者')).toBeInTheDocument();
   });
 
   it('一般ユーザーバッジが表示される', () => {
-    renderHeader({ isAdmin: false });
+    renderHeader({ isEditor: false });
     expect(screen.getByText('一般ユーザー')).toBeInTheDocument();
   });
 
@@ -50,21 +45,15 @@ describe('Header', () => {
     expect(link).toHaveAttribute('href', expect.stringContaining('guild-123'));
   });
 
-  it('管理者でタイトルを押下してもトークンが href に含まれる（権限が消えない）', () => {
-    renderHeader({ isAdmin: true, guildId: 'guild-123', token: 'mytoken' });
-    const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', toHashPath(toDashboard('guild-123', '?token=mytoken')));
-  });
-
-  it('トークンなしの場合、href にトークンが含まれない', () => {
-    renderHeader({ guildId: 'guild-123', token: null });
+  it('タイトルリンクの href にトークンが含まれない', () => {
+    renderHeader({ guildId: 'guild-123' });
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', toHashPath(toDashboard('guild-123')));
+    expect(link.getAttribute('href')).not.toContain('token');
   });
 
   it('サーバーアイコンURLが取得できた場合、img タグが表示される', async () => {
-    vi.mocked(useAuth).mockReturnValue({ token: null, isAdmin: false, isVerifying: false, guildId: 'guild-123' });
-    vi.mocked(useTokenSearch).mockReturnValue('');
+    vi.mocked(useAuth).mockReturnValue({ isEditor: false, isVerifying: false, guildId: 'guild-123' });
     vi.mocked(api.getGuild).mockResolvedValue({ guildId: 'guild-123', guildName: 'テストサーバー', guildIconUrl: 'https://cdn.discordapp.com/icons/guild-123/abcdef.png' });
     render(<MemoryRouter><Header /></MemoryRouter>);
     await waitFor(() => expect(screen.getByRole('img')).toBeInTheDocument());
