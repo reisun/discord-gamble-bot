@@ -14,6 +14,11 @@ router.get('/:guildId', async (req: Request, res: Response, next: NextFunction) 
     const { token } = req.query as { token?: string };
 
     const webAppBaseUrl = process.env.WEB_APP_BASE_URL?.replace(/\/$/, '') ?? '';
+    if (!webAppBaseUrl) {
+      res.status(503).send('Webアプリの設定が不完全です。管理者に連絡してください。');
+      return;
+    }
+
     const redirectUrl = `${webAppBaseUrl}/#/dashboard/${guildId}`;
 
     if (!token) {
