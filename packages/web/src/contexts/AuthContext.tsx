@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { verifyToken } from '../api/client';
+import { verifyToken, TOKEN_EXPIRED_EVENT } from '../api/client';
 
 interface AuthContextValue {
   token: string | null;
   isAdmin: boolean;
   isVerifying: boolean;
   guildId: string | null;
+  isTokenExpired: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -13,6 +14,7 @@ const AuthContext = createContext<AuthContextValue>({
   isAdmin: false,
   isVerifying: false,
   guildId: null,
+  isTokenExpired: false,
 });
 
 /**
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [guildId, setGuildId] = useState<string | null>(() => getGuildIdFromHash());
   const [isAdmin, setIsAdmin] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isTokenExpired, setIsTokenExpired] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -87,8 +90,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  // TOKEN_EXPIRED イベントを購読
+  useEffect(() => {
+    const handler = () => setIsTokenExpired(true);
+    window.addEventListener(TOKEN_EXPIRED_EVENT, handler);
+    return () => window.removeEventListener(TOKEN_EXPIRED_EVENT, handler);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ token, isAdmin, isVerifying, guildId }}>
+    <AuthContext.Provider value={{ token, isAdmin, isVerifying, guildId, isTokenExpired }}>
       {children}
     </AuthContext.Provider>
   );

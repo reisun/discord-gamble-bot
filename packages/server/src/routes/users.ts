@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { query } from '../db';
-import { isAdmin } from '../middleware/auth';
+import { isAdmin, requireToken } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
@@ -88,7 +88,7 @@ async function getActiveEventId(): Promise<number | null> {
 }
 
 // GET /api/users
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', requireToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const eventId = req.query.eventId as string | undefined;
     if (!eventId) {
@@ -131,7 +131,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // GET /api/users/discord/:discordId  ← must be before /:id
-router.get('/discord/:discordId', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/discord/:discordId', requireToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await query<UserRow>(
       'SELECT id, discord_id, discord_name, discord_avatar_url, created_at, updated_at FROM users WHERE discord_id = $1',
@@ -172,7 +172,7 @@ router.get('/discord/:discordId', async (req: Request, res: Response, next: Next
 });
 
 // GET /api/users/:id
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', requireToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await query<UserRow>(
       'SELECT id, discord_id, discord_name, discord_avatar_url, created_at, updated_at FROM users WHERE id = $1',

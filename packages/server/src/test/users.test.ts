@@ -51,8 +51,14 @@ async function setupFullScenario() {
 
 describe('GET /api/users', () => {
   it('eventId なしだと 400 を返す', async () => {
-    const res = await request(app).get('/api/users');
+    const res = await request(app).get('/api/users').set(adminHeaders);
     expect(res.status).toBe(400);
+  });
+
+  it('トークンなしで 401 を返す', async () => {
+    const res = await request(app).get('/api/users').query({ eventId: '1' });
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('TOKEN_EXPIRED');
   });
 
   it('賭けを行ったユーザーのポイントが反映される', async () => {
@@ -60,6 +66,7 @@ describe('GET /api/users', () => {
 
     const res = await request(app)
       .get('/api/users')
+      .set(adminHeaders)
       .query({ eventId: event.id });
 
     expect(res.status).toBe(200);
@@ -82,11 +89,19 @@ describe('GET /api/users', () => {
     expect(res.body.data[0]).toHaveProperty('debt');
   });
 
-  it('一般ユーザーは debt フィールドを受け取らない', async () => {
+  it('viewer トークンは debt フィールドを受け取らない', async () => {
     const { event } = await setupFullScenario();
+
+    // viewer トークンを生成
+    const tokenRes = await request(app)
+      .post('/api/auth/token')
+      .set(adminHeaders)
+      .send({ guildId: 'test-guild-001', role: 'viewer' });
+    const viewerToken = tokenRes.body.data.token;
 
     const res = await request(app)
       .get('/api/users')
+      .set('Authorization', `Bearer ${viewerToken}`)
       .query({ eventId: event.id });
 
     expect(res.status).toBe(200);
@@ -100,6 +115,7 @@ describe('GET /api/users/discord/:discordId', () => {
 
     const res = await request(app)
       .get('/api/users/discord/user001')
+      .set(adminHeaders)
       .query({ eventId: event.id });
 
     expect(res.status).toBe(200);
@@ -108,8 +124,16 @@ describe('GET /api/users/discord/:discordId', () => {
   });
 
   it('存在しない Discord ID だと 404 を返す', async () => {
-    const res = await request(app).get('/api/users/discord/nobody');
+    const res = await request(app)
+      .get('/api/users/discord/nobody')
+      .set(adminHeaders);
     expect(res.status).toBe(404);
+  });
+
+  it('トークンなしで 401 を返す', async () => {
+    const res = await request(app).get('/api/users/discord/user001');
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('TOKEN_EXPIRED');
   });
 });
 
@@ -119,16 +143,24 @@ describe('GET /api/users/:id', () => {
 
     const listRes = await request(app)
       .get('/api/users')
+      .set(adminHeaders)
       .query({ eventId: event.id });
     const user = listRes.body.data[0];
 
     const res = await request(app)
       .get(`/api/users/${user.id}`)
+      .set(adminHeaders)
       .query({ eventId: event.id });
 
     expect(res.status).toBe(200);
     expect(res.body.data.id).toBe(user.id);
     expect(res.body.data.points).toBeDefined();
+  });
+
+  it('トークンなしで 401 を返す', async () => {
+    const res = await request(app).get('/api/users/1');
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('TOKEN_EXPIRED');
   });
 });
 
@@ -138,12 +170,15 @@ describe('GET /api/users/:id/event-bets/:eventId', () => {
 
     const listRes = await request(app)
       .get('/api/users')
+      .set(adminHeaders)
       .query({ eventId: event.id });
     const user = listRes.body.data.find(
       (u: { discordId: string }) => u.discordId === 'user001',
     );
 
-    const res = await request(app).get(`/api/users/${user.id}/event-bets/${event.id}`);
+    const res = await request(app)
+      .get(`/api/users/${user.id}/event-bets/${event.id}`)
+      .set(adminHeaders);
 
     expect(res.status).toBe(200);
     expect(res.body.data.eventId).toBe(event.id);
@@ -165,12 +200,15 @@ describe('GET /api/users/:id/event-bets/:eventId', () => {
 
     const listRes = await request(app)
       .get('/api/users')
+      .set(adminHeaders)
       .query({ eventId: event.id });
     const user = listRes.body.data.find(
       (u: { discordId: string }) => u.discordId === 'user001',
     );
 
-    const res = await request(app).get(`/api/users/${user.id}/event-bets/${event.id}`);
+    const res = await request(app)
+      .get(`/api/users/${user.id}/event-bets/${event.id}`)
+      .set(adminHeaders);
 
     const bet = res.body.data.bets[0];
     expect(bet.result).toBe('win');
@@ -185,12 +223,20 @@ describe('GET /api/users/:id/event-results/:eventId', () => {
 
     const listRes = await request(app)
       .get('/api/users')
+      .set(adminHeaders)
       .query({ eventId: event.id });
     const user = listRes.body.data[0];
 
-    const res = await request(app).get(
-      `/api/users/${user.id}/event-results/${event.id}`,
-    );
+    // viewer トークンで試みる
+    const tokenRes = await request(app)
+      .post('/api/auth/token')
+      .set(adminHeaders)
+      .send({ guildId: 'test-guild-001', role: 'viewer' });
+    const viewerToken = tokenRes.body.data.token;
+
+    const res = await request(app)
+      .get(`/api/users/${user.id}/event-results/${event.id}`)
+      .set('Authorization', `Bearer ${viewerToken}`);
 
     expect(res.status).toBe(403);
   });
@@ -235,12 +281,20 @@ describe('GET /api/users/:id/event-results/:eventId', () => {
 
     const listRes = await request(app)
       .get('/api/users')
+      .set(adminHeaders)
       .query({ eventId: event.id });
     const user = listRes.body.data[0];
 
-    const res = await request(app).get(
-      `/api/users/${user.id}/event-results/${event.id}`,
-    );
+    // viewer トークンで試みる
+    const tokenRes = await request(app)
+      .post('/api/auth/token')
+      .set(adminHeaders)
+      .send({ guildId: 'test-guild-001', role: 'viewer' });
+    const viewerToken = tokenRes.body.data.token;
+
+    const res = await request(app)
+      .get(`/api/users/${user.id}/event-results/${event.id}`)
+      .set('Authorization', `Bearer ${viewerToken}`);
     expect(res.status).toBe(200);
   });
 });
@@ -251,12 +305,15 @@ describe('GET /api/users/:id/point-history', () => {
 
     const listRes = await request(app)
       .get('/api/users')
+      .set(adminHeaders)
       .query({ eventId: event.id });
     const user = listRes.body.data.find(
       (u: { discordId: string }) => u.discordId === 'user001',
     );
 
-    const res = await request(app).get(`/api/users/${user.id}/point-history`);
+    const res = await request(app)
+      .get(`/api/users/${user.id}/point-history`)
+      .set(adminHeaders);
 
     expect(res.status).toBe(200);
     // bet_placed が1件あるはず

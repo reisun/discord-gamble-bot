@@ -264,6 +264,7 @@ describe('GET /api/games/:gameId/bets', () => {
     // user001のポイントを確認: 10000 - 500 (bet_placed) + 1000 (game_result) = 10500
     const userRes = await request(app)
       .get('/api/users/discord/user001')
+      .set(adminHeaders)
       .query({ eventId: event.id });
     expect(userRes.body.data.points).toBe(10500);
   });

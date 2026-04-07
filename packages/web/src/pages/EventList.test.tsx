@@ -23,7 +23,7 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 function renderPage(isAdmin = false) {
-  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001' });
+  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
   return render(<MemoryRouter><EventList /></MemoryRouter>);
 }
 
