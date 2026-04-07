@@ -1,17 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getEvent, createEvent, updateEvent } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
+import { useTokenSearch } from '../hooks/useTokenSearch';
 import { toDashboard, toEvent, toHashPath } from '../routes';
 
 export default function EventEdit() {
+  // Route: /dashboard/:guildId/new-event  or  /dashboard/:guildId/:eventId/edit
   const { guildId, eventId } = useParams<{ guildId?: string; eventId?: string }>();
   const isNew = !eventId;
+  const { token } = useAuth();
   const navigate = useNavigate();
+  const tokenSearch = useTokenSearch();
 
   const cancelPath = isNew
-    ? toDashboard(guildId)
-    : toEvent(guildId, eventId);
+    ? toDashboard(guildId, tokenSearch)
+    : toEvent(guildId, eventId, tokenSearch);
 
   const [name, setName] = useState('');
   const [initialPoints, setInitialPoints] = useState(10000);
@@ -22,7 +27,7 @@ export default function EventEdit() {
   useEffect(() => {
     if (isNew) return;
     setLoading(true);
-    getEvent(Number(eventId))
+    getEvent(Number(eventId), token ?? undefined)
       .then((ev) => {
         setName(ev.name);
         setInitialPoints(ev.initialPoints);
@@ -34,6 +39,7 @@ export default function EventEdit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) return;
     if (!guildId) { setError('ギルドIDが取得できません'); return; }
     if (name.trim().length === 0 || name.length > 100) {
       setError('イベント名は1〜100文字で入力してください');
@@ -48,11 +54,11 @@ export default function EventEdit() {
     setError(null);
     try {
       if (isNew) {
-        await createEvent({ name: name.trim(), initialPoints, guildId });
+        await createEvent({ name: name.trim(), initialPoints, guildId }, token);
       } else {
-        await updateEvent(Number(eventId), { name: name.trim(), initialPoints });
+        await updateEvent(Number(eventId), { name: name.trim(), initialPoints }, token);
       }
-      navigate(toDashboard(guildId));
+      navigate(toDashboard(guildId, tokenSearch));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存に失敗しました');
     } finally {
@@ -62,12 +68,12 @@ export default function EventEdit() {
 
   const breadcrumbItems = isNew
     ? [
-        { label: 'ホーム', href: toHashPath(toDashboard(guildId)) },
+        { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
         { label: '新規作成' },
       ]
     : [
-        { label: 'ホーム', href: toHashPath(toDashboard(guildId)) },
-        { label: name || '...', href: toHashPath(toEvent(guildId, eventId)) },
+        { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
+        { label: name || '...', href: toHashPath(toEvent(guildId, eventId, tokenSearch)) },
         { label: '編集' },
       ];
 

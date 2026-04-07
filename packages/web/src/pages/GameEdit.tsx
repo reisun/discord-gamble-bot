@@ -4,6 +4,7 @@ import { getGame, getEvent, createGame, updateGame } from '../api/client';
 import type { BetType, Game } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
+import { useTokenSearch } from '../hooks/useTokenSearch';
 import { toDashboard, toEvent, toGame, toHashPath } from '../routes';
 
 interface BetOptionDraft {
@@ -32,12 +33,14 @@ const BET_TYPE_OPTIONS: { value: BetType; label: string; description: string }[]
 ];
 
 export default function GameEdit() {
+  // Route: /dashboard/:guildId/:eventId/new-game  or  /dashboard/:guildId/:eventId/:gameId/edit
   const params = useParams<{ guildId?: string; eventId?: string; gameId?: string }>();
   const isNew = !params.gameId;
   const gameId = params.gameId ? Number(params.gameId) : undefined;
-  const { guildId: authGuildId } = useAuth();
+  const { token, guildId: authGuildId } = useAuth();
   const guildId = params.guildId ?? authGuildId;
   const navigate = useNavigate();
+  const tokenSearch = useTokenSearch();
 
   const [eventId, setEventId] = useState<number | null>(
     params.eventId ? Number(params.eventId) : null,
@@ -70,15 +73,16 @@ export default function GameEdit() {
 
   useEffect(() => {
     if (isNew) {
+      // eventId は params.eventId から設定済み
       if (params.eventId) {
-        getEvent(Number(params.eventId))
+        getEvent(Number(params.eventId), token ?? undefined)
           .then((ev) => setEventName(ev.name))
           .catch(() => setEventName(''));
       }
       return;
     }
     setLoading(true);
-    getGame(gameId!)
+    getGame(gameId!, token ?? undefined)
       .then((g) => {
         setGame(g);
         setEventId(g.eventId);
@@ -88,7 +92,7 @@ export default function GameEdit() {
         setBetType(g.betType);
         setRequiredSelections(g.requiredSelections ?? 2);
         setOptions(g.betOptions.map((o) => ({ id: o.id, symbol: o.symbol, label: o.label })));
-        return getEvent(g.eventId);
+        return getEvent(g.eventId, token ?? undefined);
       })
       .then((ev) => setEventName(ev.name))
       .catch((e) => setError(e.message))
@@ -127,6 +131,7 @@ export default function GameEdit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) return;
     const validErr = validate();
     if (validErr) { setError(validErr); return; }
 
@@ -143,14 +148,14 @@ export default function GameEdit() {
 
     try {
       if (isNew) {
-        await createGame(eventId!, body);
+        await createGame(eventId!, body, token);
         const newEventPath = guildId
-          ? toEvent(guildId, eventId)
-          : toDashboard(undefined);
+          ? toEvent(guildId, eventId, tokenSearch)
+          : toDashboard(undefined, tokenSearch);
         navigate(newEventPath);
       } else {
-        const saved = await updateGame(gameId!, body);
-        navigate(toGame(guildId, saved.eventId, gameId));
+        const saved = await updateGame(gameId!, body, token);
+        navigate(toGame(guildId, saved.eventId, gameId, tokenSearch));
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存に失敗しました');
@@ -160,19 +165,19 @@ export default function GameEdit() {
   };
 
   const backPath = isNew
-    ? toEvent(guildId, eventId)
-    : toGame(guildId, eventId, gameId);
+    ? toEvent(guildId, eventId, tokenSearch)
+    : toGame(guildId, eventId, gameId, tokenSearch);
 
   const breadcrumbs = isNew
     ? [
-        { label: 'ホーム', href: toHashPath(toDashboard(guildId)) },
-        { label: eventName || '...', href: toHashPath(toEvent(guildId, eventId)) },
+        { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
+        { label: eventName || '...', href: toHashPath(toEvent(guildId, eventId, tokenSearch)) },
         { label: '新規作成' },
       ]
     : [
-        { label: 'ホーム', href: toHashPath(toDashboard(guildId)) },
-        { label: eventName || '...', href: toHashPath(toEvent(guildId, eventId)) },
-        { label: title || '...', href: toHashPath(toGame(guildId, eventId, gameId)) },
+        { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
+        { label: eventName || '...', href: toHashPath(toEvent(guildId, eventId, tokenSearch)) },
+        { label: title || '...', href: toHashPath(toGame(guildId, eventId, gameId, tokenSearch)) },
         { label: '編集' },
       ];
 

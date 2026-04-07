@@ -4,10 +4,16 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import EventEdit from './EventEdit';
 import * as api from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 import { toDashboard, toEvent, toHashPath } from '../routes';
 import { mockEvent } from '../test/fixtures';
 
 vi.mock('../api/client');
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: vi.fn(),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+vi.mock('../hooks/useTokenSearch', () => ({ useTokenSearch: () => '' }));
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -22,11 +28,13 @@ vi.mock('react-router-dom', async (importOriginal) => {
 import { useParams } from 'react-router-dom';
 
 function renderNew() {
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001' });
   vi.mocked(useParams).mockReturnValue({ guildId: 'test-guild-001' });
   return render(<MemoryRouter><EventEdit /></MemoryRouter>);
 }
 
 function renderEdit(eventId = '1') {
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001' });
   vi.mocked(useParams).mockReturnValue({ guildId: 'test-guild-001', eventId });
   vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
   return render(<MemoryRouter><EventEdit /></MemoryRouter>);
@@ -83,6 +91,7 @@ describe('EventEdit', () => {
     await user.click(screen.getByRole('button', { name: '保存' }));
     await waitFor(() => expect(api.createEvent).toHaveBeenCalledWith(
       expect.objectContaining({ name: '秋季大会', guildId: 'test-guild-001' }),
+      'tok',
     ));
     expect(mockNavigate).toHaveBeenCalledWith(toDashboard('test-guild-001'));
   });
@@ -95,6 +104,7 @@ describe('EventEdit', () => {
     await waitFor(() => expect(api.updateEvent).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ name: '春季大会' }),
+      'tok',
     ));
   });
 

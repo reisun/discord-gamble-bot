@@ -12,6 +12,7 @@ vi.mock('../contexts/AuthContext', () => ({
   useAuth: vi.fn(),
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
+vi.mock('../hooks/useTokenSearch', () => ({ useTokenSearch: () => '' }));
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
   return {
@@ -21,8 +22,8 @@ vi.mock('react-router-dom', async (importOriginal) => {
   };
 });
 
-function renderPage(isEditor = false) {
-  vi.mocked(useAuth).mockReturnValue({ isEditor, isVerifying: false, guildId: 'test-guild-001' });
+function renderPage(isAdmin = false) {
+  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001' });
   return render(<MemoryRouter><EventList /></MemoryRouter>);
 }
 
@@ -32,7 +33,7 @@ describe('EventList', () => {
   });
 
   it('ローディング中のスピナーが表示される', () => {
-    vi.mocked(api.getEvents).mockReturnValue(new Promise(() => {}));
+    vi.mocked(api.getEvents).mockReturnValue(new Promise(() => {})); // 永遠に pending
     renderPage();
     expect(screen.getByText('読み込み中...')).toBeInTheDocument();
   });
@@ -49,7 +50,7 @@ describe('EventList', () => {
     expect(screen.getByText('ー 非開催')).toBeInTheDocument();
   });
 
-  it('���開催イベントの開催状態には丸アイコンが表示されない', async () => {
+  it('非開催イベントの開催状態には丸アイコンが表示されない', async () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText('ー 非開催')).toBeInTheDocument());
@@ -81,6 +82,7 @@ describe('EventList', () => {
     renderPage(true);
     await waitFor(() => screen.getAllByText('開催中切替'));
     const buttons = screen.getAllByText('開催中切替');
+    // 開催中イベント（mockEvent）の開催中切替ボタンも disabled でない
     expect(buttons[0]).not.toBeDisabled();
     expect(buttons[1]).not.toBeDisabled();
   });
@@ -88,6 +90,7 @@ describe('EventList', () => {
   it('開催中のイベントの「非公開にする」ボタンは disabled', async () => {
     renderPage(true);
     await waitFor(() => screen.getByText('非公開にする'));
+    // mockEvent は isActive=true なので非公開にするボタンは disabled
     const publishBtn = screen.getByText('非公開にする');
     expect(publishBtn).toBeDisabled();
   });
@@ -100,7 +103,7 @@ describe('EventList', () => {
     const buttons = screen.getAllByText('開催中切替');
     fireEvent.click(buttons[0]);
 
-    await waitFor(() => expect(api.activateEvent).toHaveBeenCalledWith(mockEvent.id));
+    await waitFor(() => expect(api.activateEvent).toHaveBeenCalledWith(mockEvent.id, 'tok'));
   });
 
   it('イベント名がリンクとして表示される', async () => {
