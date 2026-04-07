@@ -7,7 +7,6 @@ vi.mock('../../config', () => ({
     discordAdminRoleIds: ['role-admin'],
     webAppBaseUrl: 'https://example.github.io/app',
     apiBaseUrl: 'http://server:3000',
-    serverPublicUrl: 'https://example.com',
     adminToken: 'secret-admin-token',
   },
 }));
@@ -68,7 +67,7 @@ describe('/link execute', () => {
               expect.objectContaining({
                 data: expect.objectContaining({
                   label: 'Webアプリを開く',
-                  url: expect.stringContaining(`/api/entrance/${TEST_GUILD_ID}?token=generated-token-abc`),
+                  url: expect.stringContaining(`/${TEST_GUILD_ID}?token=generated-token-abc`),
                 }),
               }),
             ]),
