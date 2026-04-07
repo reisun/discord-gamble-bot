@@ -73,7 +73,7 @@ export function createApp() {
   app.get('/api/version', (_req, res) => {
     res.json({
       service: 'server',
-      version: process.env.APP_VERSION ?? '1.0.0',
+      version: process.env.APP_VERSION ?? '1.1.0',
       commitHash: process.env.GIT_COMMIT ?? 'unknown',
     });
   });

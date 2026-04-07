@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 
-const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? '1.0.0';
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? '1.1.0';
 const GIT_COMMIT = (import.meta.env.VITE_GIT_COMMIT ?? 'unknown').slice(0, 7);
 
 export default function Layout() {
