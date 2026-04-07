@@ -9,6 +9,8 @@ export const config = {
     .map((s) => s.trim())
     .filter(Boolean),
   apiBaseUrl: process.env.API_BASE_URL ?? 'http://server:3000',
+  /** 外部からアクセス可能なサーバーの公開 URL */
+  serverPublicUrl: process.env.SERVER_PUBLIC_URL ?? '',
   /** 管理者用 Webアプリの公開 URL */
   webAppBaseUrl: process.env.WEB_APP_BASE_URL ?? '',
   /** Web API 管理者トークン (admin-link で URL に埋め込む) */

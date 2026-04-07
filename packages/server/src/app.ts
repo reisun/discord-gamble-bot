@@ -57,7 +57,7 @@ export function createApp() {
     },
   }));
 
-  app.use('/', entranceRouter);
+  app.use('/api/entrance', entranceRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/guilds', guildsRouter);
   app.use('/api/events', eventsRouter);

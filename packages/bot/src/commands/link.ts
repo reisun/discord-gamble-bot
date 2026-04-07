@@ -14,7 +14,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     return;
   }
 
-  if (!config.webAppBaseUrl || !config.apiBaseUrl) {
+  if (!config.webAppBaseUrl || !config.apiBaseUrl || !config.serverPublicUrl) {
     await interaction.reply({ content: '❌ URL設定が不足しています。管理者に確認してください。', ephemeral: true });
     return;
   }
@@ -33,8 +33,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     return;
   }
 
-  const serverBaseUrl = config.apiBaseUrl.replace(/\/api$/, '').replace(/\/$/, '');
-  const url = `${serverBaseUrl}/${guildId}?token=${token}`;
+  const url = `${config.serverPublicUrl}/api/entrance/${guildId}?token=${token}`;
 
   const button = new ButtonBuilder()
     .setLabel('Webアプリを開く')

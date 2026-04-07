@@ -17,7 +17,11 @@ router.get('/:guildId', async (req: Request, res: Response, next: NextFunction) 
     const redirectUrl = `${webAppBaseUrl}/#/dashboard/${guildId}`;
 
     if (!token) {
-      res.redirect(302, redirectUrl);
+      if (req.session?.guildId === guildId) {
+        res.redirect(302, redirectUrl);
+      } else {
+        res.status(401).send('アクセスには /link コマンドで取得したリンクが必要です。Discordで /link を実行してください。');
+      }
       return;
     }
 
