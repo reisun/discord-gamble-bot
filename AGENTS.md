@@ -25,7 +25,6 @@
 - feature ブランチで作業、`main`/`develop` への直接変更禁止
 - 変更は小さく、レビュー可能な単位でコミット
 
-
 ## 環境変数
 - `.env` ファイルはコミット禁止
 - secret をログや出力に含めない
@@ -34,3 +33,12 @@
 ## Docker
 - 許可: `up`, `stop`, `start`, `restart`, `ps`, `logs`, `build`
 - 要確認: `down -v`, volume / image 削除
+
+## 運用
+- 企画の入口は shape-request
+- shape-request は GO と判断したら、粗いタスクを direct-task に渡す
+- direct-task は必要に応じて pmo-task で整理する
+- direct-task は必ず 1つ以上の lead-task に委譲する
+- lead-task は必要に応じて専門 skill を使う
+- 全体完了判定は direct-task のみ
+- 部分完了判定は lead-task
