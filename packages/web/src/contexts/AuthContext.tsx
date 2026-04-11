@@ -79,11 +79,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   // ハッシュ変化時にトークンと guildId を再取得
+  // トークンがURLに含まれていない場合は既存値を維持する
   useEffect(() => {
     const onHashChange = () => {
       const t = getTokenFromHash();
       const g = getGuildIdFromHash();
-      setToken(t);
+      if (t) setToken(t);
       setGuildId(g);
     };
     window.addEventListener('hashchange', onHashChange);
