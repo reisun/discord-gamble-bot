@@ -23,8 +23,8 @@ export async function runCleanup(): Promise<void> {
       // 1. 登録から2週間経過したユーザーの個人情報をNULL化
       const { rowCount: nullifiedCount } = await client.query(
         `UPDATE users
-         SET discord_name = NULL, discord_avatar_url = NULL
-         WHERE (discord_name IS NOT NULL OR discord_avatar_url IS NOT NULL)
+         SET discord_id = 'deleted_' || id::text, discord_name = NULL, discord_avatar_url = NULL
+         WHERE discord_id NOT LIKE 'deleted_%'
            AND created_at < NOW() - INTERVAL '${RETENTION_DAYS} days'`,
       );
       if (nullifiedCount && nullifiedCount > 0) {
@@ -45,7 +45,7 @@ export async function runCleanup(): Promise<void> {
            JOIN games g ON g.id = b.game_id
            JOIN users u ON u.id = b.user_id
            WHERE g.event_id = e.id
-             AND (u.discord_name IS NOT NULL OR u.discord_avatar_url IS NOT NULL)
+             AND u.discord_id NOT LIKE 'deleted_%'
          )`,
       );
 
