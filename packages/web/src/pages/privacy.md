@@ -1,5 +1,7 @@
 # プライバシーポリシー
 
+本サービスは、[Discord Developer Terms of Service](https://discord.com/developers/docs/policies-and-agreements/developer-terms-of-service) および [Discord Developer Policy](https://discord.com/developers/docs/policies-and-agreements/developer-policy) に準拠して運用されます。
+
 ## 1. 取得する情報
 
 本サービスは、Discord との連携を通じて以下の情報を取得します。
@@ -30,17 +32,35 @@ Discord OAuth2 によるログイン時に、Discord ユーザーID と表示名
 
 取得した情報を第三者に提供・販売することはありません。
 
-## 3. 保存期間と削除
+## 3. 禁止用途
+
+取得した情報について、以下の行為は一切行いません。
+
+- AI・機械学習モデルのトレーニングへの使用
+- 広告ネットワークやデータブローカーへの提供
+- ユーザー情報の販売・ライセンス供与・商業利用
+- 匿名化されたデータの再識別
+
+## 4. 保存期間と削除
 
 | 対象 | 保存期間 | 削除方法 |
 |------|---------|---------|
 | ユーザー情報 | 登録から2週間 | Discord ID は匿名化、表示名・アバターURL は削除 |
-| セッション情報 | 48時間 | 期限切れ後にレコードごと削除 |
-| イベント関連データ | 無期限 | ユーザー情報マスク後も匿名データとして保持 |
+| 認証情報 | 48時間 | 期限切れ後にレコードごと削除 |
 | サーバー情報 | Bot がサーバーに参加している間 | - |
 
 削除処理はサーバー起動時および24時間ごとに自動実行されます。
 
-## 4. お問い合わせ
+## 5. データ削除リクエスト
 
-本ポリシーに関するご質問は、Discord サーバーの管理者にお問い合わせください。
+自動削除を待たずにユーザー情報の即時削除を希望する場合は、以下の GitHub Issues から削除リクエストを送信してください。
+
+**[データ削除リクエスト](https://github.com/reisun/discord_gamble_bot/issues)**
+
+リクエストには Discord ユーザーIDまたは表示名を記載してください。開発者が確認の上、速やかに対象データを削除します。
+
+## 6. お問い合わせ
+
+本ポリシーに関するご質問やお問い合わせは、GitHub Issues で受け付けています。
+
+**[お問い合わせ](https://github.com/reisun/discord_gamble_bot/issues)**
