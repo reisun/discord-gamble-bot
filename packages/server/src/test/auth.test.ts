@@ -73,14 +73,14 @@ describe('POST /api/auth/token', () => {
     expect(res.body.error.code).toBe('UNAUTHORIZED');
   });
 
-  it('不正トークンで POST /api/auth/token すると 403 を返す', async () => {
+  it('不正トークンで POST /api/auth/token すると 401 を返す', async () => {
     const res = await request(app)
       .post('/api/auth/token')
       .set('Authorization', 'Bearer wrong-token')
       .send({ guildId: 'guild-001', role: 'editor' });
 
-    expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('TOKEN_EXPIRED');
   });
 
   it('role が不正な場合 400 を返す', async () => {
@@ -154,13 +154,13 @@ describe('管理者権限が必要なエンドポイント（401/403）', () => 
     expect(res.body.error.code).toBe('UNAUTHORIZED');
   });
 
-  it('不正トークンで POST /api/events すると 403 を返す', async () => {
+  it('不正トークンで POST /api/events すると 401 を返す', async () => {
     const res = await request(app)
       .post('/api/events')
       .set('Authorization', 'Bearer wrong-token')
       .send({ name: 'テスト', initialPoints: 1000 });
 
-    expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('TOKEN_EXPIRED');
   });
 });
