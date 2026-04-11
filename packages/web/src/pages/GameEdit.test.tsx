@@ -27,14 +27,14 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 function renderNew() {
-  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false, isSessionExpired: false, loginUrl: null });
   mockUseParams.mockReturnValue({ guildId: 'test-guild-001', eventId: '1' });
   vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
   return render(<MemoryRouter><GameEdit /></MemoryRouter>);
 }
 
 function renderEdit(game = mockGameSingle) {
-  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false, isSessionExpired: false, loginUrl: null });
   mockUseParams.mockReturnValue({
     guildId: 'test-guild-001',
     eventId: String(game.eventId),

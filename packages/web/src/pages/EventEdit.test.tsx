@@ -28,13 +28,13 @@ vi.mock('react-router-dom', async (importOriginal) => {
 import { useParams } from 'react-router-dom';
 
 function renderNew() {
-  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false, isSessionExpired: false, loginUrl: null });
   vi.mocked(useParams).mockReturnValue({ guildId: 'test-guild-001' });
   return render(<MemoryRouter><EventEdit /></MemoryRouter>);
 }
 
 function renderEdit(eventId = '1') {
-  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
+  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false, isSessionExpired: false, loginUrl: null });
   vi.mocked(useParams).mockReturnValue({ guildId: 'test-guild-001', eventId });
   vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
   return render(<MemoryRouter><EventEdit /></MemoryRouter>);
