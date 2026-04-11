@@ -1,6 +1,6 @@
 # プライバシーポリシー
 
-本サービスは、[Discord Developer Terms of Service](https://discord.com/developers/docs/policies-and-agreements/developer-terms-of-service) および [Discord Developer Policy](https://discord.com/developers/docs/policies-and-agreements/developer-policy) に基づき、以下のように定めます。
+本サービスは、[Discord Developer Terms of Service](https://discord.com/developers/docs/policies-and-agreements/developer-terms-of-service) および [Discord Developer Policy](https://discord.com/developers/docs/policies-and-agreements/developer-policy) を尊重し、以下のように定めます。
 
 ## 1. 取得する情報
 
