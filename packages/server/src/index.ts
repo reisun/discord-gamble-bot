@@ -3,6 +3,7 @@ import migrate from 'node-pg-migrate';
 
 import { logger } from './logger';
 import { createApp } from './app';
+import { startCleanupScheduler } from './cleanup';
 
 const app = createApp();
 const port = process.env.PORT ?? 3000;
@@ -24,6 +25,7 @@ async function main(): Promise<void> {
 
   app.listen(port, () => {
     logger.info(`Server running on port ${port}`);
+    startCleanupScheduler();
   });
 }
 
