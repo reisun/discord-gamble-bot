@@ -14,6 +14,9 @@ import guildsRouter from './routes/guilds';
 export function createApp() {
   const app = express();
 
+  // nginx 背後で X-Forwarded-Proto を信頼する（req.protocol が https を返すように）
+  app.set('trust proxy', 1);
+
   const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? '')
     .split(',')
     .map((o) => o.trim())
