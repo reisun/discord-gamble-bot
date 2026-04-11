@@ -7,6 +7,7 @@ const router = Router();
 
 // GET /api/auth/verify
 router.get('/verify', async (req: Request, res: Response, next: NextFunction) => {
+  res.set('Cache-Control', 'no-store');
   try {
     const rawToken = req.headers.authorization?.startsWith('Bearer ')
       ? req.headers.authorization.slice(7)
