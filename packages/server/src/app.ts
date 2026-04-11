@@ -14,6 +14,9 @@ import guildsRouter from './routes/guilds';
 export function createApp() {
   const app = express();
 
+  // ETag を無効化（認証付きレスポンスの 304 キャッシュ問題を防止）
+  app.set('etag', false);
+
   const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? '')
     .split(',')
     .map((o) => o.trim())
