@@ -27,24 +27,14 @@ const AuthContext = createContext<AuthContextValue>({
 
 /**
  * ハッシュフラグメント内のクエリパラメータを取得する。
- * ?token=xxx (管理者トークン) または ?session=xxx (OAuth2セッション) を探す。
  */
-function getAuthFromHash(): { token: string; source: 'token' | 'session' } | null {
+function getHashParams(): URLSearchParams {
   const hash = window.location.hash;
   const queryIndex = hash.indexOf('?');
-  if (queryIndex === -1) return null;
-  const params = new URLSearchParams(hash.slice(queryIndex + 1));
-  // token（管理者）が優先
-  const token = params.get('token');
-  if (token) return { token, source: 'token' };
-  const session = params.get('session');
-  if (session) return { token: session, source: 'session' };
-  return null;
+  if (queryIndex === -1) return new URLSearchParams();
+  return new URLSearchParams(hash.slice(queryIndex + 1));
 }
 
-/**
- * ハッシュフラグメントから guildId を取得する。
- */
 function getGuildIdFromHash(): string | null {
   const hash = window.location.hash;
   const withoutHash = hash.slice(1).split('?')[0];
@@ -56,51 +46,52 @@ function getGuildIdFromHash(): string | null {
 }
 
 /**
- * 認証を初期化: URLハッシュ → localStorage の順に探す
+ * 認証を初期化:
+ * - ?session=xxx があれば localStorage に保存して使用（OAuth2 認証済み）
+ * - ?token=xxx があれば OAuth2 に渡して本人確認を開始
+ * - どちらもなければ localStorage から復元
  */
-function initAuth(): string | null {
-  const fromHash = getAuthFromHash();
-  if (fromHash) {
-    localStorage.setItem(SESSION_STORAGE_KEY, fromHash.token);
-    // URLから認証パラメータを除去
-    const hash = window.location.hash;
-    const queryIndex = hash.indexOf('?');
-    if (queryIndex !== -1) {
-      const basePath = hash.slice(0, queryIndex);
-      const params = new URLSearchParams(hash.slice(queryIndex + 1));
-      params.delete('token');
-      params.delete('session');
-      const remaining = params.toString();
-      window.location.hash = remaining ? `${basePath}?${remaining}` : basePath;
-    }
-    return fromHash.token;
+function initAuth(guildId: string | null): string | null {
+  const params = getHashParams();
+
+  // OAuth2 認証済みセッション
+  const session = params.get('session');
+  if (session) {
+    localStorage.setItem(SESSION_STORAGE_KEY, session);
+    cleanHashParams(['session', 'token']);
+    return session;
   }
+
+  // Bot から発行されたトークン → OAuth2 本人確認へリダイレクト
+  const token = params.get('token');
+  if (token && guildId) {
+    const apiBase = BASE_URL.startsWith('http') ? BASE_URL : `${window.location.origin}${BASE_URL}`;
+    const currentUrl = window.location.origin + window.location.pathname;
+    const oauthUrl = `${apiBase}/auth/discord?guild_id=${encodeURIComponent(guildId)}&token=${encodeURIComponent(token)}&redirect_uri=${encodeURIComponent(currentUrl)}`;
+    window.location.href = oauthUrl;
+    return null; // リダイレクト中
+  }
+
   return localStorage.getItem(SESSION_STORAGE_KEY);
 }
 
-function buildLoginUrl(guildId: string | null): string | null {
-  if (!guildId) return null;
-  const currentUrl = window.location.origin + window.location.pathname;
-  const apiBase = BASE_URL.startsWith('http') ? BASE_URL : `${window.location.origin}${BASE_URL}`;
-  return `${apiBase}/auth/discord?guild_id=${encodeURIComponent(guildId)}&redirect_uri=${encodeURIComponent(currentUrl)}`;
+function cleanHashParams(keys: string[]): void {
+  const hash = window.location.hash;
+  const queryIndex = hash.indexOf('?');
+  if (queryIndex === -1) return;
+  const basePath = hash.slice(0, queryIndex);
+  const params = new URLSearchParams(hash.slice(queryIndex + 1));
+  keys.forEach((k) => params.delete(k));
+  const remaining = params.toString();
+  window.location.hash = remaining ? `${basePath}?${remaining}` : basePath;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => initAuth());
-  const [guildId, setGuildId] = useState<string | null>(() => getGuildIdFromHash());
+  const [guildId] = useState<string | null>(() => getGuildIdFromHash());
+  const [token, setToken] = useState<string | null>(() => initAuth(guildId));
   const [isAdmin, setIsAdmin] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
-
-  // セッションがなく guildId がある場合、Discord OAuth2 へ自動リダイレクト
-  useEffect(() => {
-    if (!token && !isVerifying && guildId) {
-      const url = buildLoginUrl(guildId);
-      if (url) {
-        window.location.href = url;
-      }
-    }
-  }, [token, isVerifying, guildId]);
 
   useEffect(() => {
     if (!token) {
@@ -115,9 +106,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then((res) => {
         if (!cancelled) {
           setIsAdmin(res.isAdmin);
-          if (res.guildId && res.guildId !== '*') {
-            setGuildId(res.guildId);
-          }
         }
       })
       .catch(() => {
@@ -136,16 +124,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [token]);
 
-  // ハッシュ変化時に認証情報と guildId を再取得
+  // ハッシュ変化時にセッションを再取得
   useEffect(() => {
     const onHashChange = () => {
-      const auth = getAuthFromHash();
-      const g = getGuildIdFromHash();
-      if (auth) {
-        localStorage.setItem(SESSION_STORAGE_KEY, auth.token);
-        setToken(auth.token);
+      const params = getHashParams();
+      const s = params.get('session');
+      if (s) {
+        localStorage.setItem(SESSION_STORAGE_KEY, s);
+        setToken(s);
+        cleanHashParams(['session']);
       }
-      setGuildId(g);
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
@@ -163,8 +151,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener(TOKEN_EXPIRED_EVENT, handler);
   }, []);
 
-  const loginUrl = buildLoginUrl(guildId);
-
   return (
     <AuthContext.Provider value={{
       token,
@@ -173,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       guildId,
       isSessionExpired,
       isTokenExpired: isSessionExpired,
-      loginUrl,
+      loginUrl: null, // OAuth2 は token 経由のみ、直接ログインURLは不要
     }}>
       {children}
     </AuthContext.Provider>

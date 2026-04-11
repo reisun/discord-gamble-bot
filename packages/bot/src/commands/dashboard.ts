@@ -23,7 +23,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     return;
   }
 
-  if (!config.webAppBaseUrl) {
+  if (!config.webAppBaseUrl || !config.apiBaseUrl) {
     await interaction.reply({
       content: '❌ URL設定が不足しています。管理者に確認してください。',
       ephemeral: true,
@@ -31,57 +31,47 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     return;
   }
 
-  const baseUrl = `${config.webAppBaseUrl.replace(/\/$/, '')}/#/dashboard/${guildId}`;
-
   const member = await interaction.guild!.members
     .fetch(interaction.user.id)
     .catch(() => null);
 
-  if (isAdminMember(member)) {
-    // 管理者: editor トークンを発行して URL に付与
-    let token: string;
-    try {
-      const res = await api.post<{ data: { token: string } }>(
-        '/api/auth/token',
-        { guildId, role: 'editor' },
-        { headers: { Authorization: `Bearer ${config.adminToken}` } },
-      );
-      token = res.data.data.token;
-    } catch {
-      await interaction.reply({
-        content: '❌ アクセストークンの生成に失敗しました。',
-        ephemeral: true,
-      });
-      return;
-    }
+  const role = isAdminMember(member) ? 'editor' : 'viewer';
+  const discordId = interaction.user.id;
 
-    const url = `${baseUrl}?token=${token}`;
-
-    const button = new ButtonBuilder()
-      .setLabel('管理者用ダッシュボード')
-      .setStyle(ButtonStyle.Link)
-      .setURL(url);
-
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
-
+  // トークン発行（discord_id 付き）
+  let token: string;
+  try {
+    const res = await api.post<{ data: { token: string } }>(
+      '/api/auth/token',
+      { guildId, role, discordId },
+      { headers: { Authorization: `Bearer ${config.adminToken}` } },
+    );
+    token = res.data.data.token;
+  } catch {
     await interaction.reply({
-      content: '🔑 管理者用のリンクです。このボタンは本人のみ使用してください。有効期限は12時間です。',
-      components: [row],
+      content: '❌ アクセストークンの生成に失敗しました。',
       ephemeral: true,
     });
-  } else {
-    // 一般ユーザー: トークンなし URL（OAuth2 でログイン）
-    const button = new ButtonBuilder()
-      .setLabel('Webアプリを開く')
-      .setStyle(ButtonStyle.Link)
-      .setURL(baseUrl);
-
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
-
-    await interaction.reply({
-      content: '🌐 Webアプリを開くにはDiscordアカウントでログインしてください。',
-      components: [row],
-      ephemeral: true,
-    });
+    return;
   }
+
+  const url = `${config.webAppBaseUrl.replace(/\/$/, '')}/#/dashboard/${guildId}?token=${token}`;
+
+  const button = new ButtonBuilder()
+    .setLabel('Webアプリを開く')
+    .setStyle(ButtonStyle.Link)
+    .setURL(url);
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
+
+  const content =
+    role === 'editor'
+      ? '🔑 管理者用のリンクです。Discordアカウントで本人確認の上、ご利用ください。有効期限は12時間です。'
+      : '🌐 閲覧用のリンクです。Discordアカウントで本人確認の上、ご利用ください。有効期限は12時間です。';
+
+  await interaction.reply({
+    content,
+    components: [row],
+    ephemeral: true,
+  });
 }
