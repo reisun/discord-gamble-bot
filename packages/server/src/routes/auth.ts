@@ -105,7 +105,7 @@ router.get('/discord', (req: Request, res: Response) => {
     client_id: clientId,
     redirect_uri: callbackUrl,
     response_type: 'code',
-    scope: 'identify guilds guilds.members.read',
+    scope: 'identify guilds',
     state,
   });
 
@@ -136,7 +136,7 @@ router.get('/discord/callback', async (req: Request, res: Response, next: NextFu
 
     const clientId = process.env.DISCORD_CLIENT_ID!;
     const clientSecret = process.env.DISCORD_CLIENT_SECRET!;
-    const callbackUrl = `${req.protocol}://${req.get('host')}/api/auth/discord/callback`;
+    const callbackUrl = process.env.DISCORD_OAUTH_CALLBACK_URL!;
 
     // 1. Exchange code for Discord access token
     const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
@@ -188,26 +188,8 @@ router.get('/discord/callback', async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    // 5. Check if user has admin role in that guild
-    let role = 'viewer';
-    try {
-      const memberRes = await fetch(`https://discord.com/api/users/@me/guilds/${guildId}/member`, {
-        headers: { Authorization: `Bearer ${discordAccessToken}` },
-      });
-      if (memberRes.ok) {
-        const memberData = await memberRes.json() as { roles: string[] };
-        const adminRoleIds = (process.env.DISCORD_ADMIN_ROLE_ID || '').split(',').map((r) => r.trim()).filter(Boolean);
-        const hasAdminRole = memberData.roles.some((r) => adminRoleIds.includes(r));
-        if (hasAdminRole) {
-          role = 'editor';
-        }
-      }
-    } catch (err) {
-      console.error('Failed to check member roles:', err);
-      // ロール確認失敗時はviewerのまま
-    }
-
-    // 6. Create session in sessions table (48h expiry)
+    // 5. Create session (OAuth2 users are always viewer)
+    const role = 'viewer';
     const sessionToken = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
     const displayName = userData.global_name || userData.username;
@@ -217,7 +199,7 @@ router.get('/discord/callback', async (req: Request, res: Response, next: NextFu
       [sessionToken, userData.id, displayName, guildId, role, expiresAt],
     );
 
-    // 7. Redirect to web app with session token in hash
+    // 6. Redirect to web app
     const webAppBaseUrl = (redirectUri || process.env.WEB_APP_BASE_URL || '').replace(/\/$/, '');
     const finalUrl = `${webAppBaseUrl}/#/dashboard/${guildId}?session=${sessionToken}`;
     res.redirect(finalUrl);
@@ -244,21 +226,41 @@ router.get('/session', async (req: Request, res: Response, next: NextFunction) =
       return;
     }
 
-    const rows = await query<{ role: string; guild_id: string; discord_username: string | null; expires_at: Date }>(
+    // sessions テーブルで検索
+    const sessionRows = await query<{ role: string; guild_id: string; discord_username: string | null; expires_at: Date }>(
       'SELECT role, guild_id, discord_username, expires_at FROM sessions WHERE session_token = $1',
       [rawToken],
     );
-
-    if (rows.length === 0 || new Date(rows[0].expires_at) < new Date()) {
-      res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度ログインしてください' } });
+    if (sessionRows.length > 0) {
+      if (new Date(sessionRows[0].expires_at) < new Date()) {
+        res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度ログインしてください' } });
+        return;
+      }
+      res.json({
+        data: {
+          isAdmin: sessionRows[0].role === 'editor',
+          guildId: sessionRows[0].guild_id,
+          discordUsername: sessionRows[0].discord_username,
+        },
+      });
       return;
     }
 
+    // access_tokens テーブルにフォールバック（管理者トークン）
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const tokenRows = await query<{ role: string; guild_id: string; expires_at: Date }>(
+      'SELECT role, guild_id, expires_at FROM access_tokens WHERE token_hash = $1',
+      [tokenHash],
+    );
+    if (tokenRows.length === 0 || new Date(tokenRows[0].expires_at) < new Date()) {
+      res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度ログインしてください' } });
+      return;
+    }
     res.json({
       data: {
-        isAdmin: rows[0].role === 'editor',
-        guildId: rows[0].guild_id,
-        discordUsername: rows[0].discord_username,
+        isAdmin: tokenRows[0].role === 'editor',
+        guildId: tokenRows[0].guild_id,
+        discordUsername: null,
       },
     });
   } catch (err) {
