@@ -57,7 +57,7 @@ Discord OAuth2 によるログイン時に、Discord ユーザーID と表示名
 
 **[データ削除リクエスト](https://github.com/reisun/discord_gamble_bot/issues)**
 
-リクエストには Discord ユーザーIDまたは表示名を記載してください。開発者が確認の上、速やかに対象データを削除します。
+リクエストには Discord ユーザーIDまたは表示名を記載してください。個人開発・運用のため、対応までお時間をいただく場合があります。
 
 ## 6. お問い合わせ
 
