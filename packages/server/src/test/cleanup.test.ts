@@ -15,8 +15,8 @@ async function createEvent(name: string, isActive = false): Promise<number> {
   return event.id;
 }
 
-/** テスト用にゲーム・賭け・ユーザーを作成し、betのcreated_atを指定日数前に設定 */
-async function createGameWithBets(eventId: number, betDaysAgo: number = 0): Promise<{ gameId: number; userId: number }> {
+/** テスト用にゲーム・賭け・ユーザーを作成し、ユーザーのcreated_atを指定日数前に設定 */
+async function createGameWithBets(eventId: number, userDaysAgo: number = 0): Promise<{ gameId: number; userId: number }> {
   const [game] = await query<{ id: number }>(
     `INSERT INTO games (event_id, title, deadline, status, bet_type, required_selections)
      VALUES ($1, 'テストゲーム', NOW() - INTERVAL '1 day', 'finished', 'single', NULL)
@@ -30,28 +30,28 @@ async function createGameWithBets(eventId: number, betDaysAgo: number = 0): Prom
     [game.id],
   );
 
+  const discordId = `${Date.now()}`;
   const [user] = await query<{ id: number }>(
     `INSERT INTO users (discord_id, discord_name, discord_avatar_url)
      VALUES ($1, 'テストユーザー', 'https://cdn.discordapp.com/avatars/123/abc.png')
      ON CONFLICT (discord_id) DO UPDATE SET discord_name = EXCLUDED.discord_name
      RETURNING id`,
-    [`user-${Date.now()}`],
+    [discordId],
   );
+
+  // ユーザーの created_at を指定日数前に設定
+  if (userDaysAgo > 0) {
+    await pool.query(
+      `UPDATE users SET created_at = NOW() - INTERVAL '${userDaysAgo} days' WHERE id = $1`,
+      [user.id],
+    );
+  }
 
   await query(
     `INSERT INTO bets (user_id, game_id, selected_symbols, amount)
      VALUES ($1, $2, 'A', 100)`,
     [user.id, game.id],
   );
-
-  // bet の created_at を指定日数前に設定
-  if (betDaysAgo > 0) {
-    await pool.query(
-      `UPDATE bets SET created_at = NOW() - INTERVAL '${betDaysAgo} days'
-       WHERE user_id = $1 AND game_id = $2`,
-      [user.id, game.id],
-    );
-  }
 
   await query(
     `INSERT INTO point_history (user_id, event_id, game_id, change_amount, reason)
@@ -69,9 +69,36 @@ async function createGameWithBets(eventId: number, betDaysAgo: number = 0): Prom
 }
 
 describe('runCleanup', () => {
-  it('初回bet登録から2週間以上経過したイベントの関連データを削除する', async () => {
+  it('登録から2週間経過したユーザーの個人情報をNULL化する', async () => {
+    const eventId = await createEvent('テストイベント');
+    const { userId } = await createGameWithBets(eventId, 15);
+
+    await runCleanup();
+
+    const [user] = await query<{ discord_name: string | null; discord_avatar_url: string | null }>(
+      'SELECT discord_name, discord_avatar_url FROM users WHERE id = $1',
+      [userId],
+    );
+    expect(user.discord_name).toBeNull();
+    expect(user.discord_avatar_url).toBeNull();
+  });
+
+  it('登録から2週間未満のユーザーの個人情報は保持する', async () => {
+    const eventId = await createEvent('テストイベント');
+    const { userId } = await createGameWithBets(eventId, 10);
+
+    await runCleanup();
+
+    const [user] = await query<{ discord_name: string | null }>(
+      'SELECT discord_name FROM users WHERE id = $1',
+      [userId],
+    );
+    expect(user.discord_name).toBe('テストユーザー');
+  });
+
+  it('全ユーザーがNULL化されたイベントの関連データを削除する', async () => {
     const eventId = await createEvent('古いイベント');
-    await createGameWithBets(eventId, 15); // bet が15日前
+    await createGameWithBets(eventId, 15);
 
     await runCleanup();
 
@@ -86,14 +113,24 @@ describe('runCleanup', () => {
     expect(debtHistory).toHaveLength(0);
   });
 
-  it('初回bet登録から2週間未満のイベントは削除しない', async () => {
-    const eventId = await createEvent('最近のイベント');
-    await createGameWithBets(eventId, 10); // bet が10日前
+  it('まだ有効なユーザーがいるイベントは削除しない', async () => {
+    const eventId = await createEvent('混合イベント');
+    await createGameWithBets(eventId, 15); // 古いユーザー
+    // 新しいユーザーも追加
+    const [game] = await query<{ id: number }>('SELECT id FROM games WHERE event_id = $1 LIMIT 1', [eventId]);
+    const [newUser] = await query<{ id: number }>(
+      `INSERT INTO users (discord_id, discord_name) VALUES ($1, '新ユーザー') RETURNING id`,
+      [`new-user-${Date.now()}`],
+    );
+    await query(
+      `INSERT INTO bets (user_id, game_id, selected_symbols, amount) VALUES ($1, $2, 'B', 50)`,
+      [newUser.id, game.id],
+    );
 
     await runCleanup();
 
     const events = await query('SELECT id FROM events WHERE id = $1', [eventId]);
-    expect(events).toHaveLength(1);
+    expect(events).toHaveLength(1); // 新しいユーザーがいるので削除されない
   });
 
   it('betが無いイベントは削除しない', async () => {
@@ -105,58 +142,7 @@ describe('runCleanup', () => {
     expect(events).toHaveLength(1);
   });
 
-  it('アクティブイベントでもbet登録から2週間経過していれば削除する', async () => {
-    const eventId = await createEvent('アクティブだが古い', true);
-    await createGameWithBets(eventId, 15);
-
-    await runCleanup();
-
-    const events = await query('SELECT id FROM events WHERE id = $1', [eventId]);
-    expect(events).toHaveLength(0);
-  });
-
-  it('アクティブイベントに参加していないユーザーの個人情報をNULL化する', async () => {
-    const eventId = await createEvent('古いイベント');
-    const { userId } = await createGameWithBets(eventId, 15);
-
-    await runCleanup();
-
-    const [user] = await query<{ discord_name: string | null; discord_avatar_url: string | null }>(
-      'SELECT discord_name, discord_avatar_url FROM users WHERE id = $1',
-      [userId],
-    );
-    expect(user.discord_name).toBeNull();
-    expect(user.discord_avatar_url).toBeNull();
-  });
-
-  it('他の未期限イベントに参加しているユーザーの個人情報は保持する', async () => {
-    // 古いイベント（削除対象）
-    const oldEventId = await createEvent('古いイベント');
-    const { userId } = await createGameWithBets(oldEventId, 15);
-
-    // 同じユーザーが新しいイベントにも参加（bet は今日）
-    const newEventId = await createEvent('新しいイベント');
-    const [game] = await query<{ id: number }>(
-      `INSERT INTO games (event_id, title, deadline, status, bet_type, required_selections)
-       VALUES ($1, 'アクティブゲーム', NOW() + INTERVAL '1 day', 'open', 'single', NULL) RETURNING id`,
-      [newEventId],
-    );
-    await query(
-      `INSERT INTO bets (user_id, game_id, selected_symbols, amount) VALUES ($1, $2, 'A', 50)`,
-      [userId, game.id],
-    );
-
-    await runCleanup();
-
-    const [user] = await query<{ discord_name: string | null; discord_avatar_url: string | null }>(
-      'SELECT discord_name, discord_avatar_url FROM users WHERE id = $1',
-      [userId],
-    );
-    expect(user.discord_name).toBe('テストユーザー');
-    expect(user.discord_avatar_url).toBe('https://cdn.discordapp.com/avatars/123/abc.png');
-  });
-
-  it('対象イベントがない場合はエラーなく完了する', async () => {
+  it('対象がない場合はエラーなく完了する', async () => {
     await expect(runCleanup()).resolves.not.toThrow();
   });
 });
