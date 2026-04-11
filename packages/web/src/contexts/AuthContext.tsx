@@ -77,7 +77,9 @@ function initSession(): string | null {
 function buildLoginUrl(guildId: string | null): string | null {
   if (!guildId) return null;
   const currentUrl = window.location.origin + window.location.pathname;
-  return `${BASE_URL}/auth/discord?guild_id=${encodeURIComponent(guildId)}&redirect_uri=${encodeURIComponent(currentUrl)}`;
+  // BASE_URL が相対パスの場合、現在のオリジンを付与してフルURLにする
+  const apiBase = BASE_URL.startsWith('http') ? BASE_URL : `${window.location.origin}${BASE_URL}`;
+  return `${apiBase}/auth/discord?guild_id=${encodeURIComponent(guildId)}&redirect_uri=${encodeURIComponent(currentUrl)}`;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -86,6 +88,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
+
+  // セッションがなく guildId がある場合、Discord OAuth2 へ自動リダイレクト
+  useEffect(() => {
+    if (!token && !isVerifying && guildId) {
+      const url = buildLoginUrl(guildId);
+      if (url) {
+        window.location.href = url;
+      }
+    }
+  }, [token, isVerifying, guildId]);
 
   useEffect(() => {
     if (!token) {
