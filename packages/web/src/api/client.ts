@@ -8,7 +8,6 @@ import type {
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
-const SESSION_STORAGE_KEY = 'discord-gamble-session';
 
 // TOKEN_EXPIRED エラーを区別するためのカスタムイベント
 export const TOKEN_EXPIRED_EVENT = 'discord-gamble-token-expired';
@@ -18,15 +17,12 @@ async function request<T>(
   options: RequestInit = {},
   token?: string,
 ): Promise<T> {
-  // トークンが渡されなければ localStorage から取得
-  const resolvedToken = token ?? localStorage.getItem(SESSION_STORAGE_KEY) ?? undefined;
-
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
-  if (resolvedToken) {
-    headers['Authorization'] = `Bearer ${resolvedToken}`;
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
@@ -53,11 +49,6 @@ async function request<T>(
 }
 
 // 認証
-export function verifySession(token: string): Promise<{ isAdmin: boolean; guildId: string; discordUsername: string }> {
-  return request('/auth/session', {}, token);
-}
-
-/** @deprecated Use verifySession instead */
 export function verifyToken(token: string): Promise<{ isAdmin: boolean }> {
   return request('/auth/verify', {}, token);
 }

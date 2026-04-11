@@ -32,15 +32,7 @@ export async function runCleanup(): Promise<void> {
         logger.info(`[cleanup] Masked personal info for ${nullifiedCount} user(s).`);
       }
 
-      // 2. 期限切れセッションの削除（discord_user_id, discord_username を含む）
-      const { rowCount: deletedSessions } = await client.query(
-        `DELETE FROM sessions WHERE expires_at < NOW()`,
-      );
-      if (deletedSessions && deletedSessions > 0) {
-        logger.info(`[cleanup] Deleted ${deletedSessions} expired session(s).`);
-      }
-
-      // 3. 期限切れアクセストークンの削除
+      // 2. 期限切れアクセストークンの削除
       const { rowCount: deletedTokens } = await client.query(
         `DELETE FROM access_tokens WHERE expires_at < NOW()`,
       );

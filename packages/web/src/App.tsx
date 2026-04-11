@@ -10,8 +10,8 @@ import UserResults from './pages/UserResults';
 import Privacy from './pages/Privacy';
 
 function TokenExpiredBanner() {
-  const { isSessionExpired } = useAuth();
-  if (!isSessionExpired) return null;
+  const { isTokenExpired } = useAuth();
+  if (!isTokenExpired) return null;
   return (
     <div style={{
       position: 'fixed',
@@ -26,7 +26,7 @@ function TokenExpiredBanner() {
       fontSize: '14px',
       fontWeight: 500,
     }}>
-      セッションの有効期限が切れました。Discordで <code>/dashboard</code> コマンドを再実行してください。
+      ⚠️ アクセス期限が切れました。Discordで <code>/dashboard</code> コマンドを再実行してください。
     </div>
   );
 }

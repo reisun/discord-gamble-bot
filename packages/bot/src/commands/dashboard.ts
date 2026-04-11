@@ -36,14 +36,12 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     .catch(() => null);
 
   const role = isAdminMember(member) ? 'editor' : 'viewer';
-  const discordId = interaction.user.id;
 
-  // トークン発行（discord_id 付き）
   let token: string;
   try {
     const res = await api.post<{ data: { token: string } }>(
       '/api/auth/token',
-      { guildId, role, discordId },
+      { guildId, role },
       { headers: { Authorization: `Bearer ${config.adminToken}` } },
     );
     token = res.data.data.token;
@@ -66,8 +64,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
   const content =
     role === 'editor'
-      ? '🔑 管理者用のリンクです。Discordアカウントで本人確認の上、ご利用ください。有効期限は12時間です。'
-      : '🌐 閲覧用のリンクです。Discordアカウントで本人確認の上、ご利用ください。有効期限は12時間です。';
+      ? '🔑 管理者用のリンクです。このボタンは本人のみ使用してください。有効期限は12時間です。'
+      : '🌐 閲覧用のリンクです。このボタンは本人のみ使用してください。有効期限は12時間です。';
 
   await interaction.reply({
     content,
