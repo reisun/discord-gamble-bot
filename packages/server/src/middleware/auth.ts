@@ -27,37 +27,6 @@ export function isAdmin(req: Request): boolean {
   return token !== undefined && token === process.env.ADMIN_TOKEN;
 }
 
-/**
- * セッションまたはアクセストークンをDBで検証する共通ヘルパー。
- * sessions テーブルを先に確認し、なければ access_tokens にフォールバック。
- */
-async function resolveTokenRecord(
-  rawToken: string,
-): Promise<{ role: string; guild_id: string; expires_at: Date } | null> {
-  // 1. sessions テーブルで検索
-  const sessionRows = await query<{ role: string; guild_id: string; expires_at: Date }>(
-    'SELECT role, guild_id, expires_at FROM sessions WHERE session_token = $1',
-    [rawToken],
-  );
-  if (sessionRows.length > 0) {
-    if (new Date(sessionRows[0].expires_at) < new Date()) {
-      return null; // 期限切れ
-    }
-    return sessionRows[0];
-  }
-
-  // 2. access_tokens テーブルにフォールバック
-  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-  const rows = await query<{ role: string; guild_id: string; expires_at: Date }>(
-    'SELECT role, guild_id, expires_at FROM access_tokens WHERE token_hash = $1',
-    [tokenHash],
-  );
-  if (rows.length === 0 || new Date(rows[0].expires_at) < new Date()) {
-    return null;
-  }
-  return rows[0];
-}
-
 export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token = getToken(req);
   if (!token) {
@@ -72,18 +41,22 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
     next();
     return;
   }
-  // セッション → アクセストークン の順で検証
+  // DBトークンを検証し、editorロールなら許可
   try {
-    const record = await resolveTokenRecord(token);
-    if (!record) {
-      res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度ログインしてください' } });
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const rows = await query<{ role: string; guild_id: string; expires_at: Date }>(
+      'SELECT role, guild_id, expires_at FROM access_tokens WHERE token_hash = $1',
+      [tokenHash],
+    );
+    if (rows.length === 0 || new Date(rows[0].expires_at) < new Date()) {
+      res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度 /dashboard から入ってください' } });
       return;
     }
-    if (record.role !== 'editor') {
+    if (rows[0].role !== 'editor') {
       res.status(403).json({ error: { code: 'FORBIDDEN', message: '管理者権限が必要です' } });
       return;
     }
-    req.tokenRecord = record;
+    req.tokenRecord = rows[0];
     next();
   } catch (err) {
     next(err);
@@ -93,7 +66,7 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
 export async function requireToken(req: Request, res: Response, next: NextFunction): Promise<void> {
   const rawToken = getToken(req);
   if (!rawToken) {
-    res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度ログインしてください' } });
+    res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度 /dashboard から入ってください' } });
     return;
   }
   // ADMIN_TOKEN は常に有効（bot→サーバー通信用）
@@ -102,14 +75,17 @@ export async function requireToken(req: Request, res: Response, next: NextFuncti
     next();
     return;
   }
-  // セッション → アクセストークン の順で検証
   try {
-    const record = await resolveTokenRecord(rawToken);
-    if (!record) {
-      res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度ログインしてください' } });
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const rows = await query<{ role: string; guild_id: string; expires_at: Date }>(
+      'SELECT role, guild_id, expires_at FROM access_tokens WHERE token_hash = $1',
+      [tokenHash],
+    );
+    if (rows.length === 0 || new Date(rows[0].expires_at) < new Date()) {
+      res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度 /dashboard から入ってください' } });
       return;
     }
-    req.tokenRecord = record;
+    req.tokenRecord = rows[0];
     next();
   } catch (err) {
     next(err);

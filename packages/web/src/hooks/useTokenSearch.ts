@@ -1,8 +1,10 @@
+import { useAuth } from '../contexts/AuthContext';
+
 /**
- * 以前はトークンをURLパラメータとして付加していたが、
- * OAuth2セッション方式に移行したため常に空文字を返す。
- * 既存の呼び出し元との互換性のために残している。
+ * トークンが存在する場合に `?token=xxx` 形式のクエリ文字列を返す。
+ * ハッシュルーティングでのリンク・navigate に付加して使用する。
  */
 export function useTokenSearch(): string {
-  return '';
+  const { token } = useAuth();
+  return token ? `?token=${encodeURIComponent(token)}` : '';
 }
