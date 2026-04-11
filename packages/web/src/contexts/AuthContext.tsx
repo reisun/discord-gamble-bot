@@ -26,21 +26,24 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 /**
- * ハッシュフラグメント内のクエリパラメータから session を取得する。
- * 例: /#/dashboard/123456789?session=xxx  → "xxx"
+ * ハッシュフラグメント内のクエリパラメータを取得する。
+ * ?token=xxx (管理者トークン) または ?session=xxx (OAuth2セッション) を探す。
  */
-function getSessionFromHash(): string | null {
+function getAuthFromHash(): { token: string; source: 'token' | 'session' } | null {
   const hash = window.location.hash;
   const queryIndex = hash.indexOf('?');
   if (queryIndex === -1) return null;
-  const query = hash.slice(queryIndex + 1);
-  const params = new URLSearchParams(query);
-  return params.get('session');
+  const params = new URLSearchParams(hash.slice(queryIndex + 1));
+  // token（管理者）が優先
+  const token = params.get('token');
+  if (token) return { token, source: 'token' };
+  const session = params.get('session');
+  if (session) return { token: session, source: 'session' };
+  return null;
 }
 
 /**
  * ハッシュフラグメントから guildId を取得する。
- * 例: /#/dashboard/123456789/...  → "123456789"
  */
 function getGuildIdFromHash(): string | null {
   const hash = window.location.hash;
@@ -53,23 +56,24 @@ function getGuildIdFromHash(): string | null {
 }
 
 /**
- * セッションを初期化: URLハッシュ → localStorage の順に探す
+ * 認証を初期化: URLハッシュ → localStorage の順に探す
  */
-function initSession(): string | null {
-  const fromHash = getSessionFromHash();
+function initAuth(): string | null {
+  const fromHash = getAuthFromHash();
   if (fromHash) {
-    localStorage.setItem(SESSION_STORAGE_KEY, fromHash);
-    // URLからセッションパラメータを除去
+    localStorage.setItem(SESSION_STORAGE_KEY, fromHash.token);
+    // URLから認証パラメータを除去
     const hash = window.location.hash;
     const queryIndex = hash.indexOf('?');
     if (queryIndex !== -1) {
       const basePath = hash.slice(0, queryIndex);
       const params = new URLSearchParams(hash.slice(queryIndex + 1));
+      params.delete('token');
       params.delete('session');
       const remaining = params.toString();
       window.location.hash = remaining ? `${basePath}?${remaining}` : basePath;
     }
-    return fromHash;
+    return fromHash.token;
   }
   return localStorage.getItem(SESSION_STORAGE_KEY);
 }
@@ -77,13 +81,12 @@ function initSession(): string | null {
 function buildLoginUrl(guildId: string | null): string | null {
   if (!guildId) return null;
   const currentUrl = window.location.origin + window.location.pathname;
-  // BASE_URL が相対パスの場合、現在のオリジンを付与してフルURLにする
   const apiBase = BASE_URL.startsWith('http') ? BASE_URL : `${window.location.origin}${BASE_URL}`;
   return `${apiBase}/auth/discord?guild_id=${encodeURIComponent(guildId)}&redirect_uri=${encodeURIComponent(currentUrl)}`;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => initSession());
+  const [token, setToken] = useState<string | null>(() => initAuth());
   const [guildId, setGuildId] = useState<string | null>(() => getGuildIdFromHash());
   const [isAdmin, setIsAdmin] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -120,7 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {
         if (!cancelled) {
           setIsAdmin(false);
-          // セッション無効 → localStorageからも削除
           localStorage.removeItem(SESSION_STORAGE_KEY);
           setToken(null);
         }
@@ -134,14 +136,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [token]);
 
-  // ハッシュ変化時にセッションと guildId を再取得
+  // ハッシュ変化時に認証情報と guildId を再取得
   useEffect(() => {
     const onHashChange = () => {
-      const s = getSessionFromHash();
+      const auth = getAuthFromHash();
       const g = getGuildIdFromHash();
-      if (s) {
-        localStorage.setItem(SESSION_STORAGE_KEY, s);
-        setToken(s);
+      if (auth) {
+        localStorage.setItem(SESSION_STORAGE_KEY, auth.token);
+        setToken(auth.token);
       }
       setGuildId(g);
     };
