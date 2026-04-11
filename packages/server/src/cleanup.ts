@@ -31,6 +31,22 @@ export async function runCleanup(): Promise<void> {
         logger.info(`[cleanup] Nullified personal info for ${nullifiedCount} user(s).`);
       }
 
+      // 1b. 期限切れセッションの削除（discord_user_id, discord_username を含む）
+      const { rowCount: deletedSessions } = await client.query(
+        `DELETE FROM sessions WHERE expires_at < NOW()`,
+      );
+      if (deletedSessions && deletedSessions > 0) {
+        logger.info(`[cleanup] Deleted ${deletedSessions} expired session(s).`);
+      }
+
+      // 1c. 期限切れアクセストークンの削除
+      const { rowCount: deletedTokens } = await client.query(
+        `DELETE FROM access_tokens WHERE expires_at < NOW()`,
+      );
+      if (deletedTokens && deletedTokens > 0) {
+        logger.info(`[cleanup] Deleted ${deletedTokens} expired access token(s).`);
+      }
+
       // 2. 全参加ユーザーの個人情報がNULL化されたイベントを削除対象とする
       //    （= イベントに紐づくbetのユーザー全員がNULL化済み）
       const { rows: expiredEvents } = await client.query(
