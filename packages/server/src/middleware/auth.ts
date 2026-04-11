@@ -27,7 +27,7 @@ export function isAdmin(req: Request): boolean {
   return token !== undefined && token === process.env.ADMIN_TOKEN;
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token = getToken(req);
   if (!token) {
     res
@@ -35,11 +35,32 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
       .json({ error: { code: 'UNAUTHORIZED', message: '認証トークンが必要です' } });
     return;
   }
-  if (token !== process.env.ADMIN_TOKEN) {
-    res.status(403).json({ error: { code: 'FORBIDDEN', message: '管理者権限が必要です' } });
+  // ADMIN_TOKEN（Bot→Server通信用）は常に許可
+  if (token === process.env.ADMIN_TOKEN) {
+    req.tokenRecord = { role: 'editor', guild_id: '*', expires_at: new Date(8640000000000000) };
+    next();
     return;
   }
-  next();
+  // DBトークンを検証し、editorロールなら許可
+  try {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const rows = await query<{ role: string; guild_id: string; expires_at: Date }>(
+      'SELECT role, guild_id, expires_at FROM access_tokens WHERE token_hash = $1',
+      [tokenHash],
+    );
+    if (rows.length === 0 || new Date(rows[0].expires_at) < new Date()) {
+      res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度 /dashboard から入ってください' } });
+      return;
+    }
+    if (rows[0].role !== 'editor') {
+      res.status(403).json({ error: { code: 'FORBIDDEN', message: '管理者権限が必要です' } });
+      return;
+    }
+    req.tokenRecord = rows[0];
+    next();
+  } catch (err) {
+    next(err);
+  }
 }
 
 export async function requireToken(req: Request, res: Response, next: NextFunction): Promise<void> {
