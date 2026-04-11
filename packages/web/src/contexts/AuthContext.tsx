@@ -1,12 +1,18 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { verifyToken, TOKEN_EXPIRED_EVENT } from '../api/client';
+import { verifySession, TOKEN_EXPIRED_EVENT } from '../api/client';
+
+const SESSION_STORAGE_KEY = 'discord-gamble-session';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 interface AuthContextValue {
   token: string | null;
   isAdmin: boolean;
   isVerifying: boolean;
   guildId: string | null;
+  isSessionExpired: boolean;
+  /** @deprecated alias for isSessionExpired */
   isTokenExpired: boolean;
+  loginUrl: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -14,20 +20,22 @@ const AuthContext = createContext<AuthContextValue>({
   isAdmin: false,
   isVerifying: false,
   guildId: null,
+  isSessionExpired: false,
   isTokenExpired: false,
+  loginUrl: null,
 });
 
 /**
- * ハッシュフラグメント内のクエリパラメータから token を取得する。
- * 例: /#/dashboard/123456789?token=xxx  → "xxx"
+ * ハッシュフラグメント内のクエリパラメータから session を取得する。
+ * 例: /#/dashboard/123456789?session=xxx  → "xxx"
  */
-function getTokenFromHash(): string | null {
-  const hash = window.location.hash; // e.g. "#/dashboard/123456789?token=xxx"
+function getSessionFromHash(): string | null {
+  const hash = window.location.hash;
   const queryIndex = hash.indexOf('?');
   if (queryIndex === -1) return null;
   const query = hash.slice(queryIndex + 1);
   const params = new URLSearchParams(query);
-  return params.get('token');
+  return params.get('session');
 }
 
 /**
@@ -35,7 +43,7 @@ function getTokenFromHash(): string | null {
  * 例: /#/dashboard/123456789/...  → "123456789"
  */
 function getGuildIdFromHash(): string | null {
-  const hash = window.location.hash; // e.g. "#/dashboard/123456789?token=xxx"
+  const hash = window.location.hash;
   const withoutHash = hash.slice(1).split('?')[0];
   const parts = withoutHash.split('/').filter(Boolean);
   if (parts[0] === 'dashboard' && parts[1]) {
@@ -44,12 +52,40 @@ function getGuildIdFromHash(): string | null {
   return null;
 }
 
+/**
+ * セッションを初期化: URLハッシュ → localStorage の順に探す
+ */
+function initSession(): string | null {
+  const fromHash = getSessionFromHash();
+  if (fromHash) {
+    localStorage.setItem(SESSION_STORAGE_KEY, fromHash);
+    // URLからセッションパラメータを除去
+    const hash = window.location.hash;
+    const queryIndex = hash.indexOf('?');
+    if (queryIndex !== -1) {
+      const basePath = hash.slice(0, queryIndex);
+      const params = new URLSearchParams(hash.slice(queryIndex + 1));
+      params.delete('session');
+      const remaining = params.toString();
+      window.location.hash = remaining ? `${basePath}?${remaining}` : basePath;
+    }
+    return fromHash;
+  }
+  return localStorage.getItem(SESSION_STORAGE_KEY);
+}
+
+function buildLoginUrl(guildId: string | null): string | null {
+  if (!guildId) return null;
+  const currentUrl = window.location.origin + window.location.pathname;
+  return `${BASE_URL}/auth/discord?guild_id=${encodeURIComponent(guildId)}&redirect_uri=${encodeURIComponent(currentUrl)}`;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => getTokenFromHash());
+  const [token, setToken] = useState<string | null>(() => initSession());
   const [guildId, setGuildId] = useState<string | null>(() => getGuildIdFromHash());
   const [isAdmin, setIsAdmin] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [isTokenExpired, setIsTokenExpired] = useState(false);
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -60,14 +96,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     setIsVerifying(true);
 
-    verifyToken(token)
+    verifySession(token)
       .then((res) => {
         if (!cancelled) {
           setIsAdmin(res.isAdmin);
+          if (res.guildId && res.guildId !== '*') {
+            setGuildId(res.guildId);
+          }
         }
       })
       .catch(() => {
-        if (!cancelled) setIsAdmin(false);
+        if (!cancelled) {
+          setIsAdmin(false);
+          // セッション無効 → localStorageからも削除
+          localStorage.removeItem(SESSION_STORAGE_KEY);
+          setToken(null);
+        }
       })
       .finally(() => {
         if (!cancelled) setIsVerifying(false);
@@ -78,30 +122,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [token]);
 
-  // ハッシュ変化時にトークンと guildId を再取得
+  // ハッシュ変化時にセッションと guildId を再取得
   useEffect(() => {
     const onHashChange = () => {
-      const t = getTokenFromHash();
+      const s = getSessionFromHash();
       const g = getGuildIdFromHash();
-      setToken(t);
+      if (s) {
+        localStorage.setItem(SESSION_STORAGE_KEY, s);
+        setToken(s);
+      }
       setGuildId(g);
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  // TOKEN_EXPIRED イベントを購読 — バッジもリセットする
+  // TOKEN_EXPIRED イベントを購読
   useEffect(() => {
     const handler = () => {
-      setIsTokenExpired(true);
+      setIsSessionExpired(true);
       setIsAdmin(false);
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      setToken(null);
     };
     window.addEventListener(TOKEN_EXPIRED_EVENT, handler);
     return () => window.removeEventListener(TOKEN_EXPIRED_EVENT, handler);
   }, []);
 
+  const loginUrl = buildLoginUrl(guildId);
+
   return (
-    <AuthContext.Provider value={{ token, isAdmin, isVerifying, guildId, isTokenExpired }}>
+    <AuthContext.Provider value={{
+      token,
+      isAdmin,
+      isVerifying,
+      guildId,
+      isSessionExpired,
+      isTokenExpired: isSessionExpired,
+      loginUrl,
+    }}>
       {children}
     </AuthContext.Provider>
   );
