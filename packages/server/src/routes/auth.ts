@@ -96,8 +96,7 @@ router.get('/discord', (req: Request, res: Response) => {
     return;
   }
 
-  // OAuth2 callback URL (API server)
-  const callbackUrl = `${req.protocol}://${req.get('host')}/api/auth/discord/callback`;
+  const callbackUrl = process.env.DISCORD_OAUTH_CALLBACK_URL!;
 
   // state にguildIdとredirect_uriを含める
   const state = Buffer.from(JSON.stringify({ guildId, redirectUri })).toString('base64url');
