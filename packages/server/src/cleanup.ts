@@ -1,7 +1,7 @@
 /**
  * 古いイベントデータの自動クリーンアップ.
  *
- * ポリシー: イベント終了（is_active = FALSE）後2週間で関連データを削除。
+ * ポリシー: イベントに初めてユーザー情報（bet）が登録された日時から2週間後に削除。
  * 実行タイミング: サーバー起動時 + 24時間間隔。
  */
 
@@ -12,7 +12,8 @@ const RETENTION_DAYS = 14;
 const INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
- * 終了後2週間経過したイベントとその関連データを削除する。
+ * イベントに初めてbet（ユーザー情報）が登録されてから2週間経過した
+ * イベントとその関連データを削除する。
  * また、どのアクティブイベントにも紐づかないユーザーの個人情報をNULL化する。
  */
 export async function runCleanup(): Promise<void> {
@@ -20,11 +21,16 @@ export async function runCleanup(): Promise<void> {
 
   try {
     const deleted = await withTransaction(async (client) => {
-      // 対象イベントを特定
+      // 対象イベントを特定:
+      // イベントに紐づく最初の bet の created_at から RETENTION_DAYS 日経過したもの
       const { rows: expiredEvents } = await client.query(
-        `SELECT id FROM events
-         WHERE is_active = FALSE
-           AND updated_at < NOW() - INTERVAL '${RETENTION_DAYS} days'`,
+        `SELECT e.id FROM events e
+         WHERE EXISTS (
+           SELECT 1 FROM bets b
+           JOIN games g ON g.id = b.game_id
+           WHERE g.event_id = e.id
+           HAVING MIN(b.created_at) < NOW() - INTERVAL '${RETENTION_DAYS} days'
+         )`,
       );
 
       if (expiredEvents.length === 0) {
@@ -74,7 +80,7 @@ export async function runCleanup(): Promise<void> {
       );
 
       // 7. ユーザー個人情報のNULL化
-      //    どのアクティブイベントにも参加していないユーザーが対象
+      //    期限切れでないイベントに参加していないユーザーが対象
       await client.query(
         `UPDATE users
          SET discord_name = NULL, discord_avatar_url = NULL
@@ -83,8 +89,9 @@ export async function runCleanup(): Promise<void> {
              SELECT DISTINCT b.user_id FROM bets b
              JOIN games g ON g.id = b.game_id
              JOIN events e ON e.id = g.event_id
-             WHERE e.is_active = TRUE
+             WHERE e.id != ALL($1)
            )`,
+        [eventIds],
       );
 
       return eventIds.length;

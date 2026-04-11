@@ -20,13 +20,16 @@ export default function Layout() {
       </main>
       <footer style={{
         padding: '8px 24px',
-        textAlign: 'right',
         fontSize: '11px',
         color: 'var(--color-text-muted)',
         borderTop: '1px solid var(--color-border)',
         flexShrink: 0,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
       }}>
-        v{APP_VERSION} ({GIT_COMMIT})
+        <span>開催イベントに初めてユーザー情報が登録された日時から2週間後にユーザー情報は削除されます。</span>
+        <span>v{APP_VERSION} ({GIT_COMMIT})</span>
       </footer>
     </div>
   );
