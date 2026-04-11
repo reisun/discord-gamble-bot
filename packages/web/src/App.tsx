@@ -7,6 +7,7 @@ import GameList from './pages/GameList';
 import GameEdit from './pages/GameEdit';
 import GameStatus from './pages/GameStatus';
 import UserResults from './pages/UserResults';
+import Privacy from './pages/Privacy';
 
 function TokenExpiredBanner() {
   const { isTokenExpired } = useAuth();
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="/dashboard/:guildId/:eventId/results" element={<UserResults />} />
             <Route path="/dashboard/:guildId/:eventId/:gameId/edit" element={<GameEdit />} />
             <Route path="/dashboard/:guildId/:eventId/:gameId" element={<GameStatus />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

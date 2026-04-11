@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? '1.1.0';
@@ -28,7 +28,10 @@ export default function Layout() {
         justifyContent: 'space-between',
         alignItems: 'center',
       }}>
-        <span>開催イベントに初めてユーザー情報が登録された日時から2週間後にユーザー情報は削除されます。</span>
+        <span>
+          ユーザー情報は登録から2週間後に自動削除されます。
+          <Link to="/privacy" style={{ color: 'inherit', marginLeft: 4 }}>プライバシーポリシー</Link>
+        </span>
         <span>v{APP_VERSION} ({GIT_COMMIT})</span>
       </footer>
     </div>
