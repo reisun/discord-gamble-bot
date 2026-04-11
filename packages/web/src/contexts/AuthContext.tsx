@@ -90,9 +90,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  // TOKEN_EXPIRED イベントを購読
+  // TOKEN_EXPIRED イベントを購読 — バッジもリセットする
   useEffect(() => {
-    const handler = () => setIsTokenExpired(true);
+    const handler = () => {
+      setIsTokenExpired(true);
+      setIsAdmin(false);
+    };
     window.addEventListener(TOKEN_EXPIRED_EVENT, handler);
     return () => window.removeEventListener(TOKEN_EXPIRED_EVENT, handler);
   }, []);
