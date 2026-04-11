@@ -90,7 +90,7 @@ export async function runCleanup(): Promise<void> {
       return eventIds.length;
     });
 
-    logger.info('[cleanup] Cleanup complete. Deleted %d expired event(s).', deleted);
+    logger.info(`[cleanup] Cleanup complete. Deleted ${deleted} expired event(s).`);
   } catch (err) {
     logger.error('[cleanup] Cleanup failed:', err);
   }
@@ -105,7 +105,7 @@ export function startCleanupScheduler(): void {
 
   // 24時間間隔で繰り返し
   intervalId = setInterval(runCleanup, INTERVAL_MS);
-  logger.info('[cleanup] Scheduler started (interval: %dh)', INTERVAL_MS / 3600000);
+  logger.info(`[cleanup] Scheduler started (interval: ${INTERVAL_MS / 3600000}h)`);
 }
 
 /** スケジューラを停止する（テスト用） */
