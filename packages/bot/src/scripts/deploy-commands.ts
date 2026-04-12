@@ -23,7 +23,7 @@ const guildIds = (process.env.DISCORD_GUILD_ID ?? '')
 
 if (!token || !clientId || guildIds.length === 0) {
   console.error(
-    '[deploy-commands] 環境変数 DISCORD_TOKEN / DISCORD_CLIENT_ID / DISCORD_GUILD_ID を設定してください',
+    '[deploy-commands] 環境変数 DISCORD_TOKEN / DISCORD_CLIENT_ID / DISCORD_GUILD_ID を設定してください'
   );
   process.exit(1);
 }
@@ -40,7 +40,7 @@ const rest = new REST().setToken(token);
         body,
       });
       console.log(
-        `[deploy-commands] ギルド ${guildId} に ${(data as unknown[]).length}件のコマンドを正常に登録しました`,
+        `[deploy-commands] ギルド ${guildId} に ${(data as unknown[]).length}件のコマンドを正常に登録しました`
       );
     } catch (err) {
       console.error(`[deploy-commands] ギルド ${guildId} への登録に失敗しました:`, err);

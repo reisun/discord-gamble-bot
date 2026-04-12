@@ -19,8 +19,12 @@ export default function ConfirmDialog({
         <h3>確認</h3>
         <p>{message}</p>
         <div className="modal-actions">
-          <button className="btn-secondary" onClick={onCancel}>キャンセル</button>
-          <button className={confirmClassName} onClick={onConfirm}>{confirmLabel}</button>
+          <button className="btn-secondary" onClick={onCancel}>
+            キャンセル
+          </button>
+          <button className={confirmClassName} onClick={onConfirm}>
+            {confirmLabel}
+          </button>
         </div>
       </div>
     </div>

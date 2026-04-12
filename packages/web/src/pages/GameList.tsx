@@ -48,10 +48,7 @@ export default function GameList() {
   const load = () => {
     setLoading(true);
     setError(null);
-    Promise.all([
-      getEvent(evId, token ?? undefined),
-      getGames(evId, token ?? undefined),
-    ])
+    Promise.all([getEvent(evId, token ?? undefined), getGames(evId, token ?? undefined)])
       .then(([ev, gs]) => {
         setEvent(ev);
         setGames(gs);
@@ -60,7 +57,9 @@ export default function GameList() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load();
+  }, [token]);
 
   const handleDeleteEvent = async () => {
     if (!token) return;
@@ -101,13 +100,19 @@ export default function GameList() {
       <Breadcrumb items={breadcrumbs} />
 
       {/* イベント名ヘッダー */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '24px',
+          flexWrap: 'wrap',
+        }}
+      >
         <h1 style={{ fontSize: '24px', fontWeight: 600, color: 'var(--color-text)' }}>
           イベント: {event?.name}
         </h1>
-        {event?.isActive && (
-          <span className="badge badge-active">開催中</span>
-        )}
+        {event?.isActive && <span className="badge badge-active">開催中</span>}
         {isAdmin && (
           <>
             <button
@@ -155,12 +160,14 @@ export default function GameList() {
           <p style={{ color: 'var(--color-text-muted)' }}>ゲームがありません。</p>
         </div>
       ) : (
-        <div style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--border-radius-lg)',
-          overflow: 'hidden',
-        }}>
+        <div
+          style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--border-radius-lg)',
+            overflow: 'hidden',
+          }}
+        >
           <div className="table-wrapper">
             <table>
               <thead>
@@ -176,31 +183,77 @@ export default function GameList() {
                 {games.map((g, i) => (
                   <tr key={g.id}>
                     <td className="cell-sm">{i + 1}</td>
-                    <td style={{ fontSize: '16px', color: isPlaceholderGame(g, isAdmin) ? 'var(--color-text-muted)' : 'var(--color-text)' }}>
-                      {isPlaceholderGame(g, isAdmin) ? '非公開ゲーム' : (
-                        <a href={toHashPath(toGame(guildId, evId, g.id, tokenSearch))} style={{ color: 'var(--color-text)', textDecoration: 'none' }} onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')} onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}>
+                    <td
+                      style={{
+                        fontSize: '16px',
+                        color: isPlaceholderGame(g, isAdmin)
+                          ? 'var(--color-text-muted)'
+                          : 'var(--color-text)',
+                      }}
+                    >
+                      {isPlaceholderGame(g, isAdmin) ? (
+                        '非公開ゲーム'
+                      ) : (
+                        <a
+                          href={toHashPath(toGame(guildId, evId, g.id, tokenSearch))}
+                          style={{ color: 'var(--color-text)', textDecoration: 'none' }}
+                          onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                          onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                        >
                           {g.title}
                         </a>
                       )}
                     </td>
-                    <td className="cell-sm" style={{ color: isPlaceholderGame(g, isAdmin) ? 'var(--color-text-muted)' : undefined }}>
+                    <td
+                      className="cell-sm"
+                      style={{
+                        color: isPlaceholderGame(g, isAdmin)
+                          ? 'var(--color-text-muted)'
+                          : undefined,
+                      }}
+                    >
                       {formatListDeadline(g, isAdmin)}
                     </td>
                     {isAdmin && (
                       <td>
                         {g.isPublished ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', fontSize: '14px' }}>
-                            <EyeIcon />公開
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              color: 'var(--color-success)',
+                              fontSize: '14px',
+                            }}
+                          >
+                            <EyeIcon />
+                            公開
                           </span>
                         ) : (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-disabled)', fontSize: '14px' }}>
-                            <EyeOffIcon />非公開
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              color: 'var(--color-text-disabled)',
+                              fontSize: '14px',
+                            }}
+                          >
+                            <EyeOffIcon />
+                            非公開
                           </span>
                         )}
                       </td>
                     )}
                     <td>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '8px',
+                          justifyContent: 'flex-end',
+                          flexWrap: 'wrap',
+                        }}
+                      >
                         <button
                           className="btn-outline btn-sm"
                           disabled={isPlaceholderGame(g, isAdmin)}

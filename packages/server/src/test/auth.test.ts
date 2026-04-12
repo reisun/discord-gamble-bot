@@ -7,27 +7,21 @@ const app = createApp();
 
 /** 内部 API 経由で DB トークンを生成する */
 async function createDbToken(role: 'editor' | 'viewer' = 'editor', guildId = 'guild-001') {
-  const res = await request(app)
-    .post('/internal/api/auth/token')
-    .send({ guildId, role });
+  const res = await request(app).post('/internal/api/auth/token').send({ guildId, role });
   return res.body.data.token as string;
 }
 
 describe('GET /api/auth/verify', () => {
   it('editor トークンで isAdmin: true を返す', async () => {
     const token = await createDbToken('editor');
-    const res = await request(app)
-      .get('/api/auth/verify')
-      .set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/api/auth/verify').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.isAdmin).toBe(true);
   });
 
   it('トークンが不正な場合 401 TOKEN_EXPIRED を返す', async () => {
-    const res = await request(app)
-      .get('/api/auth/verify')
-      .query({ token: 'wrong-token' });
+    const res = await request(app).get('/api/auth/verify').query({ token: 'wrong-token' });
 
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe('TOKEN_EXPIRED');
@@ -42,9 +36,7 @@ describe('GET /api/auth/verify', () => {
 
   it('Authorization: Bearer ヘッダーでも認証できる', async () => {
     const token = await createDbToken('editor');
-    const res = await request(app)
-      .get('/api/auth/verify')
-      .set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/api/auth/verify').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.isAdmin).toBe(true);

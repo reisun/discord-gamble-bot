@@ -18,17 +18,20 @@ const BET_TYPE_OPTIONS: { value: BetType; label: string; description: string }[]
   {
     value: 'multi_unordered',
     label: '複数-選択一致',
-    description: '複数の記号を選び、順序に関わらず選択した記号がすべて一致すれば当選する賭け方式です。',
+    description:
+      '複数の記号を選び、順序に関わらず選択した記号がすべて一致すれば当選する賭け方式です。',
   },
   {
     value: 'multi_ordered',
     label: '複数-順番一致（重複なし）',
-    description: '複数の記号を順番通りに選び、記号と順番が完全に一致すれば当選する賭け方式です。同じ記号は1回しか選べません。',
+    description:
+      '複数の記号を順番通りに選び、記号と順番が完全に一致すれば当選する賭け方式です。同じ記号は1回しか選べません。',
   },
   {
     value: 'multi_ordered_dup',
     label: '複数-順番一致（重複あり）',
-    description: '複数の記号を順番通りに選び、記号と順番が完全に一致すれば当選する賭け方式です。同じ記号を複数回選べます。',
+    description:
+      '複数の記号を順番通りに選び、記号と順番が完全に一致すれば当選する賭け方式です。同じ記号を複数回選べます。',
   },
 ];
 
@@ -43,7 +46,7 @@ export default function GameEdit() {
   const tokenSearch = useTokenSearch();
 
   const [eventId, setEventId] = useState<number | null>(
-    params.eventId ? Number(params.eventId) : null,
+    params.eventId ? Number(params.eventId) : null
   );
   const [eventName, setEventName] = useState('');
   const [game, setGame] = useState<Game | null>(null);
@@ -97,7 +100,6 @@ export default function GameEdit() {
       .then((ev) => setEventName(ev.name))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
   const addOption = () => setOptions((prev) => [...prev, { symbol: '', label: '' }]);
@@ -106,7 +108,8 @@ export default function GameEdit() {
     setOptions((prev) => prev.map((o, idx) => (idx === i ? { ...o, [field]: value } : o)));
 
   const validate = (): string | null => {
-    if (title.trim().length === 0 || title.length > 100) return 'ゲームタイトルは1〜100文字で入力してください';
+    if (title.trim().length === 0 || title.length > 100)
+      return 'ゲームタイトルは1〜100文字で入力してください';
     if (description.length > 500) return '説明は500文字以内で入力してください';
     if (!Number.isInteger(closeAfterMinutes) || closeAfterMinutes < 1) {
       return '公開後の締め切り分数は1以上の整数で入力してください';
@@ -118,10 +121,12 @@ export default function GameEdit() {
     const symbolPattern = /^[A-Z1-9]$/;
     const symbols = new Set<string>();
     for (const opt of options) {
-      if (!symbolPattern.test(opt.symbol)) return `記号「${opt.symbol}」は半角大文字英字(A〜Z)または半角数字(1〜9)を1文字で入力してください`;
+      if (!symbolPattern.test(opt.symbol))
+        return `記号「${opt.symbol}」は半角大文字英字(A〜Z)または半角数字(1〜9)を1文字で入力してください`;
       if (symbols.has(opt.symbol)) return `記号「${opt.symbol}」が重複しています`;
       symbols.add(opt.symbol);
-      if (opt.label.trim().length === 0 || opt.label.length > 50) return '項目名は1〜50文字で入力してください';
+      if (opt.label.trim().length === 0 || opt.label.length > 50)
+        return '項目名は1〜50文字で入力してください';
     }
     if (betType !== 'single' && options.length < requiredSelections) {
       return `賭け項目数（${options.length}）が選択数（${requiredSelections}）以上必要です`;
@@ -133,7 +138,10 @@ export default function GameEdit() {
     e.preventDefault();
     if (!token) return;
     const validErr = validate();
-    if (validErr) { setError(validErr); return; }
+    if (validErr) {
+      setError(validErr);
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -192,20 +200,25 @@ export default function GameEdit() {
       <div className="card" style={{ maxWidth: '640px', margin: '0 auto' }}>
         <h1 className="page-title">{isNew ? '新規ゲーム作成' : 'ゲーム編集'}</h1>
         {isPublished && (
-          <div style={{
-            background: '#fff3cd',
-            color: '#856404',
-            padding: '10px 16px',
-            borderRadius: '6px',
-            marginBottom: '16px',
-            fontSize: '13px',
-          }}>
+          <div
+            style={{
+              background: '#fff3cd',
+              color: '#856404',
+              padding: '10px 16px',
+              borderRadius: '6px',
+              marginBottom: '16px',
+              fontSize: '13px',
+            }}
+          >
             このゲームは公開済みです。賭け方式・公開後の締め切り分数・賭け項目の記号は変更できません。
           </div>
         )}
-        {error && <div className="error-message" ref={errorRef}>{error}</div>}
+        {error && (
+          <div className="error-message" ref={errorRef}>
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
-
           <div className="form-group">
             <label htmlFor="title">ゲームタイトル *</label>
             <input
@@ -257,7 +270,9 @@ export default function GameEdit() {
               style={{ maxWidth: '320px' }}
             >
               {BET_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
             </select>
             {selectedBetTypeInfo && (
@@ -289,11 +304,13 @@ export default function GameEdit() {
 
           <div className="form-group">
             <label>賭け項目 *</label>
-            <div style={{
-              border: '1px solid var(--color-border)',
-              borderRadius: '6px',
-              overflow: 'hidden',
-            }}>
+            <div
+              style={{
+                border: '1px solid var(--color-border)',
+                borderRadius: '6px',
+                overflow: 'hidden',
+              }}
+            >
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#f8f9fa' }}>
@@ -354,12 +371,10 @@ export default function GameEdit() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '24px' }}>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => navigate(backPath)}
-            >
+          <div
+            style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '24px' }}
+          >
+            <button type="button" className="btn-secondary" onClick={() => navigate(backPath)}>
               キャンセル
             </button>
             <button type="submit" className="btn-primary" disabled={saving}>

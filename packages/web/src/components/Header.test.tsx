@@ -16,11 +16,29 @@ vi.mock('../hooks/useTokenSearch', () => ({
 }));
 import { useTokenSearch } from '../hooks/useTokenSearch';
 
-function renderHeader({ isAdmin = false, guildId = null as string | null, token = null as string | null } = {}) {
-  vi.mocked(useAuth).mockReturnValue({ token, isAdmin, isVerifying: false, guildId, isTokenExpired: false });
+function renderHeader({
+  isAdmin = false,
+  guildId = null as string | null,
+  token = null as string | null,
+} = {}) {
+  vi.mocked(useAuth).mockReturnValue({
+    token,
+    isAdmin,
+    isVerifying: false,
+    guildId,
+    isTokenExpired: false,
+  });
   vi.mocked(useTokenSearch).mockReturnValue(token ? `?token=${token}` : '');
-  vi.mocked(api.getGuild).mockResolvedValue({ guildId: guildId ?? '', guildName: 'テストサーバー', guildIconUrl: null });
-  return render(<MemoryRouter><Header /></MemoryRouter>);
+  vi.mocked(api.getGuild).mockResolvedValue({
+    guildId: guildId ?? '',
+    guildName: 'テストサーバー',
+    guildIconUrl: null,
+  });
+  return render(
+    <MemoryRouter>
+      <Header />
+    </MemoryRouter>
+  );
 }
 
 describe('Header', () => {
@@ -63,13 +81,29 @@ describe('Header', () => {
   });
 
   it('サーバーアイコンURLが取得できた場合、img タグが表示される', async () => {
-    vi.mocked(useAuth).mockReturnValue({ token: null, isAdmin: false, isVerifying: false, guildId: 'guild-123', isTokenExpired: false });
+    vi.mocked(useAuth).mockReturnValue({
+      token: null,
+      isAdmin: false,
+      isVerifying: false,
+      guildId: 'guild-123',
+      isTokenExpired: false,
+    });
     vi.mocked(useTokenSearch).mockReturnValue('');
-    vi.mocked(api.getGuild).mockResolvedValue({ guildId: 'guild-123', guildName: 'テストサーバー', guildIconUrl: 'https://cdn.discordapp.com/icons/guild-123/abcdef.png' });
-    render(<MemoryRouter><Header /></MemoryRouter>);
+    vi.mocked(api.getGuild).mockResolvedValue({
+      guildId: 'guild-123',
+      guildName: 'テストサーバー',
+      guildIconUrl: 'https://cdn.discordapp.com/icons/guild-123/abcdef.png',
+    });
+    render(
+      <MemoryRouter>
+        <Header />
+      </MemoryRouter>
+    );
     await waitFor(() => expect(screen.getByRole('img')).toBeInTheDocument());
-    expect(screen.getByRole('img')).toHaveAttribute('src', 'https://cdn.discordapp.com/icons/guild-123/abcdef.png');
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      'https://cdn.discordapp.com/icons/guild-123/abcdef.png'
+    );
     expect(screen.getByRole('link').querySelector('svg')).not.toBeInTheDocument();
   });
-
 });

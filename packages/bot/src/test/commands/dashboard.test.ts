@@ -33,7 +33,7 @@ function makeMember(isAdmin: boolean): GuildMember {
 
 function makeInteraction(
   guildId: string | null = TEST_GUILD_ID,
-  isAdmin = false,
+  isAdmin = false
 ): ChatInputCommandInteraction {
   const member = guildId ? makeMember(isAdmin) : null;
   return {
@@ -54,7 +54,9 @@ describe('/dashboard execute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset api mock to default success
-    vi.mocked(api.post).mockResolvedValue({ data: { data: { token: 'generated-token-abc' } } } as never);
+    vi.mocked(api.post).mockResolvedValue({
+      data: { data: { token: 'generated-token-abc' } },
+    } as never);
   });
 
   it('一般ユーザー: 閲覧用リンクボタンをEphemeralで返す', async () => {
@@ -65,9 +67,12 @@ describe('/dashboard execute', () => {
       expect.objectContaining({
         ephemeral: true,
         content: expect.stringContaining('🌐'),
-      }),
+      })
     );
-    const call = vi.mocked(interaction.reply).mock.calls[0][0] as { content: string; components: unknown[] };
+    const call = vi.mocked(interaction.reply).mock.calls[0][0] as {
+      content: string;
+      components: unknown[];
+    };
     expect(call.content).toContain('12時間');
     expect(call.components).toHaveLength(1);
   });
@@ -80,9 +85,12 @@ describe('/dashboard execute', () => {
       expect.objectContaining({
         ephemeral: true,
         content: expect.stringContaining('🔑'),
-      }),
+      })
     );
-    const call = vi.mocked(interaction.reply).mock.calls[0][0] as { content: string; components: unknown[] };
+    const call = vi.mocked(interaction.reply).mock.calls[0][0] as {
+      content: string;
+      components: unknown[];
+    };
     expect(call.content).toContain('12時間');
     expect(call.components).toHaveLength(1);
   });
@@ -94,8 +102,7 @@ describe('/dashboard execute', () => {
     // api.post が正しいパラメータで呼ばれたことを確認
     expect(api.post).toHaveBeenCalledWith(
       '/api/auth/token',
-      expect.objectContaining({ guildId: TEST_GUILD_ID }),
-      {},
+      expect.objectContaining({ guildId: TEST_GUILD_ID })
     );
   });
 
@@ -110,7 +117,7 @@ describe('/dashboard execute', () => {
     // ボタンの URL 確認はできないが、reply が呼ばれたことを確認
     expect(interaction.reply).toHaveBeenCalled();
     expect(interaction.reply).not.toHaveBeenCalledWith(
-      expect.objectContaining({ content: expect.stringContaining('❌') }),
+      expect.objectContaining({ content: expect.stringContaining('❌') })
     );
 
     (config as { webAppBaseUrl: string }).webAppBaseUrl = originalUrl;
@@ -124,7 +131,7 @@ describe('/dashboard execute', () => {
       expect.objectContaining({
         ephemeral: true,
         content: expect.stringContaining('サーバー内'),
-      }),
+      })
     );
   });
 
@@ -140,7 +147,7 @@ describe('/dashboard execute', () => {
       expect.objectContaining({
         ephemeral: true,
         content: expect.stringContaining('URL設定が不足'),
-      }),
+      })
     );
 
     (config as { webAppBaseUrl: string }).webAppBaseUrl = originalUrl;
@@ -156,7 +163,7 @@ describe('/dashboard execute', () => {
       expect.objectContaining({
         ephemeral: true,
         content: expect.stringContaining('アクセストークンの生成に失敗'),
-      }),
+      })
     );
   });
 });

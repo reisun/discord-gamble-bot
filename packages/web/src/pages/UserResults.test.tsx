@@ -4,7 +4,13 @@ import { MemoryRouter } from 'react-router-dom';
 import UserResults from './UserResults';
 import * as api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
-import { mockEvent, mockGameSingle, mockGameUnpublished, mockUser, mockUserEventResult } from '../test/fixtures';
+import {
+  mockEvent,
+  mockGameSingle,
+  mockGameUnpublished,
+  mockUser,
+  mockUserEventResult,
+} from '../test/fixtures';
 
 vi.mock('../api/client');
 vi.mock('../contexts/AuthContext', () => ({
@@ -21,8 +27,18 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 function renderPage(isAdmin = false) {
-  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
-  return render(<MemoryRouter><UserResults /></MemoryRouter>);
+  vi.mocked(useAuth).mockReturnValue({
+    token: isAdmin ? 'tok' : null,
+    isAdmin,
+    isVerifying: false,
+    guildId: 'test-guild-001',
+    isTokenExpired: false,
+  });
+  return render(
+    <MemoryRouter>
+      <UserResults />
+    </MemoryRouter>
+  );
 }
 
 describe('UserResults', () => {
@@ -40,7 +56,9 @@ describe('UserResults', () => {
     expect(screen.getByRole('link', { name: '春季大会' })).toBeInTheDocument();
     // 末尾の「ユーザー結果一覧」はリンクではなくspan
     const breadcrumbSpans = document.querySelector('nav')!.querySelectorAll('span');
-    const lastText = Array.from(breadcrumbSpans).find(s => s.textContent?.trim() === 'ユーザー結果一覧');
+    const lastText = Array.from(breadcrumbSpans).find(
+      (s) => s.textContent?.trim() === 'ユーザー結果一覧'
+    );
     expect(lastText).not.toBeUndefined();
   });
 
@@ -57,7 +75,9 @@ describe('UserResults', () => {
 
   it('ポイント総額列が表示される', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByRole('columnheader', { name: 'ポイント総額' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('columnheader', { name: 'ポイント総額' })).toBeInTheDocument()
+    );
     expect(screen.getAllByText('10,500 pt').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -101,7 +121,9 @@ describe('UserResults', () => {
 
   it('ゲーム別ポイント推移に公開ゲームのタイトルが列として表示される', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByRole('columnheader', { name: '第1試合' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('columnheader', { name: '第1試合' })).toBeInTheDocument()
+    );
   });
 
   it('ゲーム別ポイント推移に非公開ゲームが列として表示されない', async () => {
@@ -114,6 +136,8 @@ describe('UserResults', () => {
   it('管理者には公開切替チェックボックスが表示される', async () => {
     renderPage(true);
 
-    await waitFor(() => expect(screen.getByLabelText('一般ユーザーに公開する')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByLabelText('一般ユーザーに公開する')).toBeInTheDocument()
+    );
   });
 });

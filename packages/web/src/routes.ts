@@ -28,7 +28,7 @@ export function toEvent(guildId?: RouteParam, eventId?: RouteParam, tokenSearch 
   if (eventId == null) return toDashboard(guildId, tokenSearch);
   return appendSearch(
     `${DASHBOARD_ROOT}/${encodeSegment(guildId)}/${encodeSegment(eventId)}`,
-    tokenSearch,
+    tokenSearch
   );
 }
 
@@ -44,7 +44,7 @@ export function toGame(
   guildId?: RouteParam,
   eventId?: RouteParam,
   gameId?: RouteParam,
-  tokenSearch = '',
+  tokenSearch = ''
 ): string {
   if (gameId == null) return toEvent(guildId, eventId, tokenSearch);
   return appendSearch(`${toEvent(guildId, eventId)}/${encodeSegment(gameId)}`, tokenSearch);
@@ -54,11 +54,15 @@ export function toGameEdit(
   guildId?: RouteParam,
   eventId?: RouteParam,
   gameId?: RouteParam,
-  tokenSearch = '',
+  tokenSearch = ''
 ): string {
   return appendSearch(`${toGame(guildId, eventId, gameId)}/edit`, tokenSearch);
 }
 
-export function toEventResults(guildId?: RouteParam, eventId?: RouteParam, tokenSearch = ''): string {
+export function toEventResults(
+  guildId?: RouteParam,
+  eventId?: RouteParam,
+  tokenSearch = ''
+): string {
   return appendSearch(`${toEvent(guildId, eventId)}/results`, tokenSearch);
 }

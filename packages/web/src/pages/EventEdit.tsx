@@ -34,13 +34,15 @@ export default function EventEdit() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
-    if (!guildId) { setError('ギルドIDが取得できません'); return; }
+    if (!guildId) {
+      setError('ギルドIDが取得できません');
+      return;
+    }
     if (name.trim().length === 0 || name.length > 100) {
       setError('イベント名は1〜100文字で入力してください');
       return;
@@ -115,12 +117,10 @@ export default function EventEdit() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '24px' }}>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => navigate(cancelPath)}
-            >
+          <div
+            style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '24px' }}
+          >
+            <button type="button" className="btn-secondary" onClick={() => navigate(cancelPath)}>
               キャンセル
             </button>
             <button type="submit" className="btn-primary" disabled={saving}>

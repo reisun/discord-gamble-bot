@@ -42,10 +42,15 @@ function makeInteraction(
   option: string,
   amount: number,
   borrow = false,
-  nickname: string | null = 'TestNick',
+  nickname: string | null = 'TestNick'
 ): ChatInputCommandInteraction {
   return {
-    user: { id: DISCORD_ID, username: 'testuser', displayName: 'TestUser', displayAvatarURL: () => 'https://cdn.discordapp.com/avatars/test/avatar.png' },
+    user: {
+      id: DISCORD_ID,
+      username: 'testuser',
+      displayName: 'TestUser',
+      displayAvatarURL: () => 'https://cdn.discordapp.com/avatars/test/avatar.png',
+    },
     member: { nickname },
     guild: { id: 'test-guild-001' },
     options: {
@@ -87,14 +92,22 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('✅ 賭けを受け付けました'),
+      expect.stringContaining('✅ 賭けを受け付けました')
     );
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestNick', 'A', 500, false, 'https://cdn.discordapp.com/avatars/test/avatar.png');
+    expect(api.placeBet).toHaveBeenCalledWith(
+      1,
+      DISCORD_ID,
+      'TestNick',
+      'A',
+      500,
+      false,
+      'https://cdn.discordapp.com/avatars/test/avatar.png'
+    );
   });
 
   it('multi_unordered: option を昇順ソートして API に送信する', async () => {
     vi.mocked(api.getGameByNo).mockResolvedValue(
-      makeGame({ betType: 'multi_unordered', requiredSelections: 3 }),
+      makeGame({ betType: 'multi_unordered', requiredSelections: 3 })
     );
     vi.mocked(api.placeBet).mockResolvedValue({
       id: 101,
@@ -112,9 +125,17 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     // ソートされた 'ABC' が API に渡されているか
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestNick', 'ABC', 100, false, 'https://cdn.discordapp.com/avatars/test/avatar.png');
+    expect(api.placeBet).toHaveBeenCalledWith(
+      1,
+      DISCORD_ID,
+      'TestNick',
+      'ABC',
+      100,
+      false,
+      'https://cdn.discordapp.com/avatars/test/avatar.png'
+    );
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('✅ 賭けを受け付けました'),
+      expect.stringContaining('✅ 賭けを受け付けました')
     );
   });
 
@@ -136,7 +157,7 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('🔄 賭けを変更しました'),
+      expect.stringContaining('🔄 賭けを変更しました')
     );
   });
 
@@ -157,10 +178,16 @@ describe('/bet execute', () => {
     const interaction = makeInteraction(1, 'A', 200, true);
     await execute(interaction);
 
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestNick', 'A', 200, true, 'https://cdn.discordapp.com/avatars/test/avatar.png');
-    expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('借金'),
+    expect(api.placeBet).toHaveBeenCalledWith(
+      1,
+      DISCORD_ID,
+      'TestNick',
+      'A',
+      200,
+      true,
+      'https://cdn.discordapp.com/avatars/test/avatar.png'
     );
+    expect(interaction.editReply).toHaveBeenCalledWith(expect.stringContaining('借金'));
   });
 
   it('ゲームが見つからない場合はエラーメッセージ', async () => {
@@ -170,7 +197,7 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('指定されたゲームが見つかりません'),
+      expect.stringContaining('指定されたゲームが見つかりません')
     );
     expect(api.placeBet).not.toHaveBeenCalled();
   });
@@ -182,7 +209,7 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('受け付けていません'),
+      expect.stringContaining('受け付けていません')
     );
     expect(api.placeBet).not.toHaveBeenCalled();
   });
@@ -194,7 +221,7 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('受け付けていません'),
+      expect.stringContaining('受け付けていません')
     );
     expect(api.placeBet).not.toHaveBeenCalled();
   });
@@ -205,23 +232,19 @@ describe('/bet execute', () => {
     const interaction = makeInteraction(1, 'AB', 100);
     await execute(interaction);
 
-    expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringMatching(/1文字で入力/),
-    );
+    expect(interaction.editReply).toHaveBeenCalledWith(expect.stringMatching(/1文字で入力/));
     expect(api.placeBet).not.toHaveBeenCalled();
   });
 
   it('multi_ordered: 文字数が不正な場合はエラー', async () => {
     vi.mocked(api.getGameByNo).mockResolvedValue(
-      makeGame({ betType: 'multi_ordered', requiredSelections: 3 }),
+      makeGame({ betType: 'multi_ordered', requiredSelections: 3 })
     );
 
     const interaction = makeInteraction(1, 'AB', 100); // 2文字（必要: 3文字）
     await execute(interaction);
 
-    expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringMatching(/3文字で入力/),
-    );
+    expect(interaction.editReply).toHaveBeenCalledWith(expect.stringMatching(/3文字で入力/));
   });
 
   it('存在しない記号を含む場合はエラー', async () => {
@@ -231,26 +254,24 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('記号が見つかりません'),
+      expect.stringContaining('記号が見つかりません')
     );
   });
 
   it('multi_ordered: 重複記号はエラー', async () => {
     vi.mocked(api.getGameByNo).mockResolvedValue(
-      makeGame({ betType: 'multi_ordered', requiredSelections: 2 }),
+      makeGame({ betType: 'multi_ordered', requiredSelections: 2 })
     );
 
     const interaction = makeInteraction(1, 'AA', 100);
     await execute(interaction);
 
-    expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('同じ記号を複数回'),
-    );
+    expect(interaction.editReply).toHaveBeenCalledWith(expect.stringContaining('同じ記号を複数回'));
   });
 
   it('multi_ordered_dup: 重複記号でもエラーにならない', async () => {
     vi.mocked(api.getGameByNo).mockResolvedValue(
-      makeGame({ betType: 'multi_ordered_dup', requiredSelections: 2 }),
+      makeGame({ betType: 'multi_ordered_dup', requiredSelections: 2 })
     );
     vi.mocked(api.placeBet).mockResolvedValue({
       id: 103,
@@ -267,10 +288,16 @@ describe('/bet execute', () => {
     const interaction = makeInteraction(1, 'AA', 100);
     await execute(interaction);
 
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestNick', 'AA', 100, false, 'https://cdn.discordapp.com/avatars/test/avatar.png');
-    expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('✅'),
+    expect(api.placeBet).toHaveBeenCalledWith(
+      1,
+      DISCORD_ID,
+      'TestNick',
+      'AA',
+      100,
+      false,
+      'https://cdn.discordapp.com/avatars/test/avatar.png'
     );
+    expect(interaction.editReply).toHaveBeenCalledWith(expect.stringContaining('✅'));
   });
 
   it('borrow=false でポイント不足の場合はエラー', async () => {
@@ -286,7 +313,7 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('所持ポイントが足りません'),
+      expect.stringContaining('所持ポイントが足りません')
     );
     expect(api.placeBet).not.toHaveBeenCalled();
   });
@@ -309,7 +336,15 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     // nickname が null の場合は displayName ('TestUser') が渡される
-    expect(api.placeBet).toHaveBeenCalledWith(1, DISCORD_ID, 'TestUser', 'A', 100, false, 'https://cdn.discordapp.com/avatars/test/avatar.png');
+    expect(api.placeBet).toHaveBeenCalledWith(
+      1,
+      DISCORD_ID,
+      'TestUser',
+      'A',
+      100,
+      false,
+      'https://cdn.discordapp.com/avatars/test/avatar.png'
+    );
   });
 
   it('API エラー時はエラーメッセージを表示', async () => {
@@ -320,7 +355,7 @@ describe('/bet execute', () => {
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('賭けに失敗しました'),
+      expect.stringContaining('賭けに失敗しました')
     );
   });
 });

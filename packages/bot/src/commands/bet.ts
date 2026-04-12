@@ -22,24 +22,24 @@ export const data = new SlashCommandBuilder()
       .setName('game')
       .setDescription('ゲーム番号（受付中のゲームが候補に表示されます）')
       .setRequired(true)
-      .setAutocomplete(true),
+      .setAutocomplete(true)
   )
   .addStringOption((opt) =>
     opt
       .setName('option')
       .setDescription('賭ける記号の文字列（ゲーム選択後にヒントが表示されます）')
       .setRequired(true)
-      .setAutocomplete(true),
+      .setAutocomplete(true)
   )
   .addIntegerOption((opt) =>
     opt
       .setName('amount')
       .setDescription('賭けるポイント数（1以上）')
       .setRequired(true)
-      .setMinValue(1),
+      .setMinValue(1)
   )
   .addBooleanOption((opt) =>
-    opt.setName('borrow').setDescription('借金として賭けるか（デフォルト: false）'),
+    opt.setName('borrow').setDescription('借金として賭けるか（デフォルト: false）')
   );
 
 export async function autocomplete(interaction: AutocompleteInteraction): Promise<void> {
@@ -49,7 +49,10 @@ export async function autocomplete(interaction: AutocompleteInteraction): Promis
     // 開催中イベントの受付中ゲーム一覧を候補として返す
     try {
       const guildId = interaction.guild?.id;
-      if (!guildId) { await interaction.respond([]); return; }
+      if (!guildId) {
+        await interaction.respond([]);
+        return;
+      }
       const events = await getEvents(guildId);
       const activeEvent = events.find((e) => e.isActive);
       if (!activeEvent) {
@@ -64,9 +67,7 @@ export async function autocomplete(interaction: AutocompleteInteraction): Promis
         .filter((g) => {
           const gameNo = allGames.findIndex((ag) => ag.id === g.id) + 1;
           if (!query) return true;
-          return (
-            String(gameNo).includes(query) || g.title.toLowerCase().includes(query)
-          );
+          return String(gameNo).includes(query) || g.title.toLowerCase().includes(query);
         })
         .slice(0, 25)
         .map((g) => {
@@ -90,12 +91,13 @@ export async function autocomplete(interaction: AutocompleteInteraction): Promis
     }
     try {
       const guildId = interaction.guild?.id;
-      if (!guildId) { await interaction.respond([]); return; }
+      if (!guildId) {
+        await interaction.respond([]);
+        return;
+      }
       const game = await getGameByNo(guildId, gameNo);
       const hint = optionHint(game.betType, game.requiredSelections);
-      const optList = game.betOptions
-        .map((o) => `${o.symbol}: ${o.label}`)
-        .join('、');
+      const optList = game.betOptions.map((o) => `${o.symbol}: ${o.label}`).join('、');
       await interaction.respond([
         { name: `${hint}  ／  項目: ${optList}`, value: focused.value || '' },
       ]);
@@ -143,11 +145,10 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   const chars = optionInput.split('');
 
   // 文字数チェック
-  const expected =
-    game.betType === 'single' ? 1 : (game.requiredSelections ?? 1);
+  const expected = game.betType === 'single' ? 1 : (game.requiredSelections ?? 1);
   if (chars.length !== expected) {
     await interaction.editReply(
-      `❌ ${expected}文字で入力してください。（このゲームの選択数: ${expected}）`,
+      `❌ ${expected}文字で入力してください。（このゲームの選択数: ${expected}）`
     );
     return;
   }
@@ -155,9 +156,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   // 記号存在チェック
   const invalid = chars.filter((c) => !optMap.has(c));
   if (invalid.length > 0) {
-    await interaction.editReply(
-      `❌ 指定した記号が見つかりません。（無効: ${invalid.join(', ')}）`,
-    );
+    await interaction.editReply(`❌ 指定した記号が見つかりません。（無効: ${invalid.join(', ')}）`);
     return;
   }
 
@@ -182,7 +181,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       const userInfo = await getUserByDiscordId(discordId, game.eventId);
       if (userInfo.points < amount) {
         await interaction.editReply(
-          `❌ 所持ポイントが足りません。（所持: ${fmtPt(userInfo.points)}）`,
+          `❌ 所持ポイントが足りません。（所持: ${fmtPt(userInfo.points)}）`
         );
         return;
       }
@@ -194,7 +193,15 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   // 賭け実行
   let result;
   try {
-    result = await placeBet(game.id, discordId, discordName, normalizedSymbols, amount, borrow, avatarUrl);
+    result = await placeBet(
+      game.id,
+      discordId,
+      discordName,
+      normalizedSymbols,
+      amount,
+      borrow,
+      avatarUrl
+    );
   } catch (err) {
     await interaction.editReply(`❌ 賭けに失敗しました。\n理由: ${extractApiMessage(err)}`);
     return;
@@ -234,13 +241,13 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     lines.push(
       currentPoints !== null
         ? `現在の所持ポイント: ${fmtPt(currentPoints)}（変動なし）`
-        : '現在の所持ポイント: （取得失敗）',
+        : '現在の所持ポイント: （取得失敗）'
     );
   } else {
     lines.push(
       currentPoints !== null
         ? `現在の所持ポイント: ${fmtPt(currentPoints)}`
-        : '現在の所持ポイント: （取得失敗）',
+        : '現在の所持ポイント: （取得失敗）'
     );
   }
 

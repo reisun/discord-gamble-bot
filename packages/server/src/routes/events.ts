@@ -47,7 +47,7 @@ router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunc
       adminUser
         ? `SELECT ${SELECT_COLUMNS} FROM events WHERE guild_id = $1 ORDER BY id`
         : `SELECT ${SELECT_COLUMNS} FROM events WHERE guild_id = $1 AND is_published = TRUE ORDER BY id`,
-      [guildId],
+      [guildId]
     );
     res.json({ data: rows.map(formatEvent) });
   } catch (err) {
@@ -58,10 +58,9 @@ router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunc
 // GET /api/events/:id
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const rows = await query<EventRow>(
-      `SELECT ${SELECT_COLUMNS} FROM events WHERE id = $1`,
-      [req.params.id],
-    );
+    const rows = await query<EventRow>(`SELECT ${SELECT_COLUMNS} FROM events WHERE id = $1`, [
+      req.params.id,
+    ]);
     if (rows.length === 0) {
       throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
     }
@@ -74,7 +73,12 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 // POST /api/events
 router.post('/', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, initialPoints = 10000, resultsPublic = false, guildId } = req.body as {
+    const {
+      name,
+      initialPoints = 10000,
+      resultsPublic = false,
+      guildId,
+    } = req.body as {
       name?: string;
       initialPoints?: number;
       resultsPublic?: boolean;
@@ -95,7 +99,7 @@ router.post('/', requireAdmin, async (req: Request, res: Response, next: NextFun
       `INSERT INTO events (guild_id, name, initial_points, results_public)
        VALUES ($1, $2, $3, $4)
        RETURNING ${SELECT_COLUMNS}`,
-      [guildId.trim(), name.trim(), initialPoints, resultsPublic],
+      [guildId.trim(), name.trim(), initialPoints, resultsPublic]
     );
     res.status(201).json({ data: formatEvent(rows[0]) });
   } catch (err) {
@@ -112,10 +116,9 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
       resultsPublic?: boolean;
     };
 
-    const existing = await query<EventRow>(
-      `SELECT ${SELECT_COLUMNS} FROM events WHERE id = $1`,
-      [req.params.id],
-    );
+    const existing = await query<EventRow>(`SELECT ${SELECT_COLUMNS} FROM events WHERE id = $1`, [
+      req.params.id,
+    ]);
     if (existing.length === 0) {
       throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
     }
@@ -127,7 +130,11 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
     }
     if (initialPoints !== undefined) {
       if (!Number.isInteger(initialPoints) || initialPoints < 1) {
-        throw new AppError(400, 'VALIDATION_ERROR', 'initialPoints は1以上の整数で指定してください');
+        throw new AppError(
+          400,
+          'VALIDATION_ERROR',
+          'initialPoints は1以上の整数で指定してください'
+        );
       }
     }
 
@@ -139,7 +146,7 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
            updated_at = NOW()
        WHERE id = $4
        RETURNING ${SELECT_COLUMNS}`,
-      [name?.trim() ?? null, initialPoints ?? null, resultsPublic ?? null, req.params.id],
+      [name?.trim() ?? null, initialPoints ?? null, resultsPublic ?? null, req.params.id]
     );
     res.json({ data: formatEvent(rows[0]) });
   } catch (err) {
@@ -150,10 +157,9 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
 // DELETE /api/events/:id
 router.delete('/:id', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await query<{ id: number }>(
-      'DELETE FROM events WHERE id = $1 RETURNING id',
-      [req.params.id],
-    );
+    const result = await query<{ id: number }>('DELETE FROM events WHERE id = $1 RETURNING id', [
+      req.params.id,
+    ]);
     if (result.length === 0) {
       throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
     }
@@ -174,7 +180,7 @@ router.patch(
       const rows = await withTransaction(async (client) => {
         const check = await client.query<EventRow>(
           `SELECT id, is_active, guild_id FROM events WHERE id = $1`,
-          [req.params.id],
+          [req.params.id]
         );
         if (check.rows.length === 0) {
           throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
@@ -188,20 +194,20 @@ router.patch(
             `UPDATE events SET is_active = FALSE, updated_at = NOW()
              WHERE id = $1
              RETURNING ${SELECT_COLUMNS}`,
-            [req.params.id],
+            [req.params.id]
           );
           return updated.rows;
         } else {
           // 非開催 → 開催に切り替え（同一ギルドの他を非開催、かつ is_published を TRUE に強制）
           await client.query(
             'UPDATE events SET is_active = FALSE, updated_at = NOW() WHERE is_active = TRUE AND guild_id = $1',
-            [guild_id],
+            [guild_id]
           );
           const updated = await client.query<EventRow>(
             `UPDATE events SET is_active = TRUE, is_published = TRUE, updated_at = NOW()
              WHERE id = $1
              RETURNING ${SELECT_COLUMNS}`,
-            [req.params.id],
+            [req.params.id]
           );
           return updated.rows;
         }
@@ -211,7 +217,7 @@ router.patch(
     } catch (err) {
       next(err);
     }
-  },
+  }
 );
 
 // PATCH /api/events/:id/publish
@@ -226,10 +232,9 @@ router.patch(
         throw new AppError(400, 'VALIDATION_ERROR', 'isPublished は boolean で指定してください');
       }
 
-      const existing = await query<EventRow>(
-        `SELECT ${SELECT_COLUMNS} FROM events WHERE id = $1`,
-        [req.params.id],
-      );
+      const existing = await query<EventRow>(`SELECT ${SELECT_COLUMNS} FROM events WHERE id = $1`, [
+        req.params.id,
+      ]);
       if (existing.length === 0) {
         throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
       }
@@ -241,13 +246,13 @@ router.patch(
         `UPDATE events SET is_published = $1, updated_at = NOW()
          WHERE id = $2
          RETURNING ${SELECT_COLUMNS}`,
-        [isPublished, req.params.id],
+        [isPublished, req.params.id]
       );
       res.json({ data: formatEvent(rows[0]) });
     } catch (err) {
       next(err);
     }
-  },
+  }
 );
 
 export default router;

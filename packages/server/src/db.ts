@@ -14,16 +14,14 @@ pool.on('error', (err) => {
 /** 単一クエリを実行し、行の配列を返す */
 export async function query<T extends Record<string, unknown>>(
   sql: string,
-  params?: unknown[],
+  params?: unknown[]
 ): Promise<T[]> {
   const result: QueryResult<T> = await pool.query(sql, params);
   return result.rows;
 }
 
 /** トランザクションを実行する。エラー時は自動ロールバック */
-export async function withTransaction<T>(
-  fn: (client: PoolClient) => Promise<T>,
-): Promise<T> {
+export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

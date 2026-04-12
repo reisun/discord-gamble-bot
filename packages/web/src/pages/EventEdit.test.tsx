@@ -28,16 +28,36 @@ vi.mock('react-router-dom', async (importOriginal) => {
 import { useParams } from 'react-router-dom';
 
 function renderNew() {
-  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
+  vi.mocked(useAuth).mockReturnValue({
+    token: 'tok',
+    isAdmin: true,
+    isVerifying: false,
+    guildId: 'test-guild-001',
+    isTokenExpired: false,
+  });
   vi.mocked(useParams).mockReturnValue({ guildId: 'test-guild-001' });
-  return render(<MemoryRouter><EventEdit /></MemoryRouter>);
+  return render(
+    <MemoryRouter>
+      <EventEdit />
+    </MemoryRouter>
+  );
 }
 
 function renderEdit(eventId = '1') {
-  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
+  vi.mocked(useAuth).mockReturnValue({
+    token: 'tok',
+    isAdmin: true,
+    isVerifying: false,
+    guildId: 'test-guild-001',
+    isTokenExpired: false,
+  });
   vi.mocked(useParams).mockReturnValue({ guildId: 'test-guild-001', eventId });
   vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
-  return render(<MemoryRouter><EventEdit /></MemoryRouter>);
+  return render(
+    <MemoryRouter>
+      <EventEdit />
+    </MemoryRouter>
+  );
 }
 
 describe('EventEdit', () => {
@@ -57,7 +77,10 @@ describe('EventEdit', () => {
   it('新規作成: パンくずが設計書どおり「ホーム > 新規作成」で表示される', () => {
     renderNew();
 
-    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', toHashPath(toDashboard('test-guild-001')));
+    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute(
+      'href',
+      toHashPath(toDashboard('test-guild-001'))
+    );
     expect(screen.getByText('新規作成')).toBeInTheDocument();
     expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
   });
@@ -71,8 +94,16 @@ describe('EventEdit', () => {
   it('編集: パンくずが設計書どおり「ホーム > イベント名 > 編集」で表示される', async () => {
     renderEdit();
 
-    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', toHashPath(toEvent('test-guild-001', 1))));
-    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', toHashPath(toDashboard('test-guild-001')));
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute(
+        'href',
+        toHashPath(toEvent('test-guild-001', 1))
+      )
+    );
+    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute(
+      'href',
+      toHashPath(toDashboard('test-guild-001'))
+    );
     expect(screen.getByText('編集')).toBeInTheDocument();
     expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
   });
@@ -89,10 +120,12 @@ describe('EventEdit', () => {
     renderNew();
     await user.type(screen.getByLabelText(/イベント名/), '秋季大会');
     await user.click(screen.getByRole('button', { name: '保存' }));
-    await waitFor(() => expect(api.createEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ name: '秋季大会', guildId: 'test-guild-001' }),
-      'tok',
-    ));
+    await waitFor(() =>
+      expect(api.createEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ name: '秋季大会', guildId: 'test-guild-001' }),
+        'tok'
+      )
+    );
     expect(mockNavigate).toHaveBeenCalledWith(toDashboard('test-guild-001'));
   });
 
@@ -101,11 +134,13 @@ describe('EventEdit', () => {
     renderEdit();
     await waitFor(() => screen.getByDisplayValue('春季大会'));
     await user.click(screen.getByRole('button', { name: '保存' }));
-    await waitFor(() => expect(api.updateEvent).toHaveBeenCalledWith(
-      1,
-      expect.objectContaining({ name: '春季大会' }),
-      'tok',
-    ));
+    await waitFor(() =>
+      expect(api.updateEvent).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ name: '春季大会' }),
+        'tok'
+      )
+    );
   });
 
   it('キャンセルボタンで一覧に戻る', async () => {

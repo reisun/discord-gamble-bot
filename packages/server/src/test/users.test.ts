@@ -13,9 +13,7 @@ const defaultBetOptions = [
 
 /** DB editor トークンを生成する */
 async function createDbToken(role: 'editor' | 'viewer' = 'editor', guildId = 'test-guild-001') {
-  const res = await request(app)
-    .post('/internal/api/auth/token')
-    .send({ guildId, role });
+  const res = await request(app).post('/internal/api/auth/token').send({ guildId, role });
   return res.body.data.token as string;
 }
 
@@ -60,9 +58,7 @@ async function setupFullScenario() {
 describe('GET /api/users', () => {
   it('eventId なしだと 400 を返す', async () => {
     const token = await createDbToken();
-    const res = await request(app)
-      .get('/api/users')
-      .set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/api/users').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(400);
   });
 
@@ -175,9 +171,7 @@ describe('GET /api/users/:id', () => {
   });
 
   it('不正トークンで 401 を返す', async () => {
-    const res = await request(app)
-      .get('/api/users/1')
-      .set('Authorization', 'Bearer wrong-token');
+    const res = await request(app).get('/api/users/1').set('Authorization', 'Bearer wrong-token');
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe('TOKEN_EXPIRED');
   });
@@ -192,9 +186,7 @@ describe('GET /api/users/:id/event-bets/:eventId', () => {
       .get('/api/users')
       .set('Authorization', `Bearer ${token}`)
       .query({ eventId: event.id });
-    const user = listRes.body.data.find(
-      (u: { discordId: string }) => u.discordId === 'user001',
-    );
+    const user = listRes.body.data.find((u: { discordId: string }) => u.discordId === 'user001');
 
     const res = await request(app)
       .get(`/api/users/${user.id}/event-bets/${event.id}`)
@@ -223,9 +215,7 @@ describe('GET /api/users/:id/event-bets/:eventId', () => {
       .get('/api/users')
       .set('Authorization', `Bearer ${token}`)
       .query({ eventId: event.id });
-    const user = listRes.body.data.find(
-      (u: { discordId: string }) => u.discordId === 'user001',
-    );
+    const user = listRes.body.data.find((u: { discordId: string }) => u.discordId === 'user001');
 
     const res = await request(app)
       .get(`/api/users/${user.id}/event-bets/${event.id}`)
@@ -273,9 +263,7 @@ describe('GET /api/users/:id/event-results/:eventId', () => {
       .get('/api/users')
       .set('Authorization', `Bearer ${token}`)
       .query({ eventId: event.id });
-    const user = listRes.body.data.find(
-      (u: { discordId: string }) => u.discordId === 'user001',
-    );
+    const user = listRes.body.data.find((u: { discordId: string }) => u.discordId === 'user001');
 
     const res = await request(app)
       .get(`/api/users/${user.id}/event-results/${event.id}`)
@@ -324,9 +312,7 @@ describe('GET /api/users/:id/point-history', () => {
       .get('/api/users')
       .set('Authorization', `Bearer ${token}`)
       .query({ eventId: event.id });
-    const user = listRes.body.data.find(
-      (u: { discordId: string }) => u.discordId === 'user001',
-    );
+    const user = listRes.body.data.find((u: { discordId: string }) => u.discordId === 'user001');
 
     const res = await request(app)
       .get(`/api/users/${user.id}/point-history`)
@@ -335,9 +321,7 @@ describe('GET /api/users/:id/point-history', () => {
     expect(res.status).toBe(200);
     // bet_placed が1件あるはず
     expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-    const betPlaced = res.body.data.find(
-      (h: { reason: string }) => h.reason === 'bet_placed',
-    );
+    const betPlaced = res.body.data.find((h: { reason: string }) => h.reason === 'bet_placed');
     expect(betPlaced.changeAmount).toBe(-500);
   });
 });
