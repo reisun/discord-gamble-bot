@@ -17,4 +17,7 @@ if [ ! -s "$KEYFILE" ]; then
   exit 1
 fi
 
+# nginx.conf 内の環境変数プレースホルダーを実際の値に置換
+envsubst '${SERVER_NAME}' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf
+
 exec nginx -g 'daemon off;'
