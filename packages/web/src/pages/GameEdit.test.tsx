@@ -27,14 +27,30 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 function renderNew() {
-  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
+  vi.mocked(useAuth).mockReturnValue({
+    token: 'tok',
+    isAdmin: true,
+    isVerifying: false,
+    guildId: 'test-guild-001',
+    isTokenExpired: false,
+  });
   mockUseParams.mockReturnValue({ guildId: 'test-guild-001', eventId: '1' });
   vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
-  return render(<MemoryRouter><GameEdit /></MemoryRouter>);
+  return render(
+    <MemoryRouter>
+      <GameEdit />
+    </MemoryRouter>
+  );
 }
 
 function renderEdit(game = mockGameSingle) {
-  vi.mocked(useAuth).mockReturnValue({ token: 'tok', isAdmin: true, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
+  vi.mocked(useAuth).mockReturnValue({
+    token: 'tok',
+    isAdmin: true,
+    isVerifying: false,
+    guildId: 'test-guild-001',
+    isTokenExpired: false,
+  });
   mockUseParams.mockReturnValue({
     guildId: 'test-guild-001',
     eventId: String(game.eventId),
@@ -42,7 +58,11 @@ function renderEdit(game = mockGameSingle) {
   });
   vi.mocked(api.getGame).mockResolvedValue(game);
   vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
-  return render(<MemoryRouter><GameEdit /></MemoryRouter>);
+  return render(
+    <MemoryRouter>
+      <GameEdit />
+    </MemoryRouter>
+  );
 }
 
 describe('GameEdit', () => {
@@ -60,8 +80,16 @@ describe('GameEdit', () => {
   it('新規作成: パンくずが設計書どおり「ホーム > イベント名 > 新規作成」で表示される', async () => {
     renderNew();
 
-    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', toHashPath(toDashboard('test-guild-001')));
-    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', toHashPath(toEvent('test-guild-001', 1))));
+    expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute(
+      'href',
+      toHashPath(toDashboard('test-guild-001'))
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute(
+        'href',
+        toHashPath(toEvent('test-guild-001', 1))
+      )
+    );
     expect(screen.getByText('新規作成')).toBeInTheDocument();
     expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
     expect(screen.queryByText('ゲーム一覧')).not.toBeInTheDocument();
@@ -119,7 +147,9 @@ describe('GameEdit', () => {
     const user = userEvent.setup();
     renderNew();
     await user.type(screen.getByLabelText(/ゲームタイトル/), '第5試合');
-    fireEvent.change(screen.getByLabelText(/公開後の何分後に締め切るか/), { target: { value: '12' } });
+    fireEvent.change(screen.getByLabelText(/公開後の何分後に締め切るか/), {
+      target: { value: '12' },
+    });
     // 記号と項目名（2行分）を入力
     const symbolInputs = screen.getAllByPlaceholderText('A');
     const labelInputs = screen.getAllByPlaceholderText('チームA');
@@ -140,9 +170,22 @@ describe('GameEdit', () => {
   it('編集: パンくずが設計書どおり「ホーム > イベント名 > ゲームタイトル > 編集」で表示される', async () => {
     renderEdit(mockGameSingle);
 
-    await waitFor(() => expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', toHashPath(toDashboard('test-guild-001'))));
-    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', toHashPath(toEvent('test-guild-001', 1))));
-    expect(screen.getByRole('link', { name: '第1試合' })).toHaveAttribute('href', toHashPath(toGame('test-guild-001', 1, 1)));
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute(
+        'href',
+        toHashPath(toDashboard('test-guild-001'))
+      )
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute(
+        'href',
+        toHashPath(toEvent('test-guild-001', 1))
+      )
+    );
+    expect(screen.getByRole('link', { name: '第1試合' })).toHaveAttribute(
+      'href',
+      toHashPath(toGame('test-guild-001', 1, 1))
+    );
     expect(screen.getByText('編集')).toBeInTheDocument();
     expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
     expect(screen.queryByText('ゲーム一覧')).not.toBeInTheDocument();
@@ -165,7 +208,9 @@ describe('GameEdit', () => {
     const user = userEvent.setup();
     renderNew();
     await user.type(screen.getByLabelText(/ゲームタイトル/), '第5試合');
-    fireEvent.change(screen.getByLabelText(/公開後の何分後に締め切るか/), { target: { value: '12' } });
+    fireEvent.change(screen.getByLabelText(/公開後の何分後に締め切るか/), {
+      target: { value: '12' },
+    });
     const symbolInputs = screen.getAllByPlaceholderText('A');
     const labelInputs = screen.getAllByPlaceholderText('チームA');
     await user.type(symbolInputs[0], 'A');
@@ -181,7 +226,9 @@ describe('GameEdit', () => {
     await waitFor(() => screen.getByDisplayValue('第1試合'));
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
     await waitFor(() =>
-      expect(mockNavigate).toHaveBeenCalledWith(toGame('test-guild-001', mockGameSingle.eventId, mockGameSingle.id)),
+      expect(mockNavigate).toHaveBeenCalledWith(
+        toGame('test-guild-001', mockGameSingle.eventId, mockGameSingle.id)
+      )
     );
   });
 });

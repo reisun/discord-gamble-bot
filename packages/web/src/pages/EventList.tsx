@@ -39,7 +39,6 @@ export default function EventList() {
 
   useEffect(() => {
     load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, guildId]);
 
   const handleDelete = async () => {
@@ -94,9 +93,7 @@ export default function EventList() {
 
   return (
     <>
-      <Breadcrumb items={[
-        { label: 'ホーム' },
-      ]} />
+      <Breadcrumb items={[{ label: 'ホーム' }]} />
 
       <div className="action-bar">
         {isAdmin && (
@@ -119,12 +116,14 @@ export default function EventList() {
           <p style={{ color: 'var(--color-text-muted)' }}>イベントがありません。</p>
         </div>
       ) : (
-        <div style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--border-radius-lg)',
-          overflow: 'hidden',
-        }}>
+        <div
+          style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--border-radius-lg)',
+            overflow: 'hidden',
+          }}
+        >
           <div className="table-wrapper">
             <table>
               <thead>
@@ -139,36 +138,65 @@ export default function EventList() {
                 {events.map((ev) => (
                   <tr key={ev.id}>
                     <td style={{ fontSize: '16px' }}>
-                      <a href={toHashPath(toEvent(guildId, ev.id, tokenSearch))} style={{ color: 'var(--color-text)', textDecoration: 'none' }} onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')} onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}>
+                      <a
+                        href={toHashPath(toEvent(guildId, ev.id, tokenSearch))}
+                        style={{ color: 'var(--color-text)', textDecoration: 'none' }}
+                        onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                        onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                      >
                         {ev.name}
                       </a>
                     </td>
                     <td>
                       {ev.isActive ? (
                         <span className="badge badge-active event-status-badge">
-                          <CircleActive />開催中
+                          <CircleActive />
+                          開催中
                         </span>
                       ) : (
-                        <span className="badge badge-inactive event-status-badge">
-                          ー 非開催
-                        </span>
+                        <span className="badge badge-inactive event-status-badge">ー 非開催</span>
                       )}
                     </td>
                     {isAdmin && (
                       <td>
                         {ev.isPublished ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', fontSize: '14px' }}>
-                            <EyeIcon />公開
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              color: 'var(--color-success)',
+                              fontSize: '14px',
+                            }}
+                          >
+                            <EyeIcon />
+                            公開
                           </span>
                         ) : (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-disabled)', fontSize: '14px' }}>
-                            <EyeOffIcon />非公開
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              color: 'var(--color-text-disabled)',
+                              fontSize: '14px',
+                            }}
+                          >
+                            <EyeOffIcon />
+                            非公開
                           </span>
                         )}
                       </td>
                     )}
                     <td>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '8px',
+                          justifyContent: 'flex-end',
+                          flexWrap: 'wrap',
+                        }}
+                      >
                         <button
                           className="btn-outline btn-sm"
                           onClick={() => navigate(toEvent(guildId, ev.id, tokenSearch))}
@@ -187,7 +215,9 @@ export default function EventList() {
                             <button
                               className={`btn-sm ${ev.isPublished ? 'btn-warning' : 'btn-success'}`}
                               disabled={actionLoading || ev.isActive}
-                              title={ev.isActive ? '開催中のイベントは非公開にできません' : undefined}
+                              title={
+                                ev.isActive ? '開催中のイベントは非公開にできません' : undefined
+                              }
                               onClick={() => handlePublish(ev)}
                             >
                               {ev.isPublished ? '非公開にする' : '公開にする'}

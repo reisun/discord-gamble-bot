@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { fmtPt, betTypeLabel, formatSelection, fmtDeadline, fmtRemaining, optionHint, buildOptMap } from '../../lib/format';
+import {
+  fmtPt,
+  betTypeLabel,
+  formatSelection,
+  fmtDeadline,
+  fmtRemaining,
+  optionHint,
+  buildOptMap,
+} from '../../lib/format';
 import type { Game } from '../../lib/api';
 
 // テスト用 optMap ヘルパー
@@ -43,20 +51,20 @@ describe('formatSelection', () => {
 
   it('multi_unordered: 読点区切り＋選択一致', () => {
     expect(formatSelection('AB', map, 'multi_unordered')).toBe(
-      'A: チームA、B: チームB（選択一致）',
+      'A: チームA、B: チームB（選択一致）'
     );
   });
 
   it('multi_ordered: → 区切り＋順番一致・重複なし', () => {
     expect(formatSelection('BC', map, 'multi_ordered')).toBe(
-      'B: チームB → C: チームC（順番一致・重複なし）',
+      'B: チームB → C: チームC（順番一致・重複なし）'
     );
   });
 
   it('multi_ordered_dup: → 区切り＋順番一致・重複あり', () => {
-    expect(formatSelection('AAB', optMap({ A: 'チームA', B: 'チームB' }), 'multi_ordered_dup')).toBe(
-      'A: チームA → A: チームA → B: チームB（順番一致・重複あり）',
-    );
+    expect(
+      formatSelection('AAB', optMap({ A: 'チームA', B: 'チームB' }), 'multi_ordered_dup')
+    ).toBe('A: チームA → A: チームA → B: チームB（順番一致・重複あり）');
   });
 
   it('optMap に存在しない記号はそのまま表示', () => {

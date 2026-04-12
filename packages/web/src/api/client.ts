@@ -1,22 +1,11 @@
-import type {
-  Event,
-  Game,
-  BetsData,
-  Guild,
-  User,
-  UserEventResult,
-} from './types';
+import type { Event, Game, BetsData, Guild, User, UserEventResult } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 // TOKEN_EXPIRED エラーを区別するためのカスタムイベント
 export const TOKEN_EXPIRED_EVENT = 'discord-gamble-token-expired';
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-  token?: string,
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -70,7 +59,7 @@ export function getEvent(id: number, token?: string): Promise<Event> {
 
 export function createEvent(
   body: { name: string; initialPoints?: number; resultsPublic?: boolean; guildId: string },
-  token: string,
+  token: string
 ): Promise<Event> {
   return request('/events', { method: 'POST', body: JSON.stringify(body) }, token);
 }
@@ -78,7 +67,7 @@ export function createEvent(
 export function updateEvent(
   id: number,
   body: { name: string; initialPoints?: number; resultsPublic?: boolean },
-  token: string,
+  token: string
 ): Promise<Event> {
   return request(`/events/${id}`, { method: 'PUT', body: JSON.stringify(body) }, token);
 }
@@ -95,27 +84,24 @@ export function publishEvent(id: number, isPublished: boolean, token: string): P
   return request(
     `/events/${id}/publish`,
     { method: 'PATCH', body: JSON.stringify({ isPublished }) },
-    token,
+    token
   );
 }
 
 export function updateEventResultsPublic(
   id: number,
   resultsPublic: boolean,
-  token: string,
+  token: string
 ): Promise<Event> {
   return request(
     `/events/${id}`,
     { method: 'PUT', body: JSON.stringify({ resultsPublic }) },
-    token,
+    token
   );
 }
 
 // ゲーム
-export function getGames(
-  eventId: number,
-  token?: string,
-): Promise<Game[]> {
+export function getGames(eventId: number, token?: string): Promise<Game[]> {
   const query = token ? '?includeUnpublished=true' : '';
   return request(`/events/${eventId}/games${query}`, {}, token);
 }
@@ -134,13 +120,9 @@ export function createGame(
     requiredSelections?: number | null;
     betOptions: { symbol: string; label: string }[];
   },
-  token: string,
+  token: string
 ): Promise<Game> {
-  return request(
-    `/events/${eventId}/games`,
-    { method: 'POST', body: JSON.stringify(body) },
-    token,
-  );
+  return request(`/events/${eventId}/games`, { method: 'POST', body: JSON.stringify(body) }, token);
 }
 
 export function updateGame(
@@ -153,7 +135,7 @@ export function updateGame(
     requiredSelections?: number | null;
     betOptions?: { symbol: string; label: string }[];
   },
-  token: string,
+  token: string
 ): Promise<Game> {
   return request(`/games/${id}`, { method: 'PUT', body: JSON.stringify(body) }, token);
 }
@@ -162,15 +144,11 @@ export function deleteGame(id: number, token: string): Promise<void> {
   return request(`/games/${id}`, { method: 'DELETE' }, token);
 }
 
-export function publishGame(
-  id: number,
-  isPublished: boolean,
-  token: string,
-): Promise<Game> {
+export function publishGame(id: number, isPublished: boolean, token: string): Promise<Game> {
   return request(
     `/games/${id}/publish`,
     { method: 'PATCH', body: JSON.stringify({ isPublished }) },
-    token,
+    token
   );
 }
 
@@ -178,15 +156,11 @@ export function closeGameNow(id: number, token: string): Promise<Game> {
   return request(`/games/${id}/close-now`, { method: 'PATCH' }, token);
 }
 
-export function setGameResult(
-  id: number,
-  resultSymbols: string,
-  token: string,
-): Promise<Game> {
+export function setGameResult(id: number, resultSymbols: string, token: string): Promise<Game> {
   return request(
     `/games/${id}/result`,
     { method: 'PATCH', body: JSON.stringify({ resultSymbols }) },
-    token,
+    token
   );
 }
 
@@ -203,7 +177,7 @@ export function getUsers(eventId: number, token?: string): Promise<User[]> {
 export function getUserEventResults(
   userId: number,
   eventId: number,
-  token?: string,
+  token?: string
 ): Promise<UserEventResult> {
   return request(`/users/${userId}/event-results/${eventId}`, {}, token);
 }

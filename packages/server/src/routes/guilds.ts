@@ -28,7 +28,7 @@ router.get('/:guildId', async (req: Request, res: Response, next: NextFunction) 
   try {
     const rows = await query<GuildRow>(
       'SELECT guild_id, guild_name, guild_icon_hash, created_at, updated_at FROM guilds WHERE guild_id = $1',
-      [req.params.guildId],
+      [req.params.guildId]
     );
     if (rows.length === 0) {
       throw new AppError(404, 'NOT_FOUND', 'ギルドが見つかりません');
@@ -42,7 +42,10 @@ router.get('/:guildId', async (req: Request, res: Response, next: NextFunction) 
 // PUT /api/guilds/:guildId  (Botがギルド情報を登録・更新する)
 router.put('/:guildId', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { guildName, guildIconHash } = req.body as { guildName?: string; guildIconHash?: string | null };
+    const { guildName, guildIconHash } = req.body as {
+      guildName?: string;
+      guildIconHash?: string | null;
+    };
     if (!guildName || typeof guildName !== 'string' || guildName.trim().length === 0) {
       throw new AppError(400, 'VALIDATION_ERROR', 'guildName は必須です');
     }
@@ -53,7 +56,7 @@ router.put('/:guildId', requireAdmin, async (req: Request, res: Response, next: 
        ON CONFLICT (guild_id) DO UPDATE
        SET guild_name = EXCLUDED.guild_name, guild_icon_hash = EXCLUDED.guild_icon_hash, updated_at = NOW()
        RETURNING guild_id, guild_name, guild_icon_hash, created_at, updated_at`,
-      [req.params.guildId, guildName.trim(), guildIconHash ?? null],
+      [req.params.guildId, guildName.trim(), guildIconHash ?? null]
     );
     res.json({ data: formatGuild(rows[0]) });
   } catch (err) {

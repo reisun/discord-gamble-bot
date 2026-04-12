@@ -14,9 +14,7 @@ const defaultBetOptions = [
 
 /** DB editor トークンを生成する */
 async function createDbToken(role: 'editor' | 'viewer' = 'editor', guildId = 'test-guild-001') {
-  const res = await request(app)
-    .post('/internal/api/auth/token')
-    .send({ guildId, role });
+  const res = await request(app).post('/internal/api/auth/token').send({ guildId, role });
   return res.body.data.token as string;
 }
 

@@ -8,9 +8,7 @@ const TEST_GUILD_ID = 'test-guild-001';
 
 /** 内部 API 経由で DB トークンを生成する */
 async function createDbToken(role: 'editor' | 'viewer' = 'editor', guildId = TEST_GUILD_ID) {
-  const res = await request(app)
-    .post('/internal/api/auth/token')
-    .send({ guildId, role });
+  const res = await request(app).post('/internal/api/auth/token').send({ guildId, role });
   return res.body.data.token as string;
 }
 
@@ -21,7 +19,16 @@ async function createEvent(name = 'テストイベント', initialPoints = 10000
     .post('/api/events')
     .set('Authorization', `Bearer ${token}`)
     .send({ name, initialPoints, guildId: TEST_GUILD_ID });
-  return { ...(res.body.data as { id: number; name: string; isActive: boolean; isPublished: boolean; initialPoints: number }), token };
+  return {
+    ...(res.body.data as {
+      id: number;
+      name: string;
+      isActive: boolean;
+      isPublished: boolean;
+      initialPoints: number;
+    }),
+    token,
+  };
 }
 
 describe('GET /api/events', () => {
@@ -55,7 +62,10 @@ describe('GET /api/events', () => {
     await createEvent('非公開大会');
 
     // e1 のみ公開にする
-    await request(app).patch(`/api/events/${id}/publish`).set('Authorization', `Bearer ${token}`).send({ isPublished: true });
+    await request(app)
+      .patch(`/api/events/${id}/publish`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isPublished: true });
 
     const res = await request(app).get(`/api/events?guildId=${TEST_GUILD_ID}`);
     expect(res.status).toBe(200);
@@ -216,7 +226,9 @@ describe('PATCH /api/events/:id/activate', () => {
     const { id: e1Id, token } = await createEvent('大会1');
     const { id: e2Id } = await createEvent('大会2');
 
-    await request(app).patch(`/api/events/${e1Id}/activate`).set('Authorization', `Bearer ${token}`);
+    await request(app)
+      .patch(`/api/events/${e1Id}/activate`)
+      .set('Authorization', `Bearer ${token}`);
 
     const res = await request(app)
       .patch(`/api/events/${e2Id}/activate`)
@@ -279,7 +291,10 @@ describe('PATCH /api/events/:id/publish', () => {
 
   it('公開→非公開に切り替えられる', async () => {
     const { id, token } = await createEvent('大会');
-    await request(app).patch(`/api/events/${id}/publish`).set('Authorization', `Bearer ${token}`).send({ isPublished: true });
+    await request(app)
+      .patch(`/api/events/${id}/publish`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isPublished: true });
 
     const res = await request(app)
       .patch(`/api/events/${id}/publish`)

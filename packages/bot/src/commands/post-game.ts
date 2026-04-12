@@ -16,7 +16,7 @@ export const data = new SlashCommandBuilder()
       .setName('game')
       .setDescription('ゲーム番号（未公開のゲームも候補に表示されます）')
       .setRequired(true)
-      .setAutocomplete(true),
+      .setAutocomplete(true)
   );
 
 export async function autocomplete(interaction: AutocompleteInteraction): Promise<void> {
@@ -25,10 +25,16 @@ export async function autocomplete(interaction: AutocompleteInteraction): Promis
 
   try {
     const guildId = interaction.guild?.id;
-    if (!guildId) { await interaction.respond([]); return; }
+    if (!guildId) {
+      await interaction.respond([]);
+      return;
+    }
     const events = await getEvents(guildId);
     const activeEvent = events.find((e) => e.isActive);
-    if (!activeEvent) { await interaction.respond([]); return; }
+    if (!activeEvent) {
+      await interaction.respond([]);
+      return;
+    }
     const allGames = await getEventGamesAdmin(activeEvent.id);
 
     const query = focused.value.toString().toLowerCase();
@@ -101,9 +107,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   const isSingle = game.betType === 'single';
   const n = game.requiredSelections ?? 1;
 
-  const embed = new EmbedBuilder()
-    .setTitle(`🎮 #${gameNo} ${game.title}`)
-    .setColor(0x5865f2); // Discord Blurple
+  const embed = new EmbedBuilder().setTitle(`🎮 #${gameNo} ${game.title}`).setColor(0x5865f2); // Discord Blurple
 
   if (game.description) {
     embed.setDescription(game.description);
@@ -126,12 +130,15 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     {
       name: '賭け項目',
       value: game.betOptions.map((o) => `\`${o.symbol}\` ${o.label}`).join('\n'),
-    },
+    }
   );
 
   const exSymbols = isSingle
     ? (game.betOptions[0]?.symbol ?? 'A')
-    : game.betOptions.slice(0, n).map((o) => o.symbol).join('');
+    : game.betOptions
+        .slice(0, n)
+        .map((o) => o.symbol)
+        .join('');
   const usageHint = isSingle
     ? `\`/bet game:${gameNo} option:<記号> amount:<ポイント>\``
     : `\`/bet game:${gameNo} option:<記号を${n}文字> amount:<ポイント>\``;

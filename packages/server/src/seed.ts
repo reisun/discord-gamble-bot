@@ -36,24 +36,25 @@ async function seed(): Promise<void> {
     const deadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 1週間後
     const pastDeadline = '2025-12-31T23:59:59+09:00';
 
-    const gamesRes = await client.query<{ id: number }>(`
+    const gamesRes = await client.query<{ id: number }>(
+      `
       INSERT INTO games (event_id, title, description, deadline, is_published, status, bet_type, required_selections) VALUES
         ($1, '第1試合: チームA vs チームB', '単純勝敗予想（single）', $2, TRUE,  'open',     'single',          NULL),
         ($1, '第2試合: MVP選手予想',        '複数候補から順不同で2名選択（multi_unordered）', $2, TRUE, 'open', 'multi_unordered', 2),
         ($1, '第3試合: 1〜3着予想',         '3着まで順番通りに選択（multi_ordered）', $2, FALSE, 'open', 'multi_ordered',   3),
         ($3, '過去試合: チームX vs Y',      '過去イベントの完結したゲーム', $4, TRUE, 'finished', 'single',         NULL)
       RETURNING id
-    `, [activeEventId, deadline, pastEventId, pastDeadline]);
+    `,
+      [activeEventId, deadline, pastEventId, pastDeadline]
+    );
     const [game1Id, game2Id, game3Id, game4Id] = gamesRes.rows.map((r) => r.id);
 
     // 過去ゲームの結果を設定
-    await client.query(
-      `UPDATE games SET result_symbols = 'A' WHERE id = $1`,
-      [game4Id],
-    );
+    await client.query(`UPDATE games SET result_symbols = 'A' WHERE id = $1`, [game4Id]);
 
     // ── bet_options ───────────────────────────────────────────────────
-    await client.query(`
+    await client.query(
+      `
       INSERT INTO bet_options (game_id, symbol, label, "order") VALUES
         ($1, 'A', 'チームA', 1),
         ($1, 'B', 'チームB', 2),
@@ -68,7 +69,9 @@ async function seed(): Promise<void> {
         ($3, 'E', '選手E', 5),
         ($4, 'A', 'チームX', 1),
         ($4, 'B', 'チームY', 2)
-    `, [game1Id, game2Id, game3Id, game4Id]);
+    `,
+      [game1Id, game2Id, game3Id, game4Id]
+    );
 
     // ── users ─────────────────────────────────────────────────────────
     const usersRes = await client.query<{ id: number }>(`
@@ -83,7 +86,8 @@ async function seed(): Promise<void> {
     const [aliceId, bobId, charlieId, dianaId, eveId] = usersRes.rows.map((r) => r.id);
 
     // ── bets（現在の開催中イベントのゲーム1, 2 に対して賭け）─────────
-    await client.query(`
+    await client.query(
+      `
       INSERT INTO bets (user_id, game_id, selected_symbols, amount, is_debt) VALUES
         ($1, $5, 'A', 1000, FALSE),
         ($2, $5, 'B', 2000, FALSE),
@@ -93,7 +97,9 @@ async function seed(): Promise<void> {
         ($1, $6, 'AC', 1500, FALSE),
         ($2, $6, 'BD', 1000, FALSE),
         ($3, $6, 'AB', 2000, FALSE)
-    `, [aliceId, bobId, charlieId, dianaId, eveId, game1Id, game2Id]);
+    `,
+      [aliceId, bobId, charlieId, dianaId, eveId, game1Id, game2Id]
+    );
 
     // ── point_history（過去イベントのポイント移動）────────────────────
     // 過去イベント: チームX が勝利（result='A'）
@@ -113,14 +119,14 @@ async function seed(): Promise<void> {
       await client.query(
         `INSERT INTO point_history (user_id, event_id, game_id, change_amount, reason)
          VALUES ($1, $2, $3, $4, 'bet_placed')`,
-        [w.userId, pastEventId, game4Id, -w.betAmount],
+        [w.userId, pastEventId, game4Id, -w.betAmount]
       );
       // 当選時の獲得
       const winAmount = Math.floor(w.betAmount * pastWinMultiplier);
       await client.query(
         `INSERT INTO point_history (user_id, event_id, game_id, change_amount, reason)
          VALUES ($1, $2, $3, $4, 'game_result')`,
-        [w.userId, pastEventId, game4Id, winAmount],
+        [w.userId, pastEventId, game4Id, winAmount]
       );
     }
 
@@ -128,7 +134,7 @@ async function seed(): Promise<void> {
     await client.query(
       `INSERT INTO point_history (user_id, event_id, game_id, change_amount, reason)
        VALUES ($1, $2, $3, $4, 'bet_placed')`,
-      [bobId, pastEventId, game4Id, -3000],
+      [bobId, pastEventId, game4Id, -3000]
     );
 
     // ── point_history（現在の開催中イベント: 賭け時の消費）──────────
@@ -146,7 +152,7 @@ async function seed(): Promise<void> {
       await client.query(
         `INSERT INTO point_history (user_id, event_id, game_id, change_amount, reason)
          VALUES ($1, $2, $3, $4, 'bet_placed')`,
-        [b.userId, activeEventId, b.gameId, -b.amount],
+        [b.userId, activeEventId, b.gameId, -b.amount]
       );
     }
 
@@ -154,7 +160,7 @@ async function seed(): Promise<void> {
     await client.query(
       `INSERT INTO debt_history (user_id, event_id, game_id, change_amount, reason)
        VALUES ($1, $2, $3, $4, 'bet_placed')`,
-      [eveId, activeEventId, game1Id, pastBetAmount],
+      [eveId, activeEventId, game1Id, pastBetAmount]
     );
 
     await client.query('COMMIT');

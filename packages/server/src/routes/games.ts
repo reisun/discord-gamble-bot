@@ -49,7 +49,11 @@ function computeDeadlineFromNow(closeAfterMinutes: number): Date {
 function normalizeCloseAfterMinutes(value: unknown): number {
   const next = value === undefined ? DEFAULT_CLOSE_AFTER_MINUTES : Number(value);
   if (!Number.isInteger(next) || next < 1) {
-    throw new AppError(400, 'VALIDATION_ERROR', 'closeAfterMinutes は1以上の整数で指定してください');
+    throw new AppError(
+      400,
+      'VALIDATION_ERROR',
+      'closeAfterMinutes は1以上の整数で指定してください'
+    );
   }
   return next;
 }
@@ -99,14 +103,14 @@ function formatPlaceholderGame(row: GameRow) {
 
 async function fetchGameWithOptions(
   client: PoolClient,
-  gameId: number | string,
+  gameId: number | string
 ): Promise<{ game: GameRow; options: BetOptionRow[] } | null> {
   const gameRows = await client.query<GameRow>('SELECT * FROM games WHERE id = $1', [gameId]);
   if (gameRows.rows.length === 0) return null;
 
   const optionRows = await client.query<BetOptionRow>(
     'SELECT id, game_id, symbol, label, "order" FROM bet_options WHERE game_id = $1 ORDER BY "order"',
-    [gameId],
+    [gameId]
   );
   return { game: gameRows.rows[0], options: optionRows.rows };
 }
@@ -114,7 +118,7 @@ async function fetchGameWithOptions(
 function validateBetOptions(
   betOptions: { symbol: string; label: string }[],
   betType: string,
-  requiredSelections: number | null,
+  requiredSelections: number | null
 ): void {
   if (!Array.isArray(betOptions) || betOptions.length < 2) {
     throw new AppError(400, 'VALIDATION_ERROR', '賭け項目は2つ以上必要です');
@@ -123,23 +127,36 @@ function validateBetOptions(
   const symbols = new Set<string>();
   for (const opt of betOptions) {
     if (!opt.symbol || !SYMBOL_REGEX.test(opt.symbol)) {
-      throw new AppError(400, 'VALIDATION_ERROR', `記号は半角英字(A〜Z)または半角数字(1〜9)で指定してください: ${opt.symbol}`);
+      throw new AppError(
+        400,
+        'VALIDATION_ERROR',
+        `記号は半角英字(A〜Z)または半角数字(1〜9)で指定してください: ${opt.symbol}`
+      );
     }
     if (symbols.has(opt.symbol)) {
       throw new AppError(400, 'VALIDATION_ERROR', `記号が重複しています: ${opt.symbol}`);
     }
     symbols.add(opt.symbol);
 
-    if (!opt.label || typeof opt.label !== 'string' || opt.label.length === 0 || opt.label.length > 50) {
+    if (
+      !opt.label ||
+      typeof opt.label !== 'string' ||
+      opt.label.length === 0 ||
+      opt.label.length > 50
+    ) {
       throw new AppError(400, 'VALIDATION_ERROR', '項目名は1〜50文字で指定してください');
     }
   }
 
-  if (betType !== 'single' && requiredSelections !== null && betOptions.length < requiredSelections) {
+  if (
+    betType !== 'single' &&
+    requiredSelections !== null &&
+    betOptions.length < requiredSelections
+  ) {
     throw new AppError(
       400,
       'VALIDATION_ERROR',
-      `賭け項目数(${betOptions.length})は選択数(${requiredSelections})以上必要です`,
+      `賭け項目数(${betOptions.length})は選択数(${requiredSelections})以上必要です`
     );
   }
 }
@@ -154,10 +171,14 @@ router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunc
       ? 'WHERE g.event_id = $1'
       : 'WHERE g.event_id = $1 AND g.is_published = TRUE';
 
-    const gameRows = await query<GameRow>(`SELECT * FROM games g ${whereClause} ORDER BY g.id`, [eventId]);
+    const gameRows = await query<GameRow>(`SELECT * FROM games g ${whereClause} ORDER BY g.id`, [
+      eventId,
+    ]);
 
     if (gameRows.length === 0) {
-      const eventExists = await query<{ id: number }>('SELECT id FROM events WHERE id = $1', [eventId]);
+      const eventExists = await query<{ id: number }>('SELECT id FROM events WHERE id = $1', [
+        eventId,
+      ]);
       if (eventExists.length === 0) {
         throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
       }
@@ -168,7 +189,7 @@ router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunc
     const gameIds = gameRows.map((g) => g.id);
     const optionRows = await query<BetOptionRow>(
       'SELECT id, game_id, symbol, label, "order" FROM bet_options WHERE game_id = ANY($1) ORDER BY game_id, "order"',
-      [gameIds],
+      [gameIds]
     );
 
     const optionsByGame = new Map<number, BetOptionRow[]>();
@@ -181,7 +202,7 @@ router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunc
       data: gameRows.map((g) =>
         adminMode || g.is_published
           ? formatGame(g, optionsByGame.get(g.id) ?? [])
-          : formatPlaceholderGame(g),
+          : formatPlaceholderGame(g)
       ),
     });
   } catch (err) {
@@ -202,7 +223,7 @@ router.get('/:id', optionalAuth, async (req: Request, res: Response, next: NextF
 
     const optionRows = await query<BetOptionRow>(
       'SELECT id, game_id, symbol, label, "order" FROM bet_options WHERE game_id = $1 ORDER BY "order"',
-      [req.params.id],
+      [req.params.id]
     );
     res.json({ data: formatGame(gameRows[0], optionRows) });
   } catch (err) {
@@ -231,7 +252,9 @@ router.post('/', requireAdmin, async (req: Request, res: Response, next: NextFun
       deadline?: string;
     };
 
-    const eventExists = await query<{ id: number }>('SELECT id FROM events WHERE id = $1', [eventId]);
+    const eventExists = await query<{ id: number }>('SELECT id FROM events WHERE id = $1', [
+      eventId,
+    ]);
     if (eventExists.length === 0) {
       throw new AppError(404, 'NOT_FOUND', 'イベントが見つかりません');
     }
@@ -245,14 +268,30 @@ router.post('/', requireAdmin, async (req: Request, res: Response, next: NextFun
       throw new AppError(400, 'VALIDATION_ERROR', 'description は500文字以内で指定してください');
     }
     if (!VALID_BET_TYPES.includes(betType)) {
-      throw new AppError(400, 'VALIDATION_ERROR', `betType は ${VALID_BET_TYPES.join(' / ')} のいずれかを指定してください`);
+      throw new AppError(
+        400,
+        'VALIDATION_ERROR',
+        `betType は ${VALID_BET_TYPES.join(' / ')} のいずれかを指定してください`
+      );
     }
     if (betType === 'single') {
       if (requiredSelections !== null && requiredSelections !== undefined) {
-        throw new AppError(400, 'VALIDATION_ERROR', 'betType が single の場合 requiredSelections は不要です');
+        throw new AppError(
+          400,
+          'VALIDATION_ERROR',
+          'betType が single の場合 requiredSelections は不要です'
+        );
       }
-    } else if (!requiredSelections || !Number.isInteger(requiredSelections) || requiredSelections < 2) {
-      throw new AppError(400, 'VALIDATION_ERROR', 'requiredSelections は2以上の整数で指定してください');
+    } else if (
+      !requiredSelections ||
+      !Number.isInteger(requiredSelections) ||
+      requiredSelections < 2
+    ) {
+      throw new AppError(
+        400,
+        'VALIDATION_ERROR',
+        'requiredSelections は2以上の整数で指定してください'
+      );
     }
 
     const normalizedCloseAfterMinutes = normalizeCloseAfterMinutes(closeAfterMinutes);
@@ -271,7 +310,7 @@ router.post('/', requireAdmin, async (req: Request, res: Response, next: NextFun
           normalizedCloseAfterMinutes,
           betType,
           requiredSelections ?? null,
-        ],
+        ]
       );
       const game = gameRows.rows[0];
 
@@ -279,13 +318,13 @@ router.post('/', requireAdmin, async (req: Request, res: Response, next: NextFun
         const opt = betOptions![i];
         await client.query(
           'INSERT INTO bet_options (game_id, symbol, label, "order") VALUES ($1, $2, $3, $4)',
-          [game.id, opt.symbol, opt.label, i + 1],
+          [game.id, opt.symbol, opt.label, i + 1]
         );
       }
 
       const optRows = await client.query<BetOptionRow>(
         'SELECT id, game_id, symbol, label, "order" FROM bet_options WHERE game_id = $1 ORDER BY "order"',
-        [game.id],
+        [game.id]
       );
       return { game, options: optRows.rows };
     });
@@ -336,38 +375,61 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
         }
         if (betOptions !== undefined) {
           if (betOptions.length !== currentOptions.length) {
-            throw new AppError(409, 'CONFLICT', '公開済みゲームでは賭け項目の追加・削除はできません');
+            throw new AppError(
+              409,
+              'CONFLICT',
+              '公開済みゲームでは賭け項目の追加・削除はできません'
+            );
           }
           for (let i = 0; i < betOptions.length; i++) {
             if (betOptions[i].symbol !== currentOptions[i].symbol) {
-              throw new AppError(409, 'CONFLICT', '公開済みゲームでは賭け項目の記号は変更できません');
+              throw new AppError(
+                409,
+                'CONFLICT',
+                '公開済みゲームでは賭け項目の記号は変更できません'
+              );
             }
           }
         }
       } else {
         if (betType !== undefined && !VALID_BET_TYPES.includes(betType)) {
-          throw new AppError(400, 'VALIDATION_ERROR', `betType は ${VALID_BET_TYPES.join(' / ')} のいずれかを指定してください`);
+          throw new AppError(
+            400,
+            'VALIDATION_ERROR',
+            `betType は ${VALID_BET_TYPES.join(' / ')} のいずれかを指定してください`
+          );
         }
         const effectiveBetType = betType ?? game.bet_type;
         const effectiveRequiredSelections =
           requiredSelections !== undefined ? requiredSelections : game.required_selections;
         if (effectiveBetType === 'single') {
           if (requiredSelections !== undefined && requiredSelections !== null) {
-            throw new AppError(400, 'VALIDATION_ERROR', 'betType が single の場合 requiredSelections は不要です');
+            throw new AppError(
+              400,
+              'VALIDATION_ERROR',
+              'betType が single の場合 requiredSelections は不要です'
+            );
           }
         } else if (
           effectiveRequiredSelections === null ||
           !Number.isInteger(effectiveRequiredSelections) ||
           effectiveRequiredSelections < 2
         ) {
-          throw new AppError(400, 'VALIDATION_ERROR', 'requiredSelections は2以上の整数で指定してください');
+          throw new AppError(
+            400,
+            'VALIDATION_ERROR',
+            'requiredSelections は2以上の整数で指定してください'
+          );
         }
         if (betOptions !== undefined) {
           validateBetOptions(betOptions, effectiveBetType, effectiveRequiredSelections);
         }
       }
 
-      if (title !== undefined && (typeof title !== 'string' || title.trim().length === 0 || title.length > 100)) {
+      if (
+        title !== undefined &&
+        (typeof title !== 'string' || title.trim().length === 0 || title.length > 100)
+      ) {
         throw new AppError(400, 'VALIDATION_ERROR', 'title は1〜100文字で指定してください');
       }
       if (description !== undefined && description !== null && description.length > 500) {
@@ -400,7 +462,7 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
           betType ?? null,
           requiredSelections !== undefined ? (requiredSelections ?? null) : null,
           req.params.id,
-        ],
+        ]
       );
 
       let updatedOptions: BetOptionRow[] = currentOptions;
@@ -409,7 +471,7 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
           for (const opt of betOptions) {
             await client.query(
               'UPDATE bet_options SET label = $1 WHERE game_id = $2 AND symbol = $3',
-              [opt.label, req.params.id, opt.symbol],
+              [opt.label, req.params.id, opt.symbol]
             );
           }
         } else {
@@ -417,13 +479,13 @@ router.put('/:id', requireAdmin, async (req: Request, res: Response, next: NextF
           for (let i = 0; i < betOptions.length; i++) {
             await client.query(
               'INSERT INTO bet_options (game_id, symbol, label, "order") VALUES ($1, $2, $3, $4)',
-              [req.params.id, betOptions[i].symbol, betOptions[i].label, i + 1],
+              [req.params.id, betOptions[i].symbol, betOptions[i].label, i + 1]
             );
           }
         }
         const optRows = await client.query<BetOptionRow>(
           'SELECT id, game_id, symbol, label, "order" FROM bet_options WHERE game_id = $1 ORDER BY "order"',
-          [req.params.id],
+          [req.params.id]
         );
         updatedOptions = optRows.rows;
       }
@@ -450,7 +512,9 @@ router.delete('/:id', requireAdmin, async (req: Request, res: Response, next: Ne
       throw new AppError(409, 'CONFLICT', '公開済みゲームは締め切りまで削除できません');
     }
 
-    const result = await query<{ id: number }>('DELETE FROM games WHERE id = $1 RETURNING id', [req.params.id]);
+    const result = await query<{ id: number }>('DELETE FROM games WHERE id = $1 RETURNING id', [
+      req.params.id,
+    ]);
     if (result.length === 0) {
       throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
     }
@@ -460,158 +524,179 @@ router.delete('/:id', requireAdmin, async (req: Request, res: Response, next: Ne
   }
 });
 
-router.patch('/:id/publish', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { isPublished } = req.body as { isPublished?: boolean };
-    if (typeof isPublished !== 'boolean') {
-      throw new AppError(400, 'VALIDATION_ERROR', 'isPublished は boolean で指定してください');
-    }
+router.patch(
+  '/:id/publish',
+  requireAdmin,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { isPublished } = req.body as { isPublished?: boolean };
+      if (typeof isPublished !== 'boolean') {
+        throw new AppError(400, 'VALIDATION_ERROR', 'isPublished は boolean で指定してください');
+      }
 
-    const result = await withTransaction(async (client) => {
-      const found = await fetchGameWithOptions(client, req.params.id);
-      if (!found) throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
+      const result = await withTransaction(async (client) => {
+        const found = await fetchGameWithOptions(client, req.params.id);
+        if (!found) throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
 
-      const updated = await client.query<GameRow>(
-        `UPDATE games
+        const updated = await client.query<GameRow>(
+          `UPDATE games
          SET is_published = $1,
              deadline = CASE WHEN $1 = TRUE THEN NOW() + (close_after_minutes * INTERVAL '1 minute') ELSE deadline END,
              updated_at = NOW()
          WHERE id = $2
          RETURNING *`,
-        [isPublished, req.params.id],
-      );
-      return { game: updated.rows[0], options: found.options };
-    });
+          [isPublished, req.params.id]
+        );
+        return { game: updated.rows[0], options: found.options };
+      });
 
-    res.json({ data: formatGame(result.game, result.options) });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.patch('/:id/close-now', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const result = await withTransaction(async (client) => {
-      const found = await fetchGameWithOptions(client, req.params.id);
-      if (!found) throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
-      if (!found.game.is_published) {
-        throw new AppError(409, 'CONFLICT', '未公開ゲームは即時締め切りできません');
-      }
-      if (found.game.status === 'finished') {
-        throw new AppError(409, 'CONFLICT', '結果確定済みゲームは即時締め切りできません');
-      }
-
-      const updated = await client.query<GameRow>(
-        'UPDATE games SET deadline = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *',
-        [req.params.id],
-      );
-      return { game: updated.rows[0], options: found.options };
-    });
-
-    res.json({ data: formatGame(result.game, result.options) });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.patch('/:id/result', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { resultSymbols } = req.body as { resultSymbols?: string };
-
-    if (!resultSymbols || typeof resultSymbols !== 'string') {
-      throw new AppError(400, 'VALIDATION_ERROR', 'resultSymbols は必須です');
+      res.json({ data: formatGame(result.game, result.options) });
+    } catch (err) {
+      next(err);
     }
+  }
+);
 
-    const result = await withTransaction(async (client) => {
-      const found = await fetchGameWithOptions(client, req.params.id);
-      if (!found) throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
+router.patch(
+  '/:id/close-now',
+  requireAdmin,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await withTransaction(async (client) => {
+        const found = await fetchGameWithOptions(client, req.params.id);
+        if (!found) throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
+        if (!found.game.is_published) {
+          throw new AppError(409, 'CONFLICT', '未公開ゲームは即時締め切りできません');
+        }
+        if (found.game.status === 'finished') {
+          throw new AppError(409, 'CONFLICT', '結果確定済みゲームは即時締め切りできません');
+        }
 
-      const { game, options } = found;
-      const effectiveStatus = computeStatus(game);
+        const updated = await client.query<GameRow>(
+          'UPDATE games SET deadline = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *',
+          [req.params.id]
+        );
+        return { game: updated.rows[0], options: found.options };
+      });
 
-      if (effectiveStatus !== 'closed' && effectiveStatus !== 'finished') {
-        throw new AppError(409, 'CONFLICT', '結果確定は締め切り後（closed / finished）のゲームのみ可能です');
+      res.json({ data: formatGame(result.game, result.options) });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.patch(
+  '/:id/result',
+  requireAdmin,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { resultSymbols } = req.body as { resultSymbols?: string };
+
+      if (!resultSymbols || typeof resultSymbols !== 'string') {
+        throw new AppError(400, 'VALIDATION_ERROR', 'resultSymbols は必須です');
       }
 
-      const symbolSet = new Set(options.map((o) => o.symbol));
-      const chars = resultSymbols.split('');
+      const result = await withTransaction(async (client) => {
+        const found = await fetchGameWithOptions(client, req.params.id);
+        if (!found) throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
 
-      for (const ch of chars) {
-        if (!symbolSet.has(ch)) {
-          throw new AppError(400, 'VALIDATION_ERROR', `記号 ${ch} はこのゲームに存在しません`);
-        }
-      }
+        const { game, options } = found;
+        const effectiveStatus = computeStatus(game);
 
-      let normalized = resultSymbols;
-      if (game.bet_type === 'single') {
-        if (chars.length !== 1) throw new AppError(400, 'VALIDATION_ERROR', 'single方式では記号を1つ指定してください');
-      } else if (game.required_selections !== null) {
-        if (chars.length !== game.required_selections) {
-          throw new AppError(400, 'VALIDATION_ERROR', `選択数は${game.required_selections}文字にしてください`);
+        if (effectiveStatus !== 'closed' && effectiveStatus !== 'finished') {
+          throw new AppError(
+            409,
+            'CONFLICT',
+            '結果確定は締め切り後（closed / finished）のゲームのみ可能です'
+          );
         }
-        if (game.bet_type !== 'multi_ordered_dup') {
-          const uniqueChars = new Set(chars);
-          if (uniqueChars.size !== chars.length) {
-            throw new AppError(400, 'VALIDATION_ERROR', '記号の重複は許可されていません');
+
+        const symbolSet = new Set(options.map((o) => o.symbol));
+        const chars = resultSymbols.split('');
+
+        for (const ch of chars) {
+          if (!symbolSet.has(ch)) {
+            throw new AppError(400, 'VALIDATION_ERROR', `記号 ${ch} はこのゲームに存在しません`);
           }
         }
-        if (game.bet_type === 'multi_unordered') {
-          normalized = chars.sort().join('');
+
+        let normalized = resultSymbols;
+        if (game.bet_type === 'single') {
+          if (chars.length !== 1)
+            throw new AppError(400, 'VALIDATION_ERROR', 'single方式では記号を1つ指定してください');
+        } else if (game.required_selections !== null) {
+          if (chars.length !== game.required_selections) {
+            throw new AppError(
+              400,
+              'VALIDATION_ERROR',
+              `選択数は${game.required_selections}文字にしてください`
+            );
+          }
+          if (game.bet_type !== 'multi_ordered_dup') {
+            const uniqueChars = new Set(chars);
+            if (uniqueChars.size !== chars.length) {
+              throw new AppError(400, 'VALIDATION_ERROR', '記号の重複は許可されていません');
+            }
+          }
+          if (game.bet_type === 'multi_unordered') {
+            normalized = chars.sort().join('');
+          }
         }
-      }
 
-      await client.query(
-        "DELETE FROM point_history WHERE game_id = $1 AND reason = 'game_result'",
-        [req.params.id],
-      );
+        await client.query(
+          "DELETE FROM point_history WHERE game_id = $1 AND reason = 'game_result'",
+          [req.params.id]
+        );
 
-      const updated = await client.query<GameRow>(
-        "UPDATE games SET result_symbols = $1, status = 'finished', updated_at = NOW() WHERE id = $2 RETURNING *",
-        [normalized, req.params.id],
-      );
-      const updatedGame = updated.rows[0];
+        const updated = await client.query<GameRow>(
+          "UPDATE games SET result_symbols = $1, status = 'finished', updated_at = NOW() WHERE id = $2 RETURNING *",
+          [normalized, req.params.id]
+        );
+        const updatedGame = updated.rows[0];
 
-      const betsRows = await client.query<{
-        id: number;
-        user_id: number;
-        game_id: number;
-        event_id: number;
-        selected_symbols: string;
-        amount: number;
-        is_debt: boolean;
-      }>(
-        `SELECT b.id, b.user_id, b.game_id, g.event_id, b.selected_symbols, b.amount, b.is_debt
+        const betsRows = await client.query<{
+          id: number;
+          user_id: number;
+          game_id: number;
+          event_id: number;
+          selected_symbols: string;
+          amount: number;
+          is_debt: boolean;
+        }>(
+          `SELECT b.id, b.user_id, b.game_id, g.event_id, b.selected_symbols, b.amount, b.is_debt
          FROM bets b
          JOIN games g ON g.id = b.game_id
          WHERE b.game_id = $1`,
-        [req.params.id],
-      );
+          [req.params.id]
+        );
 
-      if (betsRows.rows.length > 0) {
-        const totalPoints = betsRows.rows.reduce((sum, b) => sum + b.amount, 0);
-        const winnerBets = betsRows.rows.filter((b) => b.selected_symbols === normalized);
-        const winnerTotalPoints = winnerBets.reduce((sum, b) => sum + b.amount, 0);
+        if (betsRows.rows.length > 0) {
+          const totalPoints = betsRows.rows.reduce((sum, b) => sum + b.amount, 0);
+          const winnerBets = betsRows.rows.filter((b) => b.selected_symbols === normalized);
+          const winnerTotalPoints = winnerBets.reduce((sum, b) => sum + b.amount, 0);
 
-        if (winnerTotalPoints > 0) {
-          const odds = totalPoints / winnerTotalPoints;
-          for (const bet of winnerBets) {
-            const payout = Math.floor(bet.amount * odds);
-            await client.query(
-              `INSERT INTO point_history (user_id, event_id, game_id, change_amount, reason)
+          if (winnerTotalPoints > 0) {
+            const odds = totalPoints / winnerTotalPoints;
+            for (const bet of winnerBets) {
+              const payout = Math.floor(bet.amount * odds);
+              await client.query(
+                `INSERT INTO point_history (user_id, event_id, game_id, change_amount, reason)
                VALUES ($1, $2, $3, $4, 'game_result')`,
-              [bet.user_id, bet.event_id, req.params.id, payout],
-            );
+                [bet.user_id, bet.event_id, req.params.id, payout]
+              );
+            }
           }
         }
-      }
 
-      return { game: updatedGame, options };
-    });
+        return { game: updatedGame, options };
+      });
 
-    res.json({ data: formatGame(result.game, result.options) });
-  } catch (err) {
-    next(err);
+      res.json({ data: formatGame(result.game, result.options) });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 export default router;

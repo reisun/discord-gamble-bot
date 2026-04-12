@@ -26,8 +26,18 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 function renderPage(isAdmin = false) {
-  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
-  return render(<MemoryRouter><GameList /></MemoryRouter>);
+  vi.mocked(useAuth).mockReturnValue({
+    token: isAdmin ? 'tok' : null,
+    isAdmin,
+    isVerifying: false,
+    guildId: 'test-guild-001',
+    isTokenExpired: false,
+  });
+  return render(
+    <MemoryRouter>
+      <GameList />
+    </MemoryRouter>
+  );
 }
 
 describe('GameList', () => {
@@ -41,13 +51,20 @@ describe('GameList', () => {
 
   it('イベント名が見出しに表示される', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByRole('heading', { name: /春季大会/ })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /春季大会/ })).toBeInTheDocument()
+    );
   });
 
   it('パンくずが設計書どおり「ホーム > イベント名」で表示される', async () => {
     renderPage();
 
-    await waitFor(() => expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', toHashPath(toDashboard('test-guild-001'))));
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute(
+        'href',
+        toHashPath(toDashboard('test-guild-001'))
+      )
+    );
     expect(screen.getByText('春季大会')).toBeInTheDocument();
     expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
     expect(screen.queryByText('ゲーム一覧')).not.toBeInTheDocument();

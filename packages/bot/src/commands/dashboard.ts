@@ -31,18 +31,13 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     return;
   }
 
-  const member = await interaction.guild!.members
-    .fetch(interaction.user.id)
-    .catch(() => null);
+  const member = await interaction.guild!.members.fetch(interaction.user.id).catch(() => null);
 
   const role = isAdminMember(member) ? 'editor' : 'viewer';
 
   let token: string;
   try {
-    const res = await api.post<{ data: { token: string } }>(
-      '/api/auth/token',
-      { guildId, role },
-    );
+    const res = await api.post<{ data: { token: string } }>('/api/auth/token', { guildId, role });
     token = res.data.data.token;
   } catch {
     await interaction.reply({

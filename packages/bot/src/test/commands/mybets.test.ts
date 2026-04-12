@@ -42,7 +42,14 @@ describe('/mybets execute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(api.getEvents).mockResolvedValue([
-      { id: EVENT_ID, guildId: GUILD_ID, name: 'テスト大会', isActive: true, initialPoints: 10000, resultsPublic: false },
+      {
+        id: EVENT_ID,
+        guildId: GUILD_ID,
+        name: 'テスト大会',
+        isActive: true,
+        initialPoints: 10000,
+        resultsPublic: false,
+      },
     ]);
     vi.mocked(api.getUserByDiscordId).mockResolvedValue({
       id: USER_ID,
@@ -55,14 +62,21 @@ describe('/mybets execute', () => {
 
   it('開催中イベントがない場合はエラー', async () => {
     vi.mocked(api.getEvents).mockResolvedValue([
-      { id: 2, guildId: GUILD_ID, name: '終了大会', isActive: false, initialPoints: 10000, resultsPublic: true },
+      {
+        id: 2,
+        guildId: GUILD_ID,
+        name: '終了大会',
+        isActive: false,
+        initialPoints: 10000,
+        resultsPublic: true,
+      },
     ]);
 
     const interaction = makeInteraction();
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('開催中のイベントがありません'),
+      expect.stringContaining('開催中のイベントがありません')
     );
   });
 
@@ -73,7 +87,7 @@ describe('/mybets execute', () => {
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('ユーザー情報が見つかりません'),
+      expect.stringContaining('ユーザー情報が見つかりません')
     );
   });
 
@@ -108,7 +122,7 @@ describe('/mybets execute', () => {
             pointChange: null,
           },
         ],
-      }),
+      })
     );
 
     const interaction = makeInteraction();
@@ -142,7 +156,7 @@ describe('/mybets execute', () => {
             pointChange: 750,
           },
         ],
-      }),
+      })
     );
 
     const interaction = makeInteraction();
@@ -175,7 +189,7 @@ describe('/mybets execute', () => {
             pointChange: 0,
           },
         ],
-      }),
+      })
     );
 
     const interaction = makeInteraction();
@@ -208,7 +222,7 @@ describe('/mybets execute', () => {
             pointChange: null,
           },
         ],
-      }),
+      })
     );
 
     const interaction = makeInteraction();
@@ -242,7 +256,7 @@ describe('/mybets execute', () => {
             pointChange: null,
           },
         ],
-      }),
+      })
     );
 
     const interaction = makeInteraction();

@@ -53,7 +53,7 @@ function symbolsToLabels(symbols: string, optMap: Map<string, string>): string[]
 
 /** パリミュチュエル方式で組み合わせごとの倍率を計算する */
 function computeOdds(
-  bets: BetRow[],
+  bets: BetRow[]
 ): Map<string, { totalPoints: number; betCount: number; odds: number }> {
   const totalPoints = bets.reduce((sum, b) => sum + b.amount, 0);
   const combMap = new Map<string, { totalPoints: number; betCount: number }>();
@@ -96,17 +96,19 @@ router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunc
 
     const optionRows = await query<BetOptionRow>(
       'SELECT symbol, label FROM bet_options WHERE game_id = $1 ORDER BY "order"',
-      [gameId],
+      [gameId]
     );
     const optMap = new Map(optionRows.map((o) => [o.symbol, o.label]));
 
-    const betRows = await query<BetRow & { discord_name: string; discord_avatar_url: string | null }>(
+    const betRows = await query<
+      BetRow & { discord_name: string; discord_avatar_url: string | null }
+    >(
       `SELECT b.id, b.user_id, b.game_id, b.selected_symbols, b.amount, b.is_debt,
               b.created_at, b.updated_at, u.discord_name, u.discord_avatar_url
        FROM bets b
        JOIN users u ON u.id = b.user_id
        WHERE b.game_id = $1`,
-      [gameId],
+      [gameId]
     );
 
     const oddsMap = computeOdds(betRows);
@@ -126,7 +128,7 @@ router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunc
     if (isFinished) {
       const phRows = await query<{ user_id: number; change_amount: number }>(
         "SELECT user_id, SUM(change_amount)::integer AS change_amount FROM point_history WHERE game_id = $1 AND reason = 'game_result' GROUP BY user_id",
-        [gameId],
+        [gameId]
       );
       pointChanges = new Map(phRows.map((r) => [r.user_id, r.change_amount]));
     }
@@ -138,7 +140,11 @@ router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunc
           : 'lose'
         : null;
       const pointChange =
-        isFinished && result === 'win' ? (pointChanges?.get(b.user_id) ?? 0) : isFinished ? 0 : undefined;
+        isFinished && result === 'win'
+          ? (pointChanges?.get(b.user_id) ?? 0)
+          : isFinished
+            ? 0
+            : undefined;
 
       return {
         userId: b.user_id,
@@ -190,7 +196,12 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
     if (!discordId || typeof discordId !== 'string') {
       throw new AppError(400, 'VALIDATION_ERROR', 'discordId は必須です');
     }
-    if (discordName !== undefined && (typeof discordName !== 'string' || discordName.trim().length === 0 || discordName.length > 100)) {
+    if (
+      discordName !== undefined &&
+      (typeof discordName !== 'string' ||
+        discordName.trim().length === 0 ||
+        discordName.length > 100)
+    ) {
       throw new AppError(400, 'VALIDATION_ERROR', 'discordName は1〜100文字で指定してください');
     }
     if (!selectedSymbols || typeof selectedSymbols !== 'string') {
@@ -201,8 +212,11 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
     }
 
     const result = await withTransaction(async (client) => {
-      const gameRows = await client.query<GameRow>('SELECT * FROM games WHERE id = $1 FOR UPDATE', [gameId]);
-      if (gameRows.rows.length === 0) throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
+      const gameRows = await client.query<GameRow>('SELECT * FROM games WHERE id = $1 FOR UPDATE', [
+        gameId,
+      ]);
+      if (gameRows.rows.length === 0)
+        throw new AppError(404, 'NOT_FOUND', 'ゲームが見つかりません');
 
       const game = gameRows.rows[0];
       if (!game.is_published) {
@@ -211,13 +225,17 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
       const effectiveStatus = computeEffectiveStatus(game);
 
       if (effectiveStatus !== 'open') {
-        throw new AppError(409, 'CONFLICT', 'このゲームへの賭けは受け付けていません（締め切り済み）');
+        throw new AppError(
+          409,
+          'CONFLICT',
+          'このゲームへの賭けは受け付けていません（締め切り済み）'
+        );
       }
 
       // Validate selectedSymbols per betType
       const optRows = await client.query<BetOptionRow>(
         'SELECT symbol, label FROM bet_options WHERE game_id = $1',
-        [gameId],
+        [gameId]
       );
       const optMap = new Map(optRows.rows.map((o) => [o.symbol, o.label]));
       const chars = selectedSymbols.split('');
@@ -230,10 +248,15 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
 
       let normalizedSymbols = selectedSymbols;
       if (game.bet_type === 'single') {
-        if (chars.length !== 1) throw new AppError(400, 'VALIDATION_ERROR', 'single方式では記号を1つ指定してください');
+        if (chars.length !== 1)
+          throw new AppError(400, 'VALIDATION_ERROR', 'single方式では記号を1つ指定してください');
       } else if (game.required_selections !== null) {
         if (chars.length !== game.required_selections) {
-          throw new AppError(400, 'VALIDATION_ERROR', `選択数は${game.required_selections}文字にしてください`);
+          throw new AppError(
+            400,
+            'VALIDATION_ERROR',
+            `選択数は${game.required_selections}文字にしてください`
+          );
         }
         if (game.bet_type !== 'multi_ordered_dup') {
           const uniqueChars = new Set(chars);
@@ -250,13 +273,13 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
       const resolvedName = discordName ?? discordId;
       let userRows = await client.query<UserRow>(
         'SELECT id, discord_id, discord_name, discord_avatar_url FROM users WHERE discord_id = $1',
-        [discordId],
+        [discordId]
       );
 
       if (userRows.rows.length === 0) {
         userRows = await client.query<UserRow>(
           'INSERT INTO users (discord_id, discord_name, discord_avatar_url) VALUES ($1, $2, $3) RETURNING id, discord_id, discord_name, discord_avatar_url',
-          [discordId, resolvedName, avatarUrl ?? null],
+          [discordId, resolvedName, avatarUrl ?? null]
         );
       } else {
         const existing = userRows.rows[0];
@@ -265,7 +288,11 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
         if (nameChanged || avatarChanged) {
           userRows = await client.query<UserRow>(
             'UPDATE users SET discord_name = $1, discord_avatar_url = $2, updated_at = NOW() WHERE discord_id = $3 RETURNING id, discord_id, discord_name, discord_avatar_url',
-            [discordName ?? existing.discord_name, avatarUrl ?? existing.discord_avatar_url, discordId],
+            [
+              discordName ?? existing.discord_name,
+              avatarUrl ?? existing.discord_avatar_url,
+              discordId,
+            ]
           );
         }
       }
@@ -274,7 +301,7 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
       // Check for existing bet
       const existingBet = await client.query<BetRow>(
         'SELECT * FROM bets WHERE user_id = $1 AND game_id = $2',
-        [user.id, gameId],
+        [user.id, gameId]
       );
 
       if (!allowDebt) {
@@ -285,17 +312,19 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
            LEFT JOIN point_history ph ON ph.user_id = $1 AND ph.event_id = e.id
            WHERE e.id = $2
            GROUP BY e.initial_points`,
-          [user.id, game.event_id],
+          [user.id, game.event_id]
         );
-        const currentPoints = pointRows.rows[0]?.current_points ?? game.event_id; // fallback unused
-
         // If updating, the old bet amount will be refunded, so effective cost = new amount - old amount
         const oldAmount = existingBet.rows[0]?.is_debt === false ? existingBet.rows[0].amount : 0;
         const netCost = amount - oldAmount;
         const availablePoints = pointRows.rows[0]?.current_points ?? 0;
 
         if (netCost > availablePoints) {
-          throw new AppError(409, 'CONFLICT', `ポイントが不足しています（所持: ${availablePoints}pt、必要: ${netCost}pt）`);
+          throw new AppError(
+            409,
+            'CONFLICT',
+            `ポイントが不足しています（所持: ${availablePoints}pt、必要: ${netCost}pt）`
+          );
         }
       }
 
@@ -311,13 +340,13 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
           await client.query(
             `INSERT INTO point_history (user_id, event_id, game_id, change_amount, reason)
              VALUES ($1, $2, $3, $4, 'bet_refunded')`,
-            [user.id, game.event_id, gameId, old.amount],
+            [user.id, game.event_id, gameId, old.amount]
           );
         } else {
           await client.query(
             `INSERT INTO debt_history (user_id, event_id, game_id, change_amount, reason)
              VALUES ($1, $2, $3, $4, 'bet_refunded')`,
-            [user.id, game.event_id, gameId, -old.amount],
+            [user.id, game.event_id, gameId, -old.amount]
           );
         }
 
@@ -325,14 +354,14 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
         await client.query(
           `UPDATE bets SET selected_symbols = $1, amount = $2, is_debt = $3, updated_at = NOW()
            WHERE id = $4`,
-          [normalizedSymbols, amount, allowDebt, old.id],
+          [normalizedSymbols, amount, allowDebt, old.id]
         );
       } else {
         // Insert new bet
         await client.query(
           `INSERT INTO bets (user_id, game_id, selected_symbols, amount, is_debt)
            VALUES ($1, $2, $3, $4, $5)`,
-          [user.id, gameId, normalizedSymbols, amount, allowDebt],
+          [user.id, gameId, normalizedSymbols, amount, allowDebt]
         );
       }
 
@@ -341,21 +370,21 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
         await client.query(
           `INSERT INTO point_history (user_id, event_id, game_id, change_amount, reason)
            VALUES ($1, $2, $3, $4, 'bet_placed')`,
-          [user.id, game.event_id, gameId, -amount],
+          [user.id, game.event_id, gameId, -amount]
         );
       } else {
         debtAmount = amount;
         await client.query(
           `INSERT INTO debt_history (user_id, event_id, game_id, change_amount, reason)
            VALUES ($1, $2, $3, $4, 'bet_placed')`,
-          [user.id, game.event_id, gameId, amount],
+          [user.id, game.event_id, gameId, amount]
         );
       }
 
       // Fetch final bet record
       const finalBet = await client.query<BetRow>(
         'SELECT * FROM bets WHERE user_id = $1 AND game_id = $2',
-        [user.id, gameId],
+        [user.id, gameId]
       );
       const bet = finalBet.rows[0];
 

@@ -17,7 +17,7 @@ export async function initBotToken(): Promise<void> {
   const res = await axios.post<{ data: { token: string } }>(
     `${internalBase}/api/auth/token`,
     { guildId: '*', role: 'editor' },
-    { timeout: 10_000 },
+    { timeout: 10_000 }
   );
   const token = res.data.data.token;
   api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -160,7 +160,9 @@ export async function getEventGames(eventId: number): Promise<Game[]> {
 
 /** 非公開ゲームを含む全ゲームを取得する */
 export async function getEventGamesAdmin(eventId: number): Promise<Game[]> {
-  const res = await api.get<{ data: Game[] }>(`/api/events/${eventId}/games?includeUnpublished=true`);
+  const res = await api.get<{ data: Game[] }>(
+    `/api/events/${eventId}/games?includeUnpublished=true`
+  );
   return res.data.data;
 }
 
@@ -181,7 +183,7 @@ export async function placeBet(
   selectedSymbols: string,
   amount: number,
   allowDebt: boolean,
-  avatarUrl?: string,
+  avatarUrl?: string
 ): Promise<{
   id: number;
   gameId: number;
@@ -204,29 +206,20 @@ export async function placeBet(
   return res.data.data;
 }
 
-export async function getUserByDiscordId(
-  discordId: string,
-  eventId?: number,
-): Promise<UserInfo> {
+export async function getUserByDiscordId(discordId: string, eventId?: number): Promise<UserInfo> {
   const params = eventId !== undefined ? { eventId } : {};
   const res = await api.get<{ data: UserInfo }>(`/api/users/discord/${discordId}`, { params });
   return res.data.data;
 }
 
-export async function getEventBets(
-  userId: number,
-  eventId: number,
-): Promise<EventBetsResponse> {
+export async function getEventBets(userId: number, eventId: number): Promise<EventBetsResponse> {
   const res = await api.get<{ data: EventBetsResponse }>(
-    `/api/users/${userId}/event-bets/${eventId}`,
+    `/api/users/${userId}/event-bets/${eventId}`
   );
   return res.data.data;
 }
 
-export async function getGameByNo(
-  guildId: string,
-  gameNo: number,
-): Promise<Game> {
+export async function getGameByNo(guildId: string, gameNo: number): Promise<Game> {
   const events = await getEvents(guildId);
   const activeEvent = events.find((e) => e.isActive);
   if (!activeEvent) throw new Error('開催中のイベントが見つかりません。');
@@ -236,6 +229,10 @@ export async function getGameByNo(
   return game;
 }
 
-export async function registerGuild(guildId: string, guildName: string, guildIconHash?: string | null): Promise<void> {
+export async function registerGuild(
+  guildId: string,
+  guildName: string,
+  guildIconHash?: string | null
+): Promise<void> {
   await api.put(`/api/guilds/${guildId}`, { guildName, guildIconHash: guildIconHash ?? null });
 }

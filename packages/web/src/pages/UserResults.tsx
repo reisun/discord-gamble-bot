@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getEvent, getGames, getUsers, getUserEventResults, updateEventResultsPublic } from '../api/client';
+import {
+  getEvent,
+  getGames,
+  getUsers,
+  getUserEventResults,
+  updateEventResultsPublic,
+} from '../api/client';
 import type { Event, Game, User, UserEventResult } from '../api/types';
 import { useAuth } from '../contexts/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
@@ -42,9 +48,7 @@ export default function UserResults() {
         setEvent(ev);
         setUsers(us);
         setGames(gs.filter((g) => g.isPublished));
-        return Promise.all(
-          us.map((u) => getUserEventResults(u.id, evId, token ?? undefined)),
-        );
+        return Promise.all(us.map((u) => getUserEventResults(u.id, evId, token ?? undefined)));
       })
       .then((resultList) => {
         const map = new Map<number, UserEventResult>();
@@ -55,7 +59,9 @@ export default function UserResults() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load();
+  }, [token]);
 
   const handleResultsPublicToggle = async () => {
     if (!event || !token) return;
@@ -79,7 +85,6 @@ export default function UserResults() {
     return (rb?.totalAssetsChange ?? 0) - (ra?.totalAssetsChange ?? 0);
   });
 
-
   const breadcrumbs = [
     { label: 'ホーム', href: toHashPath(toDashboard(guildId, tokenSearch)) },
     { label: event?.name ?? '...', href: toHashPath(toEvent(guildId, evId, tokenSearch)) },
@@ -100,7 +105,15 @@ export default function UserResults() {
 
       {isAdmin && (
         <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'normal' }}>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              fontWeight: 'normal',
+            }}
+          >
             <input
               type="checkbox"
               checked={event?.resultsPublic ?? false}
@@ -115,7 +128,16 @@ export default function UserResults() {
 
       {/* ポイントランキング */}
       <div className="card" style={{ marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '12px',
+            flexWrap: 'wrap',
+            gap: '8px',
+          }}
+        >
           <h2 style={{ fontSize: '15px', fontWeight: 700 }}>ポイントランキング</h2>
           <div style={{ display: 'flex', gap: '4px' }}>
             <button
@@ -152,9 +174,15 @@ export default function UserResults() {
                 <th>ポイント総額</th>
                 <th>ポイント増減</th>
                 <th>勝/敗</th>
-                <th style={{ visibility: sortKey === 'points' ? 'hidden' : undefined }}>借金総額</th>
-                <th style={{ visibility: sortKey === 'points' ? 'hidden' : undefined }}>総資産額</th>
-                <th style={{ visibility: sortKey === 'points' ? 'hidden' : undefined }}>総資産増減</th>
+                <th style={{ visibility: sortKey === 'points' ? 'hidden' : undefined }}>
+                  借金総額
+                </th>
+                <th style={{ visibility: sortKey === 'points' ? 'hidden' : undefined }}>
+                  総資産額
+                </th>
+                <th style={{ visibility: sortKey === 'points' ? 'hidden' : undefined }}>
+                  総資産増減
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -167,9 +195,24 @@ export default function UserResults() {
                     <td>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         {u.avatarUrl ? (
-                          <img src={u.avatarUrl} alt="" width={20} height={20} style={{ borderRadius: '50%', flexShrink: 0 }} />
+                          <img
+                            src={u.avatarUrl}
+                            alt=""
+                            width={20}
+                            height={20}
+                            style={{ borderRadius: '50%', flexShrink: 0 }}
+                          />
                         ) : (
-                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--color-border)', display: 'inline-block', flexShrink: 0 }} />
+                          <span
+                            style={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: '50%',
+                              background: 'var(--color-border)',
+                              display: 'inline-block',
+                              flexShrink: 0,
+                            }}
+                          />
                         )}
                         {u.discordName}
                       </span>
@@ -178,9 +221,15 @@ export default function UserResults() {
                     <td>{r ? <PointChange value={r.totalPointChange} /> : '-'}</td>
                     <td>{r ? `${r.wins}勝${r.losses}敗` : '-'}</td>
                     <td style={{ visibility: hideAssets ? 'hidden' : undefined }}>
-                      {r ? (r.totalDebt > 0 ? (
-                        <span className="text-danger">{r.totalDebt.toLocaleString()} pt</span>
-                      ) : '0 pt') : '-'}
+                      {r ? (
+                        r.totalDebt > 0 ? (
+                          <span className="text-danger">{r.totalDebt.toLocaleString()} pt</span>
+                        ) : (
+                          '0 pt'
+                        )
+                      ) : (
+                        '-'
+                      )}
                     </td>
                     <td style={{ visibility: hideAssets ? 'hidden' : undefined }}>
                       {r ? `${r.totalAssets.toLocaleString()} pt` : '-'}
@@ -199,7 +248,9 @@ export default function UserResults() {
       {/* ゲーム別ポイント推移 */}
       {games.length > 0 && (
         <div className="card">
-          <h2 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>ゲーム別ポイント推移</h2>
+          <h2 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>
+            ゲーム別ポイント推移
+          </h2>
           <div className="table-wrapper">
             <table>
               <thead>
@@ -219,16 +270,39 @@ export default function UserResults() {
                       <td>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                           {u.avatarUrl ? (
-                            <img src={u.avatarUrl} alt="" width={16} height={16} style={{ borderRadius: '50%', flexShrink: 0 }} />
+                            <img
+                              src={u.avatarUrl}
+                              alt=""
+                              width={16}
+                              height={16}
+                              style={{ borderRadius: '50%', flexShrink: 0 }}
+                            />
                           ) : (
-                            <span style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--color-border)', display: 'inline-block', flexShrink: 0 }} />
+                            <span
+                              style={{
+                                width: 16,
+                                height: 16,
+                                borderRadius: '50%',
+                                background: 'var(--color-border)',
+                                display: 'inline-block',
+                                flexShrink: 0,
+                              }}
+                            />
                           )}
                           {u.discordName}
                         </span>
                       </td>
                       {games.map((game) => {
                         const gr = r?.games.find((rg) => rg.gameId === game.id);
-                        if (!gr) return <td key={game.id} style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>-</td>;
+                        if (!gr)
+                          return (
+                            <td
+                              key={game.id}
+                              style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}
+                            >
+                              -
+                            </td>
+                          );
                         return (
                           <td key={game.id} style={{ fontSize: '12px' }}>
                             <div>
@@ -252,7 +326,9 @@ export default function UserResults() {
                               </div>
                             )}
                           </div>
-                        ) : '-'}
+                        ) : (
+                          '-'
+                        )}
                       </td>
                     </tr>
                   );

@@ -108,13 +108,8 @@ export const mockBetsData: BetsData = {
 
 export const mockBetsFinished: BetsData = {
   ...mockBetsData,
-  combinations: [
-    { ...mockBetsData.combinations[0], },
-    { ...mockBetsData.combinations[1], },
-  ],
-  bets: [
-    { ...mockBetsData.bets[0], result: 'win', pointChange: 167 },
-  ],
+  combinations: [{ ...mockBetsData.combinations[0] }, { ...mockBetsData.combinations[1] }],
+  bets: [{ ...mockBetsData.bets[0], result: 'win', pointChange: 167 }],
 };
 
 export const mockUser: User = {

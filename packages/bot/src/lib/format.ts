@@ -28,7 +28,7 @@ export function betTypeLabel(betType: string, requiredSelections: number | null)
 export function formatSelection(
   selectedSymbols: string,
   optMap: Map<string, string>,
-  betType: string,
+  betType: string
 ): string {
   const entries = selectedSymbols.split('').map((s) => `${s}: ${optMap.get(s) ?? s}`);
 

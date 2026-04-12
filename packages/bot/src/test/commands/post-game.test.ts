@@ -26,7 +26,14 @@ function makeMember(isAdmin: boolean): GuildMember {
 }
 
 function makeEvent(): Event {
-  return { id: 1, guildId: 'test-guild-001', name: 'テストイベント', isActive: true, initialPoints: 1000, resultsPublic: false };
+  return {
+    id: 1,
+    guildId: 'test-guild-001',
+    name: 'テストイベント',
+    isActive: true,
+    initialPoints: 1000,
+    resultsPublic: false,
+  };
 }
 
 function makeGame(overrides: Partial<Game> = {}): Game {
@@ -137,7 +144,7 @@ describe('/post-game execute', () => {
     await execute(interaction);
 
     expect(interaction.reply).toHaveBeenCalledWith(
-      expect.objectContaining({ ephemeral: true, content: expect.stringContaining('管理者のみ') }),
+      expect.objectContaining({ ephemeral: true, content: expect.stringContaining('管理者のみ') })
     );
     expect(interaction.deferReply).not.toHaveBeenCalled();
     expect(api.getEventGamesAdmin).not.toHaveBeenCalled();
@@ -149,7 +156,7 @@ describe('/post-game execute', () => {
     await execute(interaction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('ゲームが見つかりません'),
+      expect.stringContaining('ゲームが見つかりません')
     );
   });
 

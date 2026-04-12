@@ -27,7 +27,7 @@ export function createApp() {
     cors({
       origin: allowedOrigins.length > 0 ? allowedOrigins : false,
       credentials: true,
-    }),
+    })
   );
   app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }));
   app.use(express.json());

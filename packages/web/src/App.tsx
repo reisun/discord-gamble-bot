@@ -13,19 +13,21 @@ function TokenExpiredBanner() {
   const { isTokenExpired } = useAuth();
   if (!isTokenExpired) return null;
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 9999,
-      background: '#b91c1c',
-      color: '#ffffff',
-      padding: '10px 16px',
-      textAlign: 'center',
-      fontSize: '14px',
-      fontWeight: 500,
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        background: '#b91c1c',
+        color: '#ffffff',
+        padding: '10px 16px',
+        textAlign: 'center',
+        fontSize: '14px',
+        fontWeight: 500,
+      }}
+    >
       ⚠️ アクセス期限が切れました。Discordで <code>/dashboard</code> コマンドを再実行してください。
     </div>
   );

@@ -5,7 +5,7 @@
  * 実行タイミング: サーバー起動時 + 24時間間隔。
  */
 
-import { query, withTransaction } from './db';
+import { withTransaction } from './db';
 import { logger } from './logger';
 
 const RETENTION_DAYS = 14;
@@ -26,7 +26,7 @@ export async function runCleanup(): Promise<void> {
         `UPDATE users
          SET discord_id = 'deleted_' || id::text, discord_name = NULL, discord_avatar_url = NULL
          WHERE discord_id NOT LIKE 'deleted_%'
-           AND created_at < NOW() - INTERVAL '${RETENTION_DAYS} days'`,
+           AND created_at < NOW() - INTERVAL '${RETENTION_DAYS} days'`
       );
       if (nullifiedCount && nullifiedCount > 0) {
         logger.info(`[cleanup] Masked personal info for ${nullifiedCount} user(s).`);
@@ -34,7 +34,7 @@ export async function runCleanup(): Promise<void> {
 
       // 2. 期限切れアクセストークンの削除
       const { rowCount: deletedTokens } = await client.query(
-        `DELETE FROM access_tokens WHERE expires_at < NOW()`,
+        `DELETE FROM access_tokens WHERE expires_at < NOW()`
       );
       if (deletedTokens && deletedTokens > 0) {
         logger.info(`[cleanup] Deleted ${deletedTokens} expired access token(s).`);

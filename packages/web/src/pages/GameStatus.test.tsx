@@ -27,8 +27,18 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 function renderPage(isAdmin = false) {
-  vi.mocked(useAuth).mockReturnValue({ token: isAdmin ? 'tok' : null, isAdmin, isVerifying: false, guildId: 'test-guild-001', isTokenExpired: false });
-  return render(<MemoryRouter><GameStatus /></MemoryRouter>);
+  vi.mocked(useAuth).mockReturnValue({
+    token: isAdmin ? 'tok' : null,
+    isAdmin,
+    isVerifying: false,
+    guildId: 'test-guild-001',
+    isTokenExpired: false,
+  });
+  return render(
+    <MemoryRouter>
+      <GameStatus />
+    </MemoryRouter>
+  );
 }
 
 describe('GameStatus', () => {
@@ -36,20 +46,36 @@ describe('GameStatus', () => {
     vi.mocked(api.getGame).mockResolvedValue(mockGameSingle);
     vi.mocked(api.getEvent).mockResolvedValue(mockEvent);
     vi.mocked(api.getBets).mockResolvedValue(mockBetsData);
-    vi.mocked(api.setGameResult).mockResolvedValue({ ...mockGameSingle, resultSymbols: 'A', status: 'finished' });
+    vi.mocked(api.setGameResult).mockResolvedValue({
+      ...mockGameSingle,
+      resultSymbols: 'A',
+      status: 'finished',
+    });
     vi.mocked(api.closeGameNow).mockResolvedValue({ ...mockGameSingle, status: 'closed' });
   });
 
   it('ゲームタイトルが表示される', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: '第1試合' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { level: 1, name: '第1試合' })).toBeInTheDocument()
+    );
   });
 
   it('パンくずが設計書どおり「ホーム > イベント名 > ゲームタイトル」で表示される', async () => {
     renderPage();
 
-    await waitFor(() => expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute('href', toHashPath(toDashboard('test-guild-001'))));
-    await waitFor(() => expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute('href', toHashPath(toEvent('test-guild-001', 1))));
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'ホーム' })).toHaveAttribute(
+        'href',
+        toHashPath(toDashboard('test-guild-001'))
+      )
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: '春季大会' })).toHaveAttribute(
+        'href',
+        toHashPath(toEvent('test-guild-001', 1))
+      )
+    );
     expect(screen.getAllByText('第1試合')).toHaveLength(2);
     expect(screen.queryByText('イベント一覧')).not.toBeInTheDocument();
     expect(screen.queryByText('ゲーム一覧')).not.toBeInTheDocument();
@@ -69,7 +95,10 @@ describe('GameStatus', () => {
   });
 
   it('説明が設定されている場合は表示される', async () => {
-    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, description: 'テストの説明文です' });
+    vi.mocked(api.getGame).mockResolvedValue({
+      ...mockGameSingle,
+      description: 'テストの説明文です',
+    });
     renderPage();
     await waitFor(() => expect(screen.getByText('テストの説明文です')).toBeInTheDocument());
   });
@@ -160,11 +189,17 @@ describe('GameStatus', () => {
     await waitFor(() => screen.getByText('結果を確定する'));
     await user.selectOptions(screen.getByRole('combobox'), 'A');
     await user.click(screen.getByRole('button', { name: '確定' }));
-    await waitFor(() => expect(api.setGameResult).toHaveBeenCalledWith(mockGameSingle.id, 'A', 'tok'));
+    await waitFor(() =>
+      expect(api.setGameResult).toHaveBeenCalledWith(mockGameSingle.id, 'A', 'tok')
+    );
   });
 
   it('未公開ゲームの状態は「非公開」と表示される（受付中ではない）', async () => {
-    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false, status: 'open' });
+    vi.mocked(api.getGame).mockResolvedValue({
+      ...mockGameSingle,
+      isPublished: false,
+      status: 'open',
+    });
     renderPage(true);
     await waitFor(() => screen.getByRole('heading', { level: 1, name: '第1試合' }));
     expect(screen.getByText('非公開')).toBeInTheDocument();
@@ -174,11 +209,17 @@ describe('GameStatus', () => {
   it('管理者: 非公開ゲームでは「公開する」ボタンが表示される', async () => {
     vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false });
     renderPage(true);
-    await waitFor(() => expect(screen.getByRole('button', { name: '公開する' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '公開する' })).toBeInTheDocument()
+    );
   });
 
   it('管理者: 非公開ゲームでは締め切りが「公開からXX分後」で表示される', async () => {
-    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false, closeAfterMinutes: 15 });
+    vi.mocked(api.getGame).mockResolvedValue({
+      ...mockGameSingle,
+      isPublished: false,
+      closeAfterMinutes: 15,
+    });
     renderPage(true);
     await waitFor(() => expect(screen.getByText(/締め切り: 公開から15分後/)).toBeInTheDocument());
   });
@@ -186,7 +227,9 @@ describe('GameStatus', () => {
   it('管理者: 公開済みゲームでは「非公開にする」ボタンが表示される', async () => {
     vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: true });
     renderPage(true);
-    await waitFor(() => expect(screen.getByRole('button', { name: '非公開にする' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '非公開にする' })).toBeInTheDocument()
+    );
   });
 
   it('非管理者: 公開切替ボタンが表示されない', async () => {
@@ -197,31 +240,53 @@ describe('GameStatus', () => {
   });
 
   it('管理者: 公開中・受付中のゲームでは即時締め切りボタンが表示される', async () => {
-    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: true, status: 'open' });
+    vi.mocked(api.getGame).mockResolvedValue({
+      ...mockGameSingle,
+      isPublished: true,
+      status: 'open',
+    });
     renderPage(true);
-    await waitFor(() => expect(screen.getByRole('button', { name: '即時締め切り' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '即時締め切り' })).toBeInTheDocument()
+    );
   });
 
   it('管理者: 公開中・受付中のゲームでは削除ボタンが無効になる', async () => {
-    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: true, status: 'open' });
+    vi.mocked(api.getGame).mockResolvedValue({
+      ...mockGameSingle,
+      isPublished: true,
+      status: 'open',
+    });
     renderPage(true);
     await waitFor(() => expect(screen.getByRole('button', { name: '削除' })).toBeDisabled());
   });
 
   it('管理者: 非公開ゲームでは削除ボタンが有効になる', async () => {
-    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false, status: 'open' });
+    vi.mocked(api.getGame).mockResolvedValue({
+      ...mockGameSingle,
+      isPublished: false,
+      status: 'open',
+    });
     renderPage(true);
     await waitFor(() => expect(screen.getByRole('button', { name: '削除' })).not.toBeDisabled());
   });
 
   it('管理者: 公開済みでも締め切り後のゲームでは削除ボタンが有効になる', async () => {
-    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: true, status: 'closed' });
+    vi.mocked(api.getGame).mockResolvedValue({
+      ...mockGameSingle,
+      isPublished: true,
+      status: 'closed',
+    });
     renderPage(true);
     await waitFor(() => expect(screen.getByRole('button', { name: '削除' })).not.toBeDisabled());
   });
 
   it('管理者: 非公開ゲームでは即時締め切りボタンが表示されない', async () => {
-    vi.mocked(api.getGame).mockResolvedValue({ ...mockGameSingle, isPublished: false, status: 'open' });
+    vi.mocked(api.getGame).mockResolvedValue({
+      ...mockGameSingle,
+      isPublished: false,
+      status: 'open',
+    });
     renderPage(true);
     await waitFor(() => screen.getByRole('heading', { level: 1, name: '第1試合' }));
     expect(screen.queryByRole('button', { name: '即時締め切り' })).not.toBeInTheDocument();

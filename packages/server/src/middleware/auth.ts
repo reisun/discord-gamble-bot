@@ -46,9 +46,7 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
   }
   const token = getToken(req);
   if (!token) {
-    res
-      .status(401)
-      .json({ error: { code: 'UNAUTHORIZED', message: '認証トークンが必要です' } });
+    res.status(401).json({ error: { code: 'UNAUTHORIZED', message: '認証トークンが必要です' } });
     return;
   }
   // DBトークンを検証し、editorロールなら許可
@@ -56,10 +54,12 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const rows = await query<{ role: string; guild_id: string; expires_at: Date }>(
       'SELECT role, guild_id, expires_at FROM access_tokens WHERE token_hash = $1',
-      [tokenHash],
+      [tokenHash]
     );
     if (rows.length === 0 || new Date(rows[0].expires_at) < new Date()) {
-      res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度 /dashboard から入ってください' } });
+      res
+        .status(401)
+        .json({ error: { code: 'TOKEN_EXPIRED', message: '再度 /dashboard から入ってください' } });
       return;
     }
     if (rows[0].role !== 'editor') {
@@ -73,7 +73,11 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
   }
 }
 
-export async function optionalAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
+export async function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> {
   // internalAuth 等で事前認証済みの場合はスキップ
   if (req.tokenRecord) {
     next();
@@ -88,7 +92,7 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     const rows = await query<{ role: string; guild_id: string; expires_at: Date }>(
       'SELECT role, guild_id, expires_at FROM access_tokens WHERE token_hash = $1',
-      [tokenHash],
+      [tokenHash]
     );
     if (rows.length > 0 && new Date(rows[0].expires_at) >= new Date()) {
       req.tokenRecord = rows[0];
@@ -107,17 +111,21 @@ export async function requireToken(req: Request, res: Response, next: NextFuncti
   }
   const rawToken = getToken(req);
   if (!rawToken) {
-    res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度 /dashboard から入ってください' } });
+    res
+      .status(401)
+      .json({ error: { code: 'TOKEN_EXPIRED', message: '再度 /dashboard から入ってください' } });
     return;
   }
   try {
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     const rows = await query<{ role: string; guild_id: string; expires_at: Date }>(
       'SELECT role, guild_id, expires_at FROM access_tokens WHERE token_hash = $1',
-      [tokenHash],
+      [tokenHash]
     );
     if (rows.length === 0 || new Date(rows[0].expires_at) < new Date()) {
-      res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度 /dashboard から入ってください' } });
+      res
+        .status(401)
+        .json({ error: { code: 'TOKEN_EXPIRED', message: '再度 /dashboard から入ってください' } });
       return;
     }
     req.tokenRecord = rows[0];

@@ -22,7 +22,9 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     const events = await getEvents(guildId);
     activeEvent = events.find((e) => e.isActive);
   } catch (err) {
-    await interaction.editReply(`❌ イベント情報の取得に失敗しました。\n理由: ${extractApiMessage(err)}`);
+    await interaction.editReply(
+      `❌ イベント情報の取得に失敗しました。\n理由: ${extractApiMessage(err)}`
+    );
     return;
   }
 
@@ -36,9 +38,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   try {
     userInfo = await getUserByDiscordId(discordId, activeEvent.id);
   } catch {
-    await interaction.editReply(
-      '❌ ユーザー情報が見つかりません。先に /bet を実行してください。',
-    );
+    await interaction.editReply('❌ ユーザー情報が見つかりません。先に /bet を実行してください。');
     return;
   }
 
@@ -47,7 +47,9 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   try {
     eventBets = await getEventBets(userInfo.id, activeEvent.id);
   } catch (err) {
-    await interaction.editReply(`❌ 賭け情報の取得に失敗しました。\n理由: ${extractApiMessage(err)}`);
+    await interaction.editReply(
+      `❌ 賭け情報の取得に失敗しました。\n理由: ${extractApiMessage(err)}`
+    );
     return;
   }
 
@@ -72,9 +74,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     // API は selectedLabels を返すが、formatSelection のために optMap が必要
     // selectedLabels と selectedSymbols から簡易 optMap を構築する
     const chars = bet.selectedSymbols.split('');
-    const optMap = new Map<string, string>(
-      chars.map((c, i) => [c, bet.selectedLabels[i] ?? c]),
-    );
+    const optMap = new Map<string, string>(chars.map((c, i) => [c, bet.selectedLabels[i] ?? c]));
     const selectionStr = formatSelection(bet.selectedSymbols, optMap, bet.betType);
     const debtMark = bet.isDebt ? '（借金）' : '';
 
@@ -84,7 +84,9 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         const gained = bet.pointChange ?? 0;
         lines.push('');
         lines.push(`**${bet.gameTitle}** ✅ 当選  [${typeLabel}]`);
-        lines.push(`  ${selectionStr} に ${fmtPt(bet.amount)}${debtMark} | 獲得: +${fmtPt(gained)}`);
+        lines.push(
+          `  ${selectionStr} に ${fmtPt(bet.amount)}${debtMark} | 獲得: +${fmtPt(gained)}`
+        );
       } else {
         losses++;
         lines.push('');
