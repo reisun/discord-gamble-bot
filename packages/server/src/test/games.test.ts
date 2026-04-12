@@ -4,9 +4,15 @@ import { createApp } from '../app';
 import { pool } from '../db';
 
 const app = createApp();
-const ADMIN_TOKEN = 'test-admin-token';
-const adminHeaders = { Authorization: `Bearer ${ADMIN_TOKEN}` };
 const pastDeadline = new Date(Date.now() - 3600 * 1000).toISOString();
+
+/** DB editor トークンを生成する */
+async function createDbToken(role: 'editor' | 'viewer' = 'editor', guildId = 'test-guild-001') {
+  const res = await request(app)
+    .post('/internal/api/auth/token')
+    .send({ guildId, role });
+  return res.body.data.token as string;
+}
 
 const defaultBetOptions = [
   { symbol: 'A', label: 'チームA' },
@@ -15,17 +21,19 @@ const defaultBetOptions = [
 ];
 
 async function createEvent() {
+  const token = await createDbToken();
   const res = await request(app)
     .post('/api/events')
-    .set(adminHeaders)
+    .set('Authorization', `Bearer ${token}`)
     .send({ name: 'テストイベント', initialPoints: 10000, guildId: 'test-guild-001' });
   return res.body.data as { id: number };
 }
 
 async function createGame(eventId: number, overrides: Record<string, unknown> = {}) {
+  const token = await createDbToken();
   const res = await request(app)
     .post(`/api/events/${eventId}/games`)
-    .set(adminHeaders)
+    .set('Authorization', `Bearer ${token}`)
     .send({
       title: '第1試合',
       closeAfterMinutes: 10,
@@ -69,10 +77,11 @@ describe('GET /api/events/:eventId/games', () => {
     const event = await createEvent();
     await createGame(event.id);
 
+    const token = await createDbToken();
     const res = await request(app)
       .get(`/api/events/${event.id}/games`)
       .query({ includeUnpublished: 'true' })
-      .set(adminHeaders);
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data[0].title).toBe('第1試合');
@@ -82,9 +91,10 @@ describe('GET /api/events/:eventId/games', () => {
 describe('POST /api/events/:eventId/games', () => {
   it('single方式のゲームを作成できる', async () => {
     const event = await createEvent();
+    const token = await createDbToken();
     const res = await request(app)
       .post(`/api/events/${event.id}/games`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({
         title: '第1試合',
         description: '説明文',
@@ -102,9 +112,10 @@ describe('POST /api/events/:eventId/games', () => {
 
   it('closeAfterMinutes 未指定時は 10 分が入る', async () => {
     const event = await createEvent();
+    const token = await createDbToken();
     const res = await request(app)
       .post(`/api/events/${event.id}/games`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({
         title: '第1試合',
         betOptions: defaultBetOptions,
@@ -116,9 +127,10 @@ describe('POST /api/events/:eventId/games', () => {
 
   it('deadline を直接指定すると 400 を返す', async () => {
     const event = await createEvent();
+    const token = await createDbToken();
     const res = await request(app)
       .post(`/api/events/${event.id}/games`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({
         title: '第1試合',
         deadline: new Date().toISOString(),
@@ -130,9 +142,10 @@ describe('POST /api/events/:eventId/games', () => {
 
   it('closeAfterMinutes が 0 だと 400 を返す', async () => {
     const event = await createEvent();
+    const token = await createDbToken();
     const res = await request(app)
       .post(`/api/events/${event.id}/games`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({
         title: '第1試合',
         closeAfterMinutes: 0,
@@ -148,12 +161,15 @@ describe('GET /api/games/:id', () => {
     const event = await createEvent();
     const game = await createGame(event.id);
 
+    const token = await createDbToken();
     await request(app)
       .patch(`/api/games/${game.id}/publish`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({ isPublished: true });
 
-    const res = await request(app).get(`/api/games/${game.id}`);
+    const res = await request(app)
+      .get(`/api/games/${game.id}`)
+      .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.data.id).toBe(game.id);
     expect(res.body.data.betOptions).toHaveLength(3);
@@ -173,9 +189,10 @@ describe('PUT /api/games/:id', () => {
     const event = await createEvent();
     const game = await createGame(event.id, { closeAfterMinutes: 10 });
 
+    const token = await createDbToken();
     const res = await request(app)
       .put(`/api/games/${game.id}`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({
         title: '第1試合（更新）',
         closeAfterMinutes: 25,
@@ -194,14 +211,15 @@ describe('PUT /api/games/:id', () => {
   it('公開済みゲームは closeAfterMinutes を更新できない', async () => {
     const event = await createEvent();
     const game = await createGame(event.id);
+    const token = await createDbToken();
     await request(app)
       .patch(`/api/games/${game.id}/publish`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({ isPublished: true });
 
     const res = await request(app)
       .put(`/api/games/${game.id}`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({ closeAfterMinutes: 20 });
 
     expect(res.status).toBe(409);
@@ -211,9 +229,10 @@ describe('PUT /api/games/:id', () => {
     const event = await createEvent();
     const game = await createGame(event.id);
 
+    const token = await createDbToken();
     const res = await request(app)
       .put(`/api/games/${game.id}`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({ deadline: new Date().toISOString() });
 
     expect(res.status).toBe(400);
@@ -225,23 +244,25 @@ describe('DELETE /api/games/:id', () => {
     const event = await createEvent();
     const game = await createGame(event.id);
 
+    const token = await createDbToken();
     const deleteRes = await request(app)
       .delete(`/api/games/${game.id}`)
-      .set(adminHeaders);
+      .set('Authorization', `Bearer ${token}`);
     expect(deleteRes.status).toBe(204);
   });
 
   it('公開済みかつ締め切り前のゲームは削除できない', async () => {
     const event = await createEvent();
     const game = await createGame(event.id);
+    const token = await createDbToken();
     await request(app)
       .patch(`/api/games/${game.id}/publish`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({ isPublished: true });
 
     const deleteRes = await request(app)
       .delete(`/api/games/${game.id}`)
-      .set(adminHeaders);
+      .set('Authorization', `Bearer ${token}`);
     expect(deleteRes.status).toBe(409);
   });
 });
@@ -251,10 +272,11 @@ describe('PATCH /api/games/:id/publish', () => {
     const event = await createEvent();
     const game = await createGame(event.id, { closeAfterMinutes: 15 });
 
+    const token = await createDbToken();
     const before = Date.now();
     const res = await request(app)
       .patch(`/api/games/${game.id}/publish`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({ isPublished: true });
     const after = Date.now();
 
@@ -270,14 +292,15 @@ describe('PATCH /api/games/:id/close-now', () => {
   it('公開済みゲームを即時締め切りできる', async () => {
     const event = await createEvent();
     const game = await createGame(event.id);
+    const token = await createDbToken();
     await request(app)
       .patch(`/api/games/${game.id}/publish`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({ isPublished: true });
 
     const res = await request(app)
       .patch(`/api/games/${game.id}/close-now`)
-      .set(adminHeaders);
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe('closed');
@@ -288,16 +311,17 @@ describe('PATCH /api/games/:id/result', () => {
   it('締め切り後のゲームに結果を設定できる', async () => {
     const event = await createEvent();
     const game = await createGame(event.id);
+    const token = await createDbToken();
     await request(app)
       .patch(`/api/games/${game.id}/publish`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({ isPublished: true });
 
     await pool.query('UPDATE games SET deadline = $1 WHERE id = $2', [pastDeadline, game.id]);
 
     const resultRes = await request(app)
       .patch(`/api/games/${game.id}/result`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({ resultSymbols: 'A' });
 
     expect(resultRes.status).toBe(200);

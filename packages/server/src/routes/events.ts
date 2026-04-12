@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { query, withTransaction } from '../db';
-import { requireAdmin, isAdmin } from '../middleware/auth';
+import { requireAdmin, isAdmin, optionalAuth } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
@@ -35,7 +35,7 @@ const SELECT_COLUMNS =
   'id, guild_id, name, is_active, is_published, initial_points, results_public, created_at, updated_at';
 
 // GET /api/events?guildId=xxx
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { guildId } = req.query;
     if (!guildId || typeof guildId !== 'string') {

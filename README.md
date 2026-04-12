@@ -42,7 +42,6 @@ cp .env.example .env
 |------|------|
 | `POSTGRES_PASSWORD` | PostgreSQL のパスワード（任意の文字列）|
 | `DATABASE_URL` | `postgresql://<USER>:<PASSWORD>@db:5432/<DB>` 形式 |
-| `ADMIN_TOKEN` | Bot → Server 通信の認証トークン（推測困難なランダム文字列）|
 | `DISCORD_TOKEN` | Discord Bot トークン |
 | `DISCORD_CLIENT_ID` | Discord アプリケーション ID |
 | `DISCORD_CLIENT_SECRET` | Discord OAuth2 クライアントシークレット |

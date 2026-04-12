@@ -1,7 +1,7 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { config } from './config';
 import { commands } from './commands/index';
-import { registerGuild } from './lib/api';
+import { registerGuild, initBotToken, startTokenRefresh } from './lib/api';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -10,6 +10,15 @@ client.once(Events.ClientReady, async (c) => {
   const commitHash = process.env.GIT_COMMIT ?? 'unknown';
   console.log(`[Bot] Logged in as ${c.user.tag}`);
   console.log(`[Bot] Version: ${version} (${commitHash})`);
+
+  // Bot用トークンを取得
+  try {
+    await initBotToken();
+    startTokenRefresh();
+  } catch (err) {
+    console.error('[Bot] Failed to acquire API token:', err);
+    process.exit(1);
+  }
 
   // 参加中のギルド情報をAPIに登録
   for (const [, guild] of c.guilds.cache) {

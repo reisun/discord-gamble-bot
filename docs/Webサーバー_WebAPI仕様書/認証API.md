@@ -12,10 +12,9 @@ GET /api/auth/verify
 | token | △ | 検証するトークン（省略時は `isAdmin: false` を返す） |
 
 **処理フロー**
-1. token が ADMIN_TOKEN と一致 → `{ isAdmin: true }`
-2. token が DB に存在し期限内 → `{ isAdmin: role === 'editor' }`
-3. token が DB に存在するが期限切れ → `401 TOKEN_EXPIRED`
-4. token なし → `{ isAdmin: false }`
+1. token が DB に存在し期限内 → `{ isAdmin: role === 'editor' }`
+2. token が DB に存在するが期限切れ → `401 TOKEN_EXPIRED`
+3. token なし → `{ isAdmin: false }`
 
 **レスポンス**
 ```json
@@ -39,7 +38,7 @@ GET /api/auth/verify
 POST /api/auth/token
 ```
 
-**認証**: `Authorization: Bearer ${ADMIN_TOKEN}` ヘッダー必須
+**認証**: 管理者トークン必須。Bot は `/internal/api/auth/token` 経由で認証不要（詳細は[共通仕様 - 内部 API](共通仕様.md#内部-apibot--server)を参照）
 
 **リクエストボディ**
 
@@ -65,6 +64,7 @@ POST /api/auth/token
 
 | ステータス | コード | 説明 |
 |-----------|--------|------|
-| 401 | UNAUTHORIZED | 認証ヘッダーなし |
-| 403 | FORBIDDEN | ADMIN_TOKEN 不一致 |
+| 401 | UNAUTHORIZED | 認証トークンなし（公開パス `/api/auth/token` の場合） |
+| 401 | TOKEN_EXPIRED | トークンが無効または期限切れ |
+| 403 | FORBIDDEN | 管理者権限が必要 |
 | 400 | VALIDATION_ERROR | guildId または role が不正 |

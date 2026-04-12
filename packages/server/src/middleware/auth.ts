@@ -19,26 +19,36 @@ export function getToken(req: Request): string | undefined {
 }
 
 export function isAdmin(req: Request): boolean {
-  // tokenRecord が設定されている場合はroleで判定
   if (req.tokenRecord) {
     return req.tokenRecord.role === 'editor';
   }
-  const token = getToken(req);
-  return token !== undefined && token === process.env.ADMIN_TOKEN;
+  return false;
+}
+
+/**
+ * /internal/api 用ミドルウェア。
+ * 内部リクエスト（Bot → Server 直接通信）を管理者として事前認証する。
+ */
+export function internalAuth(req: Request, _res: Response, next: NextFunction): void {
+  req.tokenRecord = { role: 'editor', guild_id: '*', expires_at: new Date(8640000000000000) };
+  next();
 }
 
 export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // internalAuth 等で事前認証済みの場合はスキップ
+  if (req.tokenRecord) {
+    if (req.tokenRecord.role !== 'editor') {
+      res.status(403).json({ error: { code: 'FORBIDDEN', message: '管理者権限が必要です' } });
+      return;
+    }
+    next();
+    return;
+  }
   const token = getToken(req);
   if (!token) {
     res
       .status(401)
       .json({ error: { code: 'UNAUTHORIZED', message: '認証トークンが必要です' } });
-    return;
-  }
-  // ADMIN_TOKEN（Bot→Server通信用）は常に許可
-  if (token === process.env.ADMIN_TOKEN) {
-    req.tokenRecord = { role: 'editor', guild_id: '*', expires_at: new Date(8640000000000000) };
-    next();
     return;
   }
   // DBトークンを検証し、editorロールなら許可
@@ -63,16 +73,41 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
   }
 }
 
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  // internalAuth 等で事前認証済みの場合はスキップ
+  if (req.tokenRecord) {
+    next();
+    return;
+  }
+  const rawToken = getToken(req);
+  if (!rawToken) {
+    next();
+    return;
+  }
+  try {
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const rows = await query<{ role: string; guild_id: string; expires_at: Date }>(
+      'SELECT role, guild_id, expires_at FROM access_tokens WHERE token_hash = $1',
+      [tokenHash],
+    );
+    if (rows.length > 0 && new Date(rows[0].expires_at) >= new Date()) {
+      req.tokenRecord = rows[0];
+    }
+  } catch {
+    // ignore — treat as unauthenticated
+  }
+  next();
+}
+
 export async function requireToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // internalAuth 等で事前認証済みの場合はスキップ
+  if (req.tokenRecord) {
+    next();
+    return;
+  }
   const rawToken = getToken(req);
   if (!rawToken) {
     res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: '再度 /dashboard から入ってください' } });
-    return;
-  }
-  // ADMIN_TOKEN は常に有効（bot→サーバー通信用）
-  if (rawToken === process.env.ADMIN_TOKEN) {
-    req.tokenRecord = { role: 'editor', guild_id: '*', expires_at: new Date(8640000000000000) };
-    next();
     return;
   }
   try {

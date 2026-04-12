@@ -7,7 +7,6 @@ vi.mock('../../config', () => ({
     discordAdminRoleIds: ['role-admin'],
     webAppBaseUrl: 'https://example.github.io/app',
     apiBaseUrl: 'http://server:3000',
-    adminToken: 'secret-admin-token',
   },
 }));
 
@@ -96,7 +95,7 @@ describe('/dashboard execute', () => {
     expect(api.post).toHaveBeenCalledWith(
       '/api/auth/token',
       expect.objectContaining({ guildId: TEST_GUILD_ID }),
-      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer secret-admin-token' }) }),
+      {},
     );
   });
 

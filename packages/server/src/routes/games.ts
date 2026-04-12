@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { PoolClient } from 'pg';
 import { query, withTransaction } from '../db';
-import { requireAdmin, isAdmin } from '../middleware/auth';
+import { requireAdmin, isAdmin, optionalAuth } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 
 const router = Router({ mergeParams: true });
@@ -144,7 +144,7 @@ function validateBetOptions(
   }
 }
 
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { eventId } = req.params;
     const adminMode = isAdmin(req);
@@ -189,7 +189,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const adminMode = isAdmin(req);
     const gameRows = await query<GameRow>('SELECT * FROM games WHERE id = $1', [req.params.id]);

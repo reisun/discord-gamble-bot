@@ -4,8 +4,6 @@ import { createApp } from '../app';
 import { pool } from '../db';
 
 const app = createApp();
-const ADMIN_TOKEN = 'test-admin-token';
-const adminHeaders = { Authorization: `Bearer ${ADMIN_TOKEN}` };
 const pastDeadline = new Date(Date.now() - 3600 * 1000).toISOString();
 
 const defaultBetOptions = [
@@ -14,16 +12,26 @@ const defaultBetOptions = [
   { symbol: 'C', label: 'チームC' },
 ];
 
+/** DB editor トークンを生成する */
+async function createDbToken(role: 'editor' | 'viewer' = 'editor', guildId = 'test-guild-001') {
+  const res = await request(app)
+    .post('/internal/api/auth/token')
+    .send({ guildId, role });
+  return res.body.data.token as string;
+}
+
 async function setupEventAndGame(betType = 'single', requiredSelections?: number) {
+  const token = await createDbToken();
+
   const eventRes = await request(app)
     .post('/api/events')
-    .set(adminHeaders)
+    .set('Authorization', `Bearer ${token}`)
     .send({ name: 'テストイベント', initialPoints: 10000, guildId: 'test-guild-001' });
   const event = eventRes.body.data;
 
   const gameRes = await request(app)
     .post(`/api/events/${event.id}/games`)
-    .set(adminHeaders)
+    .set('Authorization', `Bearer ${token}`)
     .send({
       title: '第1試合',
       closeAfterMinutes: 10,
@@ -36,7 +44,7 @@ async function setupEventAndGame(betType = 'single', requiredSelections?: number
   // 公開する
   await request(app)
     .patch(`/api/games/${game.id}/publish`)
-    .set(adminHeaders)
+    .set('Authorization', `Bearer ${token}`)
     .send({ isPublished: true });
 
   return { event, game };
@@ -69,9 +77,10 @@ describe('PUT /api/games/:gameId/bets', () => {
       .put(`/api/games/${game.id}/bets`)
       .send({ discordId: 'user001', discordName: 'New Name', selectedSymbols: 'B', amount: 200 });
 
+    const token = await createDbToken();
     const res = await request(app)
       .get(`/api/games/${game.id}/bets`)
-      .set(adminHeaders);
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.bets[0].userName).toBe('New Name');
@@ -129,15 +138,17 @@ describe('PUT /api/games/:gameId/bets', () => {
   });
 
   it('未公開ゲームには賭けられない', async () => {
+    const token = await createDbToken();
+
     const eventRes = await request(app)
       .post('/api/events')
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({ name: 'テストイベント', initialPoints: 10000, guildId: 'test-guild-001' });
     const event = eventRes.body.data;
 
     const gameRes = await request(app)
       .post(`/api/events/${event.id}/games`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({
         title: '未公開試合',
         closeAfterMinutes: 10,
@@ -195,10 +206,12 @@ describe('GET /api/games/:gameId/bets', () => {
       .put(`/api/games/${game.id}/bets`)
       .send({ discordId: 'user002', selectedSymbols: 'B', amount: 200 });
 
-    // 管理者は倍率・人数を見られる
+    // editor トークンで管理者として倍率・人数を見る
+    const editorToken = await createDbToken();
+
     const adminRes = await request(app)
       .get(`/api/games/${game.id}/bets`)
-      .set(adminHeaders);
+      .set('Authorization', `Bearer ${editorToken}`);
 
     expect(adminRes.status).toBe(200);
     const combinations = adminRes.body.data.combinations;
@@ -217,7 +230,12 @@ describe('GET /api/games/:gameId/bets', () => {
       .put(`/api/games/${game.id}/bets`)
       .send({ discordId: 'user001', selectedSymbols: 'A', amount: 500 });
 
-    const res = await request(app).get(`/api/games/${game.id}/bets`);
+    // viewer トークンで閲覧
+    const viewerToken = await createDbToken('viewer');
+
+    const res = await request(app)
+      .get(`/api/games/${game.id}/bets`)
+      .set('Authorization', `Bearer ${viewerToken}`);
 
     expect(res.status).toBe(200);
     const combinations = res.body.data.combinations;
@@ -242,15 +260,16 @@ describe('GET /api/games/:gameId/bets', () => {
     await pool.query('UPDATE games SET deadline = $1 WHERE id = $2', [pastDeadline, game.id]);
 
     // A が当選
+    const token = await createDbToken();
     await request(app)
       .patch(`/api/games/${game.id}/result`)
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .send({ resultSymbols: 'A' });
 
     // bets を確認: user001はwin, user002はlose
     const betsRes = await request(app)
       .get(`/api/games/${game.id}/bets`)
-      .set(adminHeaders);
+      .set('Authorization', `Bearer ${token}`);
 
     const bets = betsRes.body.data.bets;
     const user001Bet = bets.find((b: { userName: string }) => b.userName === 'user001');
@@ -264,7 +283,7 @@ describe('GET /api/games/:gameId/bets', () => {
     // user001のポイントを確認: 10000 - 500 (bet_placed) + 1000 (game_result) = 10500
     const userRes = await request(app)
       .get('/api/users/discord/user001')
-      .set(adminHeaders)
+      .set('Authorization', `Bearer ${token}`)
       .query({ eventId: event.id });
     expect(userRes.body.data.points).toBe(10500);
   });

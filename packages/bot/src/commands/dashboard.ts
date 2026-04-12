@@ -42,7 +42,6 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     const res = await api.post<{ data: { token: string } }>(
       '/api/auth/token',
       { guildId, role },
-      { headers: { Authorization: `Bearer ${config.adminToken}` } },
     );
     token = res.data.data.token;
   } catch {
