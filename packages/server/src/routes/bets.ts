@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { query, withTransaction } from '../db';
-import { isAdmin } from '../middleware/auth';
+import { isAdmin, optionalAuth } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 
 const router = Router({ mergeParams: true });
@@ -78,7 +78,7 @@ function computeOdds(
 }
 
 // GET /api/games/:gameId/bets
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { gameId } = req.params;
     const adminMode = isAdmin(req);

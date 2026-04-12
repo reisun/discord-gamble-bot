@@ -13,7 +13,6 @@ export default defineConfig({
     // モジュールロード前に環境変数をセット
     env: {
       DATABASE_URL: 'postgresql://gamble_user:reisun0101@127.0.0.1:5432/gamble_bot_test',
-      ADMIN_TOKEN: 'test-admin-token',
     },
   },
 });

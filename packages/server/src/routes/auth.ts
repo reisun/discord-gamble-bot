@@ -19,12 +19,6 @@ router.get('/verify', async (req: Request, res: Response, next: NextFunction) =>
       return;
     }
 
-    // ADMIN_TOKEN の場合
-    if (rawToken === process.env.ADMIN_TOKEN) {
-      res.json({ data: { isAdmin: true } });
-      return;
-    }
-
     // DBトークン検証
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     const rows = await query<{ role: string; expires_at: Date }>(

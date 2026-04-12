@@ -4,6 +4,7 @@ import morgan from 'morgan';
 
 import { logger } from './logger';
 import { errorHandler } from './middleware/errorHandler';
+import { internalAuth } from './middleware/auth';
 import authRouter from './routes/auth';
 import eventsRouter from './routes/events';
 import gamesRouter from './routes/games';
@@ -31,6 +32,7 @@ export function createApp() {
   app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }));
   app.use(express.json());
 
+  // --- 公開 API（nginx 経由、トークン認証） ---
   app.use('/api/auth', authRouter);
   app.use('/api/guilds', guildsRouter);
   app.use('/api/events', eventsRouter);
@@ -38,6 +40,11 @@ export function createApp() {
   app.use('/api/events/:eventId/games', gamesRouter);
   app.use('/api/games/:gameId/bets', betsRouter);
   app.use('/api/users', usersRouter);
+
+  // --- 内部 API（Bot → Server 直接通信、認証不要） ---
+  // Bot が自身のトークンを取得するための専用エンドポイント。
+  // nginx は /internal をプロキシしないため外部からアクセス不可。
+  app.use('/internal/api/auth', internalAuth, authRouter);
 
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok' });

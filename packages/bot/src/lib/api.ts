@@ -6,6 +6,35 @@ export const api = axios.create({
   timeout: 10_000,
 });
 
+const TOKEN_REFRESH_MS = 11 * 60 * 60 * 1000; // 11時間（有効期限12時間の前に更新）
+
+/**
+ * 内部エンドポイント経由でBot用トークンを取得し、
+ * axios のデフォルト Authorization ヘッダーにセットする。
+ */
+export async function initBotToken(): Promise<void> {
+  const internalBase = `${config.apiBaseUrl.replace(/\/$/, '')}/internal`;
+  const res = await axios.post<{ data: { token: string } }>(
+    `${internalBase}/api/auth/token`,
+    { guildId: '*', role: 'editor' },
+    { timeout: 10_000 },
+  );
+  const token = res.data.data.token;
+  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  console.log('[Bot] API token acquired');
+}
+
+/** トークンを定期的に更新する */
+export function startTokenRefresh(): void {
+  setInterval(async () => {
+    try {
+      await initBotToken();
+    } catch (err) {
+      console.error('[Bot] Failed to refresh API token:', err);
+    }
+  }, TOKEN_REFRESH_MS);
+}
+
 /** API エラーレスポンスの共通型 */
 export type ApiErrorBody = {
   error: { code: string; message: string };
@@ -129,21 +158,15 @@ export async function getEventGames(eventId: number): Promise<Game[]> {
   return res.data.data;
 }
 
-/** 管理者トークンで非公開ゲームを含む全ゲームを取得する */
+/** 非公開ゲームを含む全ゲームを取得する */
 export async function getEventGamesAdmin(eventId: number): Promise<Game[]> {
-  const res = await api.get<{ data: Game[] }>(`/api/events/${eventId}/games?includeUnpublished=true`, {
-    headers: { Authorization: `Bearer ${config.adminToken}` },
-  });
+  const res = await api.get<{ data: Game[] }>(`/api/events/${eventId}/games?includeUnpublished=true`);
   return res.data.data;
 }
 
 /** ゲームの公開フラグを ON にする */
 export async function publishGame(gameId: number): Promise<void> {
-  await api.patch(
-    `/api/games/${gameId}/publish`,
-    { isPublished: true },
-    { headers: { Authorization: `Bearer ${config.adminToken}` } },
-  );
+  await api.patch(`/api/games/${gameId}/publish`, { isPublished: true });
 }
 
 export async function getBetList(gameId: number): Promise<BetListResponse> {
@@ -214,9 +237,5 @@ export async function getGameByNo(
 }
 
 export async function registerGuild(guildId: string, guildName: string, guildIconHash?: string | null): Promise<void> {
-  await api.put(
-    `/api/guilds/${guildId}`,
-    { guildName, guildIconHash: guildIconHash ?? null },
-    { headers: { Authorization: `Bearer ${config.adminToken}` } },
-  );
+  await api.put(`/api/guilds/${guildId}`, { guildName, guildIconHash: guildIconHash ?? null });
 }
