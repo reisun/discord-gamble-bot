@@ -94,7 +94,7 @@ curl http://127.0.0.1:3000/api/health
 | コンポーネント | ホスト | URL |
 |---|---|---|
 | Web アプリ（React） | GitHub Pages | `https://reisun.github.io/discord_gamble_bot/` |
-| Web API（Express） | 自宅 Docker + nginx | `https://reisun.asuscomm.com/api` |
+| Web API（Express） | 自宅 Docker + nginx | `https://your-domain.example.com/api` |
 
 ### 手順
 
@@ -111,7 +111,7 @@ cp key.pem key.pem
 #### 2. `.env` の設定
 
 ```env
-CORS_ALLOWED_ORIGINS=https://reisun.github.io,https://reisun.asuscomm.com
+CORS_ALLOWED_ORIGINS=https://reisun.github.io,https://your-domain.example.com
 WEB_APP_BASE_URL=https://reisun.github.io/discord_gamble_bot/
 ```
 
@@ -137,7 +137,7 @@ New-NetFirewallRule -DisplayName "Docker nginx HTTPS" -Direction Inbound -Protoc
 
 | Name | Value |
 |---|---|
-| `API_BASE_URL` | `https://reisun.asuscomm.com/api` |
+| `API_BASE_URL` | `https://your-domain.example.com/api` |
 
 **Settings > Pages** で Source を **GitHub Actions** に設定。
 
@@ -161,7 +161,7 @@ docker compose up -d --build
 #### 7. 疎通確認
 
 ```bash
-curl https://reisun.asuscomm.com/api/health
+curl https://your-domain.example.com/api/health
 # → {"status":"ok"}
 ```
 
