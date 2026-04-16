@@ -63,7 +63,45 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-client.login(config.discordToken).catch((err) => {
-  console.error('[Bot] Failed to login:', err);
-  process.exit(1);
-});
+async function loginWithBackoff() {
+  const maxRetries = 10;
+  const baseDelay = 5_000;
+  const maxDelay = 300_000; // 5 minutes
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await client.login(config.discordToken);
+      return;
+    } catch (err) {
+      console.error(`[Bot] Login attempt ${attempt}/${maxRetries} failed:`, err);
+
+      if (attempt === maxRetries) {
+        console.error('[Bot] All login attempts exhausted. Exiting.');
+        process.exit(1);
+      }
+
+      // セッション上限エラーの場合、リセット時刻まで待機
+      const msg = err instanceof Error ? err.message : '';
+      const resetMatch = msg.match(/resets at (.+)/);
+      if (resetMatch) {
+        const resetTime = new Date(resetMatch[1]).getTime();
+        const waitMs = resetTime - Date.now() + 5_000; // リセット後5秒の余裕
+        if (waitMs > 0 && waitMs < 86_400_000) {
+          const waitMin = Math.ceil(waitMs / 60_000);
+          console.log(`[Bot] Session limit reached. Waiting ${waitMin} min until reset...`);
+          await new Promise((r) => setTimeout(r, waitMs));
+          continue;
+        }
+      }
+
+      // 指数バックオフ + ジッター
+      const delay = Math.min(baseDelay * 2 ** (attempt - 1), maxDelay);
+      const jitter = delay * 0.2 * Math.random();
+      const waitMs = Math.round(delay + jitter);
+      console.log(`[Bot] Retrying in ${Math.round(waitMs / 1000)}s...`);
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+  }
+}
+
+loginWithBackoff();
