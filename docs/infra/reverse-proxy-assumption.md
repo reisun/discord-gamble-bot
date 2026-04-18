@@ -7,7 +7,7 @@
 ## 本プロジェクトが扱う範囲
 
 - `nginx` コンテナを `:80` で HTTP 公開（ホストポートには bind しない）
-- 共有 Docker ネットワーク `discord-gamble-bot-net` 上で `nginx:80` として可用にする
+- 共有 Docker ネットワーク `discord-gamble-bot-net` 上で `nginx:80` として可用にする（`docker-compose.yml` では `external: true` 宣言。ネットワーク自体は **`docker network create discord-gamble-bot-net` で事前作成**する前提）
 - 既存の `/api` ルーティング（Express サーバーへの proxy）は `nginx` が担当
 - `/health` 返却
 
