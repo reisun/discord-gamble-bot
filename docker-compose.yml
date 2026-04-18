@@ -69,18 +69,19 @@ services:
   nginx:
     image: nginx:1.25-alpine
     restart: unless-stopped
-    command: ["/bin/sh", "/etc/nginx/check-and-run.sh"]
-    environment:
-      SERVER_NAME: ${SERVER_NAME:-localhost}
-    ports:
-      - "80:80"
-      - "443:443"
     volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf.template:ro
-      - ./docker/nginx/check-and-run.sh:/etc/nginx/check-and-run.sh:ro
-      - ./docker/nginx/certs:/etc/nginx/certs:ro
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - default
+      - discord-gamble-bot-net
     depends_on:
       - server
 
 volumes:
   db_data:
+
+networks:
+  default:
+  discord-gamble-bot-net:
+    name: discord-gamble-bot-net
+    driver: bridge
