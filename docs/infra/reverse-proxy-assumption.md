@@ -41,10 +41,10 @@ Internet
 親 reverse-proxy が本プロジェクトを取り込む際の最小情報:
 
 - Docker ネットワーク名: `discord-gamble-bot-net`
-- Upstream service: `nginx`
+- Upstream service: `nginx`（親リバプロ側も `nginx` という service 名を使うため、**network alias `discord-gamble-bot-nginx` を併用**）
 - Upstream port: `80`
 - Healthcheck path: `/health`
-- 期待パス: 親リバプロが `/discord-gamble-bot/` → `http://nginx:80/` にプロキシする前提（プレフィックス除去）
+- 期待パス: 親リバプロが `/discord-gamble-bot/` → `http://discord-gamble-bot-nginx:80/` にプロキシする前提（プレフィックス除去）
 
 ## 開発時
 
