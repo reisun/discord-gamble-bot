@@ -35,7 +35,7 @@ jobs:
       - name: Build web app
         run: npm run build -w packages/web
         env:
-          VITE_BASE_PATH: /discord_gamble_bot/
+          VITE_BASE_PATH: /discord-gamble-bot/
           VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}
           VITE_APP_VERSION: ${{ vars.APP_VERSION || '1.1.0' }}
           VITE_GIT_COMMIT: ${{ github.sha }}

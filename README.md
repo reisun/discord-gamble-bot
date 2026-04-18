@@ -93,7 +93,7 @@ curl http://127.0.0.1:3000/api/health
 
 | コンポーネント | ホスト | URL |
 |---|---|---|
-| Web アプリ（React） | GitHub Pages | `https://reisun.github.io/discord_gamble_bot/` |
+| Web アプリ（React） | GitHub Pages | `https://reisun.github.io/discord-gamble-bot/` |
 | Web API（Express） | 自宅 Docker（親 reverse-proxy 経由） | `https://your-domain.example.com/discord-gamble-bot/api` |
 
 > TLS 終端・ドメイン設定・ポート 80/443 公開は **親 reverse-proxy**（[`workspace/reverse-proxy`](https://github.com/reisun/reverse-proxy)）が担う。本リポジトリは `:80` HTTP のみ共有ネットワーク `discord-gamble-bot-net` 経由で公開する。詳細は [`docs/infra/reverse-proxy-assumption.md`](./docs/infra/reverse-proxy-assumption.md)。
@@ -113,7 +113,7 @@ curl http://127.0.0.1:3000/api/health
 
 ```env
 CORS_ALLOWED_ORIGINS=https://reisun.github.io,https://your-domain.example.com
-WEB_APP_BASE_URL=https://reisun.github.io/discord_gamble_bot/
+WEB_APP_BASE_URL=https://reisun.github.io/discord-gamble-bot/
 ```
 
 #### 3. GitHub リポジトリの設定
@@ -159,7 +159,7 @@ docker compose exec nginx wget -qO- http://localhost/health
 # → ok
 ```
 
-Web アプリ: https://reisun.github.io/discord_gamble_bot/
+Web アプリ: https://reisun.github.io/discord-gamble-bot/
 
 ---
 
