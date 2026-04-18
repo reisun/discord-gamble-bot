@@ -55,7 +55,7 @@ Bot がサーバーに参加した際に取得されます。
 
 自動削除を待たずにユーザー情報の即時削除を希望する場合は、以下の GitHub Issues から削除リクエストを送信してください。
 
-**[データ削除リクエスト](https://github.com/reisun/discord_gamble_bot/issues)**
+**[データ削除リクエスト](https://github.com/reisun/discord-gamble-bot/issues)**
 
 リクエストには Discord ユーザーIDまたは表示名を記載してください。
 （個人開発・運用のため、対応までお時間をいただく場合があります。）
@@ -64,4 +64,4 @@ Bot がサーバーに参加した際に取得されます。
 
 本ポリシーに関するご質問やお問い合わせは、GitHub Issues で受け付けています。
 
-**[お問い合わせ](https://github.com/reisun/discord_gamble_bot/issues)**
+**[お問い合わせ](https://github.com/reisun/discord-gamble-bot/issues)**
