@@ -86,4 +86,4 @@ networks:
   default:
   discord-gamble-bot-net:
     name: discord-gamble-bot-net
-    driver: bridge
+    external: true

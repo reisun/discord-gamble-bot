@@ -46,6 +46,15 @@ cp .env.example .env
 | `DISCORD_GUILD_ID` | Bot を追加するサーバーの ID（複数はカンマ区切り）|
 | `DISCORD_ADMIN_ROLE_ID` | 管理者ロールの ID（複数はカンマ区切り）|
 
+### 共有ネットワークの作成（初回のみ）
+
+本プロジェクトは親 `reverse-proxy` と共有する外部ネットワーク `discord-gamble-bot-net` に参加します。まだ存在しない場合は作成してください。
+
+```bash
+docker network ls | grep discord-gamble-bot-net \
+  || docker network create discord-gamble-bot-net
+```
+
 ### Docker の起動
 
 ```bash
