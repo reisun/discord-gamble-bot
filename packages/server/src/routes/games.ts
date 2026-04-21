@@ -46,13 +46,15 @@ function computeDeadlineFromNow(closeAfterMinutes: number): Date {
   return new Date(Date.now() + closeAfterMinutes * 60 * 1000);
 }
 
+const MAX_CLOSE_AFTER_MINUTES = 525_600; // 365 days
+
 function normalizeCloseAfterMinutes(value: unknown): number {
   const next = value === undefined ? DEFAULT_CLOSE_AFTER_MINUTES : Number(value);
-  if (!Number.isInteger(next) || next < 1) {
+  if (!Number.isInteger(next) || next < 1 || next > MAX_CLOSE_AFTER_MINUTES) {
     throw new AppError(
       400,
       'VALIDATION_ERROR',
-      'closeAfterMinutes は1以上の整数で指定してください'
+      `closeAfterMinutes は1〜${MAX_CLOSE_AFTER_MINUTES}の整数で指定してください`
     );
   }
   return next;
