@@ -63,7 +63,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     ? await interaction.guild.members.fetch(interaction.user.id).catch(() => null)
     : null;
 
-  if (!isAdminMember(member)) {
+  if (!(await isAdminMember(member))) {
     await interaction.reply({
       content: '❌ このコマンドは管理者のみ使用できます。',
       ephemeral: true,

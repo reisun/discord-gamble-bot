@@ -33,7 +33,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
   const member = await interaction.guild!.members.fetch(interaction.user.id).catch(() => null);
 
-  const role = isAdminMember(member) ? 'editor' : 'viewer';
+  const role = (await isAdminMember(member)) ? 'editor' : 'viewer';
 
   let token: string;
   try {

@@ -236,3 +236,23 @@ export async function registerGuild(
 ): Promise<void> {
   await api.put(`/api/guilds/${guildId}`, { guildName, guildIconHash: guildIconHash ?? null });
 }
+
+export type GuildInfo = {
+  guildId: string;
+  guildName: string;
+  guildIconUrl: string | null;
+  adminRoleId: string | null;
+};
+
+export async function getGuild(guildId: string): Promise<GuildInfo> {
+  const res = await api.get<{ data: GuildInfo }>(`/api/guilds/${guildId}`);
+  return res.data.data;
+}
+
+export async function updateGuildAdminRole(
+  guildId: string,
+  guildName: string,
+  adminRoleId: string
+): Promise<void> {
+  await api.put(`/api/guilds/${guildId}`, { guildName, adminRoleId });
+}

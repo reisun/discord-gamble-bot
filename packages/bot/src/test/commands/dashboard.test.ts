@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ChatInputCommandInteraction, Guild, GuildMember } from 'discord.js';
 
-// config をモック
 vi.mock('../../config', () => ({
   config: {
-    discordAdminRoleIds: ['role-admin'],
     webAppBaseUrl: 'https://example.github.io/app',
     apiBaseUrl: 'http://server:3000',
   },
@@ -16,26 +14,22 @@ vi.mock('../../lib/api', () => ({
   },
 }));
 
+vi.mock('../../lib/admin', () => ({
+  isAdminMember: vi.fn(),
+}));
+
 import { execute } from '../../commands/dashboard';
 import { api } from '../../lib/api';
+import { isAdminMember } from '../../lib/admin';
 
 const TEST_GUILD_ID = 'guild-123456789';
-
-function makeMember(isAdmin: boolean): GuildMember {
-  return {
-    roles: {
-      cache: {
-        has: (roleId: string) => isAdmin && roleId === 'role-admin',
-      },
-    },
-  } as unknown as GuildMember;
-}
 
 function makeInteraction(
   guildId: string | null = TEST_GUILD_ID,
   isAdmin = false
 ): ChatInputCommandInteraction {
-  const member = guildId ? makeMember(isAdmin) : null;
+  vi.mocked(isAdminMember).mockResolvedValue(isAdmin);
+  const member = guildId ? ({} as GuildMember) : null;
   return {
     guild: guildId
       ? ({
