@@ -9,7 +9,7 @@ import { isAdminMember } from '../lib/admin';
 import { betTypeLabel, fmtDeadline, fmtRemaining } from '../lib/format';
 
 export const data = new SlashCommandBuilder()
-  .setName('post-game')
+  .setName('ga_post-game')
   .setDescription('ゲーム情報をチャンネルに投稿します（管理者のみ）')
   .addIntegerOption((opt) =>
     opt
@@ -140,9 +140,9 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         .map((o) => o.symbol)
         .join('');
   const usageHint = isSingle
-    ? `\`/bet game:${gameNo} option:<記号> amount:<ポイント>\``
-    : `\`/bet game:${gameNo} option:<記号を${n}文字> amount:<ポイント>\``;
-  const exampleLine = `/bet game:${gameNo} option:${exSymbols} amount:100`;
+    ? `\`/ga_bet game:${gameNo} option:<記号> amount:<ポイント>\``
+    : `\`/ga_bet game:${gameNo} option:<記号を${n}文字> amount:<ポイント>\``;
+  const exampleLine = `/ga_bet game:${gameNo} option:${exSymbols} amount:100`;
 
   embed.addFields({
     name: '賭け方法',

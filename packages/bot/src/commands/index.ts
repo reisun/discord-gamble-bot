@@ -17,9 +17,9 @@ export type Command = {
 };
 
 export const commands: Map<string, Command> = new Map<string, Command>([
-  ['bet', bet],
-  ['mybets', mybets],
-  ['dashboard', dashboard],
-  ['post-game', postGame],
-  ['set-admin-role', setAdminRole],
+  ['ga_bet', bet],
+  ['ga_mybets', mybets],
+  ['ga_dashboard', dashboard],
+  ['ga_post-game', postGame],
+  ['ga_set-admin-role', setAdminRole],
 ]);

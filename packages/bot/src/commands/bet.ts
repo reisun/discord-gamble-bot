@@ -15,7 +15,7 @@ import {
 import { betTypeLabel, buildOptMap, fmtPt, formatSelection, optionHint } from '../lib/format';
 
 export const data = new SlashCommandBuilder()
-  .setName('bet')
+  .setName('ga_bet')
   .setDescription('ゲームに賭けを行います')
   .addIntegerOption((opt) =>
     opt

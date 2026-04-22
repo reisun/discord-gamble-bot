@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandBuilder }
 import { updateGuildAdminRole } from '../lib/api';
 
 export const data = new SlashCommandBuilder()
-  .setName('set-admin-role')
+  .setName('ga_set-admin-role')
   .setDescription('gamble-bot の管理者ロールを設定します（サーバー管理者のみ）')
   .addRoleOption((opt) =>
     opt.setName('role').setDescription('管理者として設定するロール').setRequired(true)
