@@ -1,9 +1,15 @@
 import { GuildMember } from 'discord.js';
-import { config } from '../config';
+import { getGuild } from './api';
 
 /** Discord メンバーが管理者ロールを持っているか確認する */
-export function isAdminMember(member: GuildMember | null | undefined): boolean {
+export async function isAdminMember(member: GuildMember | null | undefined): Promise<boolean> {
   if (!member) return false;
-  if (config.discordAdminRoleIds.length === 0) return false;
-  return config.discordAdminRoleIds.some((roleId) => member.roles.cache.has(roleId));
+  const guildId = member.guild.id;
+  try {
+    const guild = await getGuild(guildId);
+    if (!guild.adminRoleId) return false;
+    return member.roles.cache.has(guild.adminRoleId);
+  } catch {
+    return false;
+  }
 }

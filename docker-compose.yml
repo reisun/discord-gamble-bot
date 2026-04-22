@@ -54,7 +54,6 @@ services:
     restart: unless-stopped
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
-      DISCORD_ADMIN_ROLE_ID: ${DISCORD_ADMIN_ROLE_ID}
       API_BASE_URL: ${API_BASE_URL:-http://server:3000}
       WEB_APP_BASE_URL: ${WEB_APP_BASE_URL:-}
       NODE_ENV: ${NODE_ENV:-development}

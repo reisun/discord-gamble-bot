@@ -8,6 +8,7 @@ import * as bet from './bet';
 import * as mybets from './mybets';
 import * as dashboard from './dashboard';
 import * as postGame from './post-game';
+import * as setAdminRole from './set-admin-role';
 
 export type Command = {
   data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
@@ -20,4 +21,5 @@ export const commands: Map<string, Command> = new Map<string, Command>([
   ['mybets', mybets],
   ['dashboard', dashboard],
   ['post-game', postGame],
+  ['set-admin-role', setAdminRole],
 ]);

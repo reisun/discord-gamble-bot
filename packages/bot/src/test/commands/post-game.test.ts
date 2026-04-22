@@ -3,12 +3,6 @@ import type { ChatInputCommandInteraction, Guild, GuildMember } from 'discord.js
 import type { EmbedBuilder } from 'discord.js';
 import type { Event, Game } from '../../lib/api';
 
-vi.mock('../../config', () => ({
-  config: {
-    discordAdminRoleIds: ['role-admin'],
-  },
-}));
-
 vi.mock('../../lib/api', () => ({
   getEvents: vi.fn(),
   getEventGamesAdmin: vi.fn(),
@@ -16,14 +10,13 @@ vi.mock('../../lib/api', () => ({
   extractApiMessage: vi.fn(() => 'APIエラー'),
 }));
 
-import * as api from '../../lib/api';
-import { execute } from '../../commands/post-game';
+vi.mock('../../lib/admin', () => ({
+  isAdminMember: vi.fn(),
+}));
 
-function makeMember(isAdmin: boolean): GuildMember {
-  return {
-    roles: { cache: { has: (id: string) => isAdmin && id === 'role-admin' } },
-  } as unknown as GuildMember;
-}
+import * as api from '../../lib/api';
+import { isAdminMember } from '../../lib/admin';
+import { execute } from '../../commands/post-game';
 
 function makeEvent(): Event {
   return {
@@ -58,7 +51,8 @@ function makeGame(overrides: Partial<Game> = {}): Game {
 }
 
 function makeInteraction(isAdmin: boolean, gameNo: number): ChatInputCommandInteraction {
-  const member = makeMember(isAdmin);
+  vi.mocked(isAdminMember).mockResolvedValue(isAdmin);
+  const member = {} as GuildMember;
   return {
     user: { id: 'user-001' },
     guild: {
