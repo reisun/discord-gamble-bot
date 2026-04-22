@@ -20,4 +20,4 @@ RUN npm ci -w packages/bot --omit=dev
 
 COPY --from=builder /app/packages/bot/dist ./dist
 
-CMD ["sh", "-c", "node dist/scripts/deploy-commands.js && node dist/index.js"]
+CMD ["node", "dist/index.js"]
