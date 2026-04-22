@@ -1,8 +1,6 @@
 /** 環境変数を読み込んで型付きで公開する */
 export const config = {
   discordToken: process.env.DISCORD_TOKEN ?? '',
-  discordClientId: process.env.DISCORD_CLIENT_ID ?? '',
-  discordGuildId: process.env.DISCORD_GUILD_ID ?? '',
   /** カンマ区切りで複数指定可 */
   discordAdminRoleIds: (process.env.DISCORD_ADMIN_ROLE_ID ?? '')
     .split(',')

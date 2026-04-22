@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Events } from 'discord.js';
+import { Client, GatewayIntentBits, Events, REST, Routes } from 'discord.js';
 import { config } from './config';
 import { commands } from './commands/index';
 import { registerGuild, initBotToken, startTokenRefresh } from './lib/api';
@@ -20,8 +20,17 @@ client.once(Events.ClientReady, async (c) => {
     process.exit(1);
   }
 
-  // 参加中のギルド情報をAPIに登録
+  // 参加中のギルドにコマンド登録 & API にギルド情報を登録
+  const rest = new REST().setToken(config.discordToken);
+  const body = [...commands.values()].map((cmd) => cmd.data.toJSON());
+
   for (const [, guild] of c.guilds.cache) {
+    try {
+      await rest.put(Routes.applicationGuildCommands(c.application.id, guild.id), { body });
+      console.log(`[Bot] Deployed ${body.length} commands to: ${guild.name} (${guild.id})`);
+    } catch (err) {
+      console.error(`[Bot] Failed to deploy commands to ${guild.id}:`, err);
+    }
     try {
       await registerGuild(guild.id, guild.name, guild.icon);
       console.log(`[Bot] Registered guild: ${guild.name} (${guild.id})`);
