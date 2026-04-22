@@ -3,7 +3,7 @@ import { extractApiMessage, getEventBets, getEvents, getUserByDiscordId } from '
 import { betTypeLabel, fmtPt, formatSelection } from '../lib/format';
 
 export const data = new SlashCommandBuilder()
-  .setName('mybets')
+  .setName('ga_mybets')
   .setDescription('開催中イベントで自分が賭けた全ゲームの状況を確認します');
 
 export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -38,7 +38,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   try {
     userInfo = await getUserByDiscordId(discordId, activeEvent.id);
   } catch {
-    await interaction.editReply('❌ ユーザー情報が見つかりません。先に /bet を実行してください。');
+    await interaction.editReply('❌ ユーザー情報が見つかりません。先に /ga_bet を実行してください。');
     return;
   }
 

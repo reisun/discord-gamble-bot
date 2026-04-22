@@ -10,7 +10,7 @@ import { isAdminMember } from '../lib/admin';
 import { api } from '../lib/api';
 
 export const data = new SlashCommandBuilder()
-  .setName('dashboard')
+  .setName('ga_dashboard')
   .setDescription('Webアプリへのリンクを表示します');
 
 export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {

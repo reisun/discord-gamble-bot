@@ -98,7 +98,7 @@ describe('/post-game execute', () => {
     expect(fieldValues).toContain('2024-06-01 21:00');
     expect(fieldValues.some((v) => v.includes('チームA'))).toBe(true);
     expect(fieldValues.some((v) => v.includes('チームB'))).toBe(true);
-    expect(fieldValues.some((v) => v.includes('/bet game:1'))).toBe(true);
+    expect(fieldValues.some((v) => v.includes('/ga_bet game:1'))).toBe(true);
   });
 
   it('締め切りが未来のゲームでは残り時間が付与される', async () => {
