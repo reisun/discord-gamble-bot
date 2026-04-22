@@ -5,6 +5,24 @@ import { registerGuild, initBotToken, startTokenRefresh } from './lib/api';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+const rest = new REST().setToken(config.discordToken);
+const commandBody = [...commands.values()].map((cmd) => cmd.data.toJSON());
+
+async function deployToGuild(applicationId: string, guildId: string, guildName: string, guildIcon: string | null) {
+  try {
+    await rest.put(Routes.applicationGuildCommands(applicationId, guildId), { body: commandBody });
+    console.log(`[Bot] Deployed ${commandBody.length} commands to: ${guildName} (${guildId})`);
+  } catch (err) {
+    console.error(`[Bot] Failed to deploy commands to ${guildId}:`, err);
+  }
+  try {
+    await registerGuild(guildId, guildName, guildIcon);
+    console.log(`[Bot] Registered guild: ${guildName} (${guildId})`);
+  } catch (err) {
+    console.error(`[Bot] Failed to register guild ${guildId}:`, err);
+  }
+}
+
 client.once(Events.ClientReady, async (c) => {
   const version = process.env.APP_VERSION ?? '1.1.0';
   const commitHash = process.env.GIT_COMMIT ?? 'unknown';
@@ -21,23 +39,18 @@ client.once(Events.ClientReady, async (c) => {
   }
 
   // 参加中のギルドにコマンド登録 & API にギルド情報を登録
-  const rest = new REST().setToken(config.discordToken);
-  const body = [...commands.values()].map((cmd) => cmd.data.toJSON());
-
+  console.log(`[Bot] Found ${c.guilds.cache.size} guild(s)`);
   for (const [, guild] of c.guilds.cache) {
-    try {
-      await rest.put(Routes.applicationGuildCommands(c.application.id, guild.id), { body });
-      console.log(`[Bot] Deployed ${body.length} commands to: ${guild.name} (${guild.id})`);
-    } catch (err) {
-      console.error(`[Bot] Failed to deploy commands to ${guild.id}:`, err);
-    }
-    try {
-      await registerGuild(guild.id, guild.name, guild.icon);
-      console.log(`[Bot] Registered guild: ${guild.name} (${guild.id})`);
-    } catch (err) {
-      console.error(`[Bot] Failed to register guild ${guild.id}:`, err);
-    }
+    await deployToGuild(c.application.id, guild.id, guild.name, guild.icon);
   }
+});
+
+// 新しいサーバーに追加された時にコマンドを登録
+client.on(Events.GuildCreate, async (guild) => {
+  const appId = client.application?.id;
+  if (!appId) return;
+  console.log(`[Bot] Joined guild: ${guild.name} (${guild.id})`);
+  await deployToGuild(appId, guild.id, guild.name, guild.icon);
 });
 
 // スラッシュコマンド実行
