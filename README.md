@@ -75,7 +75,7 @@ docker compose up -d --build
 |---------|------|--------------|
 | `db` | PostgreSQL 16 | `127.0.0.1:5432` |
 | `server` | Express.js API サーバー | `127.0.0.1:3000` |
-| `web` | React/Vite 開発サーバー | `127.0.0.1:5173` |
+| `web-dev-server` | React/Vite 開発サーバー | `127.0.0.1:5173` |
 | `bot` | Discord Bot | - |
 | `nginx` | 内部リバースプロキシ（HTTP :80） | なし（上流プロキシ経由） |
 
@@ -152,7 +152,7 @@ docker compose up -d --build
 | `bot` | なし（アウトバウンドのみ）|
 | `nginx` | なし（上流プロキシ経由、共有ネット `discord-gamble-bot-net`） |
 
-> `web` コンテナは GitHub Pages が代替するため本番では不使用。
+> `web-dev-server` コンテナは GitHub Pages が代替するため本番では不使用。
 
 #### 5. 上流プロキシ側の起動 / リロード
 

@@ -35,7 +35,7 @@ services:
       db:
         condition: service_healthy
 
-  web:
+  web-dev-server:
     build:
       context: .
       dockerfile: packages/web/Dockerfile
