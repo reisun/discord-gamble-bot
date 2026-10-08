@@ -12,7 +12,9 @@ export default defineConfig({
     maxWorkers: 1,
     // モジュールロード前に環境変数をセット
     env: {
-      DATABASE_URL: 'postgresql://gamble_user:reisun0101@127.0.0.1:5432/gamble_bot_test',
+      DATABASE_URL:
+        process.env.DATABASE_URL ??
+        'postgresql://gamble_user:reisun0101@127.0.0.1:5432/gamble_bot_test',
     },
   },
 });

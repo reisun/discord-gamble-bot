@@ -2,11 +2,12 @@ import path from 'path';
 import migrate from 'node-pg-migrate';
 
 import { logger } from './logger';
-import { createApp } from './app';
+import { createApp, createInternalApp } from './app';
 import { startCleanupScheduler } from './cleanup';
 
 const app = createApp();
 const port = process.env.PORT ?? 3000;
+const internalPort = process.env.INTERNAL_PORT ?? 3002;
 
 async function runMigrations(): Promise<void> {
   await migrate({
@@ -22,6 +23,10 @@ async function main(): Promise<void> {
   logger.info('[migrate] Running migrations...');
   await runMigrations();
   logger.info('[migrate] Done.');
+
+  createInternalApp().listen(internalPort, () => {
+    logger.info(`Internal Bot API running on port ${internalPort}`);
+  });
 
   app.listen(port, () => {
     logger.info(`Server running on port ${port}`);

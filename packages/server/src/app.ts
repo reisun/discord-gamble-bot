@@ -32,7 +32,7 @@ export function createApp() {
   app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }));
   app.use(express.json());
 
-  // --- 公開 API（nginx 経由、トークン認証） ---
+  // --- 公開 API（Quick Tunnel 経由、トークン認証） ---
   app.use('/api/auth', authRouter);
   app.use('/api/guilds', guildsRouter);
   app.use('/api/events', eventsRouter);
@@ -40,11 +40,6 @@ export function createApp() {
   app.use('/api/events/:eventId/games', gamesRouter);
   app.use('/api/games/:gameId/bets', betsRouter);
   app.use('/api/users', usersRouter);
-
-  // --- 内部 API（Bot → Server 直接通信、認証不要） ---
-  // Bot が自身のトークンを取得するための専用エンドポイント。
-  // nginx は /internal をプロキシしないため外部からアクセス不可。
-  app.use('/internal/api/auth', internalAuth, authRouter);
 
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok' });
@@ -60,5 +55,16 @@ export function createApp() {
 
   app.use(errorHandler);
 
+  return app;
+}
+
+/** Docker ネットワーク内の Bot 専用リスナー。ホストやトンネルに公開しない。 */
+export function createInternalApp() {
+  const app = express();
+  app.use(express.json());
+  app.use('/internal/api/auth', internalAuth, authRouter);
+  // Bot の通常 API 呼び出しは取得したトークンで公開側と同じ認証を通す。
+  app.use(createApp());
+  app.use(errorHandler);
   return app;
 }

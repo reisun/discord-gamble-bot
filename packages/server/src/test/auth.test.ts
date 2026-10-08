@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
-import { createApp } from '../app';
+import { createApp, createInternalApp } from '../app';
 import { pool } from '../db';
 
 const app = createApp();
+const internalApp = createInternalApp();
 
 /** 内部 API 経由で DB トークンを生成する */
 async function createDbToken(role: 'editor' | 'viewer' = 'editor', guildId = 'guild-001') {
-  const res = await request(app).post('/internal/api/auth/token').send({ guildId, role });
+  const res = await request(internalApp).post('/internal/api/auth/token').send({ guildId, role });
   return res.body.data.token as string;
 }
 
@@ -66,7 +67,7 @@ describe('POST /api/auth/token（公開パス）', () => {
 
 describe('POST /internal/api/auth/token（内部パス）', () => {
   it('トークンなしでトークンを生成できる', async () => {
-    const res = await request(app)
+    const res = await request(internalApp)
       .post('/internal/api/auth/token')
       .send({ guildId: 'guild-001', role: 'editor' });
 
@@ -76,7 +77,7 @@ describe('POST /internal/api/auth/token（内部パス）', () => {
   });
 
   it('viewer ロールのトークンも生成できる', async () => {
-    const res = await request(app)
+    const res = await request(internalApp)
       .post('/internal/api/auth/token')
       .send({ guildId: 'guild-001', role: 'viewer' });
 
@@ -85,7 +86,7 @@ describe('POST /internal/api/auth/token（内部パス）', () => {
   });
 
   it('role が不正な場合 400 を返す', async () => {
-    const res = await request(app)
+    const res = await request(internalApp)
       .post('/internal/api/auth/token')
       .send({ guildId: 'guild-001', role: 'superadmin' });
 
@@ -140,7 +141,7 @@ describe('管理者権限が必要なエンドポイント', () => {
   });
 
   it('内部パス（/internal/api/auth/token）でトークンなしなら許可される', async () => {
-    const res = await request(app)
+    const res = await request(internalApp)
       .post('/internal/api/auth/token')
       .send({ guildId: 'guild-001', role: 'editor' });
 
@@ -167,5 +168,31 @@ describe('管理者権限が必要なエンドポイント', () => {
 
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+});
+
+describe('公開・内部リスナーの分離', () => {
+  it('公開リスナーでは内部トークン発行パスが存在しない', async () => {
+    const res = await request(app)
+      .post('/internal/api/auth/token')
+      .send({ guildId: 'guild-001', role: 'editor' });
+    expect(res.status).toBe(404);
+    expect(res.body.data).toBeUndefined();
+  });
+
+  it('内部リスナーの通常 API でもトークンなしの管理操作を拒否する', async () => {
+    const res = await request(internalApp)
+      .post('/api/events')
+      .send({ name: 'private', guildId: 'guild-001' });
+    expect(res.status).toBe(401);
+  });
+
+  it('内部で取得した Bot トークンで通常 API を操作できる', async () => {
+    const token = await createDbToken('editor', '*');
+    const res = await request(internalApp)
+      .post('/api/events')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Bot event', initialPoints: 1000, guildId: 'guild-001' });
+    expect(res.status).toBe(201);
   });
 });

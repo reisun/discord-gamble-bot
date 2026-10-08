@@ -10,7 +10,6 @@ Discord Bot でポイントを賭けるゲームを楽しめるサービスで�
 | **Discord Bot** | discord.js (TypeScript) | 賭けコマンド・通知のインターフェース |
 | **Web アプリ** | React + Vite (TypeScript) | ゲーム管理・状況表示の Web UI |
 | **DB** | PostgreSQL 16 | データの永続化 |
-| **nginx** | nginx 1.25 | 内部リバースプロキシ（:80 HTTP）。外部公開は上流プロキシに委譲 |
 
 ## 主な機能
 
@@ -68,9 +67,10 @@ docker compose up -d --build
 | `server` | Express.js API サーバー | `127.0.0.1:3000` |
 | `web-dev-server` | React/Vite 開発サーバー | `127.0.0.1:5173` |
 | `bot` | Discord Bot | - |
-| `nginx` | 内部リバースプロキシ（HTTP :80） | なし（上流プロキシ経由） |
 
 > サーバーは起動時にマイグレーションを自動実行します。
+
+Bot の接続先は `BOT_API_BASE_URL=http://server:3002` が既定です。旧 `API_BASE_URL` は使用しません。内部ポート 3002 は Compose ネットワーク内だけで使用し、公開ポートや Quick Tunnel の接続先には指定しないでください。
 
 > bot コンテナは起動時にスラッシュコマンドを Discord へ自動登録します。
 
@@ -91,15 +91,15 @@ curl http://127.0.0.1:3000/api/health
 
 ### 構成と接続設定
 
-Web アプリは GitHub Pages、API は Docker の `nginx:80` を Cloudflare Quick Tunnel 経由で公開します。共有リバプロや共有 Docker ネットワークは不要です。nginx は `/internal` を公開しないため、トンネルを Express サーバーに直接接続しないでください。
+Web アプリは GitHub Pages、API は Docker の `server:3000` を Cloudflare Quick Tunnel 経由で公開します。共有リバプロや共有 Docker ネットワークは不要です。公開リスナー（3000）には `/internal` を登録しません。Bot 専用リスナー（3002）は Docker 内部のみで使用し、ホスト側へ公開しません。
 
 `.env` の `CORS_ALLOWED_ORIGINS` は `https://reisun.github.io`（Compose 既定値）、`WEB_APP_BASE_URL` は `https://reisun.github.io/discord-gamble-bot/` に設定します。
 
 GitHub リポジトリ変数 `QUICK_TUNNEL_URL` に発行された HTTPS URL（例: `https://example-random.trycloudflare.com`）を設定し、`.github/workflows/deploy-pages.yml` を実行します。Pages の Source は GitHub Actions に設定します。ワークフローは `packages/web/public/config.json` に `{ "apiBaseUrl": "https://example-random.trycloudflare.com" }` を生成します。画面は起動前にこのファイルをキャッシュなしで取得し、API の `/api` を追加してアクセスします。URL 変更時は変数更新後に再デプロイします。生成ファイルと `.env` はコミットしません。
 
-API・DB・Bot・nginx の起動、Quick Tunnel の開始、URL 取得、変数更新と Pages 再デプロイはワークスペースの `reverse-proxy/scripts/quick-tunnels.py` がまとめて行います。`web-dev-server` は開発用です。
+API・DB・Bot の起動、Quick Tunnel の開始、URL 取得、変数更新と Pages 再デプロイはワークスペースの `reverse-proxy/scripts/quick-tunnels.py` がまとめて行います。`web-dev-server` は開発用です。
 
-疎通確認はトンネル URL の `/api/health`（JSON）または `/health`（nginx）で行います。ローカル開発では従来どおり Vite の `/api` プロキシを利用します。本番の設定が欠落・不正な場合はエラーを表示し、旧リバプロへ接続しません。
+疎通確認はトンネル URL の `/api/health`（JSON）で行います。ローカル開発では従来どおり Vite の `/api` プロキシを利用します。本番の設定が欠落・不正な場合はエラーを表示し、旧リバプロへ接続しません。
 
 ---
 
