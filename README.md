@@ -46,15 +46,6 @@ cp .env.example .env
 | `DISCORD_GUILD_ID` | Bot を追加するサーバーの ID（複数はカンマ区切り）|
 | `DISCORD_ADMIN_ROLE_ID` | 管理者ロールの ID（複数はカンマ区切り）|
 
-### 共有ネットワークの作成（初回のみ）
-
-本プロジェクトは外部ネットワーク `discord-gamble-bot-net` に参加します（上流プロキシと共有する用途）。まだ存在しない場合は作成してください。
-
-```bash
-docker network ls | grep discord-gamble-bot-net \
-  || docker network create discord-gamble-bot-net
-```
-
 ### Docker の起動
 
 ```bash
@@ -98,79 +89,17 @@ curl http://127.0.0.1:3000/api/health
 
 ## 本番デプロイ
 
-### 構成
+### 構成と接続設定
 
-| コンポーネント | ホスト | URL |
-|---|---|---|
-| Web アプリ（React） | GitHub Pages | `https://reisun.github.io/discord-gamble-bot/` |
-| Web API（Express） | Docker（上流プロキシ経由で公開） | `https://<public-domain>/discord-gamble-bot/api` |
+Web アプリは GitHub Pages、API は Docker の `nginx:80` を Cloudflare Quick Tunnel 経由で公開します。共有リバプロや共有 Docker ネットワークは不要です。nginx は `/internal` を公開しないため、トンネルを Express サーバーに直接接続しないでください。
 
-> TLS 終端・ドメイン設定・ポート 80/443 公開は **上流プロキシ**（本リポジトリの外）が担う。本リポジトリは `:80` HTTP のみ共有ネットワーク `discord-gamble-bot-net` 経由で提供する。契約仕様は [`docs/infra/upstream-proxy-contract.md`](./docs/infra/upstream-proxy-contract.md)。
->
-> 上流プロキシの実装は利用者が選択できる（共用リバプロに相乗り／本プロジェクト専用リバプロを単独導入／マネージド LB など）。同一ワークスペース内の `reverse-proxy` プロジェクトに相乗りする構成も可能な選択肢のひとつ。
+`.env` の `CORS_ALLOWED_ORIGINS` は `https://reisun.github.io`（Compose 既定値）、`WEB_APP_BASE_URL` は `https://reisun.github.io/discord-gamble-bot/` に設定します。
 
-### 手順
+GitHub リポジトリ変数 `QUICK_TUNNEL_URL` に発行された HTTPS URL（例: `https://example-random.trycloudflare.com`）を設定し、`.github/workflows/deploy-pages.yml` を実行します。Pages の Source は GitHub Actions に設定します。ワークフローは `packages/web/public/config.json` に `{ "apiBaseUrl": "https://example-random.trycloudflare.com" }` を生成します。画面は起動前にこのファイルをキャッシュなしで取得し、API の `/api` を追加してアクセスします。URL 変更時は変数更新後に再デプロイします。生成ファイルと `.env` はコミットしません。
 
-#### 1. 上流プロキシを先にセットアップ
+API・DB・Bot・nginx の起動、Quick Tunnel の開始、URL 取得、変数更新と Pages 再デプロイはワークスペースの `reverse-proxy/scripts/quick-tunnels.py` がまとめて行います。`web-dev-server` は開発用です。
 
-上流プロキシ側で以下を行う（本 repo には不要）:
-
-- TLS 証明書配置 / 取得（Let's Encrypt 等）
-- ホストファイアウォール / ルーターのポート転送（80, 443）
-- プロキシ設定に `/discord-gamble-bot/` → `discord-gamble-bot-nginx:80` upstream を追加
-- プロキシ側 `docker-compose.yml` に `discord-gamble-bot-net` を external 参加
-
-#### 2. `.env` の設定
-
-```env
-CORS_ALLOWED_ORIGINS=https://reisun.github.io,https://<public-domain>
-WEB_APP_BASE_URL=https://reisun.github.io/discord-gamble-bot/
-```
-
-#### 3. GitHub リポジトリの設定
-
-**Settings > Environments > `github-pages` > Variables**:
-
-| Name | Value |
-|---|---|
-| `API_BASE_URL` | `https://<public-domain>/discord-gamble-bot/api` |
-
-**Settings > Pages** で Source を **GitHub Actions** に設定。
-
-#### 4. Docker の起動
-
-```bash
-docker compose up -d --build
-```
-
-本番で起動するサービス：
-
-| サービス | 外部公開 |
-|---------|---------|
-| `db` | なし（127.0.0.1 のみ）|
-| `server` | なし（nginx 経由）|
-| `bot` | なし（アウトバウンドのみ）|
-| `nginx` | なし（上流プロキシ経由、共有ネット `discord-gamble-bot-net`） |
-
-> `web-dev-server` コンテナは GitHub Pages が代替するため本番では不使用。
-
-#### 5. 上流プロキシ側の起動 / リロード
-
-上流プロキシを起動 or 設定変更後にリロードする（本 repo が先に起動してネットワークを作成した状態で）。
-
-#### 6. 疎通確認
-
-```bash
-# 上流プロキシ経由
-curl https://<public-domain>/discord-gamble-bot/api/health
-# → {"status":"ok"}
-
-# 本 repo 単体（上流プロキシが同一ホストで動作中なら）
-docker compose exec nginx wget -qO- http://localhost/health
-# → ok
-```
-
-Web アプリ: https://reisun.github.io/discord-gamble-bot/
+疎通確認はトンネル URL の `/api/health`（JSON）または `/health`（nginx）で行います。ローカル開発では従来どおり Vite の `/api` プロキシを利用します。本番の設定が欠落・不正な場合はエラーを表示し、旧リバプロへ接続しません。
 
 ---
 
