@@ -1,6 +1,6 @@
 import type { Event, Game, BetsData, Guild, User, UserEventResult } from './types';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+import { getApiBaseUrl } from '../config';
 
 // TOKEN_EXPIRED エラーを区別するためのカスタムイベント
 export const TOKEN_EXPIRED_EVENT = 'discord-gamble-token-expired';
@@ -14,7 +14,7 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${getApiBaseUrl()}${path}`, { ...options, headers });
 
   if (!res.ok) {
     let errMsg = `HTTP ${res.status}`;

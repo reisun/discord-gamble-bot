@@ -5,6 +5,11 @@ on:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: Quick Tunnel HTTPS base URL
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -32,11 +37,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate runtime connection config
+        env:
+          QUICK_TUNNEL_URL: ${{ inputs.api_base_url || vars.QUICK_TUNNEL_URL }}
+        run: |
+          node --input-type=module <<'JS'
+          import { mkdirSync, writeFileSync } from 'node:fs';
+          const value = process.env.QUICK_TUNNEL_URL;
+          const url = new URL(value);
+          if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+            throw new Error('QUICK_TUNNEL_URL must be a valid HTTPS base URL');
+          }
+          mkdirSync('packages/web/public', { recursive: true });
+          writeFileSync('packages/web/public/config.json', JSON.stringify({ apiBaseUrl: url.href.replace(/\/$/, '') }) + '\n');
+          JS
+
       - name: Build web app
         run: npm run build -w packages/web
         env:
           VITE_BASE_PATH: /discord-gamble-bot/
-          VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}
           VITE_APP_VERSION: ${{ vars.APP_VERSION || '1.1.0' }}
           VITE_GIT_COMMIT: ${{ github.sha }}
 
