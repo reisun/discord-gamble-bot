@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
-import { createApp } from '../app';
+import { createApp, createInternalApp } from '../app';
 
 const app = createApp();
+const internalApp = createInternalApp();
 
 const TEST_GUILD_ID = 'test-guild-001';
 
 /** 内部 API 経由で DB トークンを生成する */
 async function createDbToken(role: 'editor' | 'viewer' = 'editor', guildId = TEST_GUILD_ID) {
-  const res = await request(app).post('/internal/api/auth/token').send({ guildId, role });
+  const res = await request(internalApp).post('/internal/api/auth/token').send({ guildId, role });
   return res.body.data.token as string;
 }
 

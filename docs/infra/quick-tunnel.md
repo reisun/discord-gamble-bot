@@ -10,4 +10,8 @@
 
 ## API
 
-トンネルの接続先は `nginx:80`。公開 API は `/api`、ヘルスチェックは `/health` と `/api/health`。画面は `apiBaseUrl` に `/api` を追加する。Bot 専用 `/internal` は nginx 経由で公開しない。CORS 許可オリジンの既定値は `https://reisun.github.io`。
+トンネルの接続先は `server:3000`。公開 API は `/api`、ヘルスチェックは `/api/health`。画面は `apiBaseUrl` に `/api` を追加する。公開リスナーに Bot 専用 `/internal` は登録しない（404）。Bot はホスト非公開の内部リスナー `server:3002` に `BOT_API_BASE_URL` で接続し、`/internal/api/auth/token` からトークンを取得する。同じ内部リスナーで通常の `/api` もトークン認証付きで提供する。CORS 許可オリジンの既定値は `https://reisun.github.io`。
+
+## リスナー分離の検証
+
+Server のテストは `DATABASE_URL` を指定して専用の一時 PostgreSQL に接続できる。本番 DB を使用しない。公開 `/internal/api/auth/token` は 404、公開 `/api/auth/token` の未認証要求は 401。内部リスナーで取得したトークンは公開・内部の通常 API で検証される。内部の通常 API も未認証の管理操作を拒否する。Compose は内部ポート 3002 をホスト公開しない。
